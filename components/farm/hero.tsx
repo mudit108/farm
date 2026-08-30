@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlotMap } from "@/components/farm/plot-map";
+import { WheatFieldBanner } from "@/components/farm/illustrations/wheat-field-banner";
 
 export function Hero() {
   return (
@@ -78,6 +79,8 @@ export function Hero() {
           </div>
         </div>
       </div>
+
+      <WheatFieldBanner className="h-28 w-full sm:h-40" />
     </section>
   );
 }

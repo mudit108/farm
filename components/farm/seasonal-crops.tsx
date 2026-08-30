@@ -7,6 +7,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
 import { CropCycleModal } from "@/components/farm/crop-cycle-modal";
+import { WheatIcon } from "@/components/farm/illustrations/wheat-icon";
 
 export function SeasonalCrops() {
   const [open, setOpen] = useState(false);
@@ -53,7 +54,11 @@ export function SeasonalCrops() {
               </button>
             </div>
 
-            <div className="rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-6">
+            <div className="relative overflow-hidden rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-6">
+              <WheatIcon
+                color="var(--color-green)"
+                className="pointer-events-none absolute -right-3 -top-3 h-28 w-28 opacity-15"
+              />
               <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-green-deep)]">
                 At a Glance
               </p>
