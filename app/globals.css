@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  /* --- Sandwa Farm token system --- */
+  --color-bg: #F7F3E9;          /* warm off-white */
+  --color-bg-deep: #ECE4D0;     /* natural beige */
+  --color-surface: #FFFFFF;
+  --color-ink: #232920;         /* deep charcoal, green-tinted */
+  --color-ink-soft: #5B6357;
+  --color-green: #3E5A3C;       /* earthy green primary */
+  --color-green-deep: #263422;
+  --color-green-soft: #E4E9DD;
+  --color-brown: #8A5A34;       /* subtle brown accent */
+  --color-brown-soft: #F1E4D3;
+  --color-live: #C24A2C;        /* live / alert accent, used sparingly */
+  --color-gold: #C79A4B;        /* harvest gold, used sparingly */
+
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jbmono);
+
+  --radius-card: 18px;
+  --radius-sm: 10px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.font-mono-data {
+  font-family: var(--font-mono), monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* live pulse */
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(194, 74, 44, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(194, 74, 44, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(194, 74, 44, 0); }
+}
+.live-dot {
+  animation: live-pulse 2s infinite;
+}
+
+/* scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.field-rows {
+  background-image: repeating-linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-green) 14%, transparent) 0px,
+    color-mix(in srgb, var(--color-green) 14%, transparent) 2px,
+    transparent 2px,
+    transparent 22px
+  );
+}
+
+.input {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 15%, transparent);
+  background: var(--color-surface);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--color-green);
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-green-deep);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brown);
+  outline-offset: 2px;
+}
