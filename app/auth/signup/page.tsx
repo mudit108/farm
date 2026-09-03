@@ -2,28 +2,64 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
 
-  // No backend is wired up yet — this just simulates account creation so
-  // the dashboard is reachable for demo purposes. Replace with a real
-  // sign-up call once a backend is chosen.
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    router.push("/dashboard");
+    setError(null);
+
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        // Verified name/phone the claim-a-plot step reads later — never
+        // taken from client input again after this point.
+        data: { full_name: form.name, phone: form.phone },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/select-plot`,
+      },
+    });
+
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    if (data.session) {
+      // Email confirmation is disabled on this project — signed in already.
+      window.location.href = "/dashboard/select-plot";
+      return;
+    }
+
+    setDone(true);
+  }
+
+  if (done) {
+    return (
+      <div className="text-center">
+        <h1 className="font-display text-2xl">Check your email</h1>
+        <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+          We&apos;ve sent a confirmation link to {form.email}. Click it to
+          activate your account, then log in to select your plot.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div>
       <h1 className="font-display text-2xl">Own your farm</h1>
       <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-        Create an account to get started.
+        Create an account, confirm your email, then select your plot.
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -43,6 +79,8 @@ export default function SignupPage() {
           <span className="mb-1.5 block text-sm font-medium">Password</span>
           <input required type="password" minLength={8} className="input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </label>
+
+        {error && <p className="text-sm text-[var(--color-live)]">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating account…" : "Create Account"}

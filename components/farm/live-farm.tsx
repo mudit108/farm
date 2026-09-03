@@ -1,23 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Radio } from "lucide-react";
+import Image, { type StaticImageData } from "next/image";
+import { Camera } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
+import mainFieldPhoto from "@/public/images/cctv/cam-main-field.jpg";
+import farmEntrancePhoto from "@/public/images/cctv/cam-farm-entrance.jpg";
+import cropAreaPhoto from "@/public/images/cctv/cam-crop-area.jpg";
 
-const cameras = [
-  { id: "cam-01", label: "Camera 01", area: "Main Field" },
-  { id: "cam-02", label: "Camera 02", area: "Farm Entrance" },
-  { id: "cam-03", label: "Camera 03", area: "Crop Area" },
+const cameras: { id: string; label: string; area: string; photo: StaticImageData }[] = [
+  { id: "cam-01", label: "Camera 01", area: "Main Field", photo: mainFieldPhoto },
+  { id: "cam-02", label: "Camera 02", area: "Farm Entrance", photo: farmEntrancePhoto },
+  { id: "cam-03", label: "Camera 03", area: "Crop Area", photo: cropAreaPhoto },
 ];
 
 /**
- * streamUrl is intentionally undefined in demo mode. Wire this up to a real
- * RTSP → HLS/WebRTC gateway URL from the `cameras` table once configured —
- * never fabricate a live feed.
+ * streamUrl is intentionally undefined in demo mode. The photos below are
+ * real recent snapshots from Sandwa Farm's cameras — not a fabricated
+ * live feed — labeled "DEMO CAMERA" rather than "LIVE" so nobody mistakes
+ * a still photo for real-time video. Wire streamUrl up to a real
+ * RTSP → HLS/WebRTC gateway URL from the `cameras` table when ready.
  */
 export function LiveFarm({ streamUrl }: { streamUrl?: string }) {
   const [selected, setSelected] = useState(cameras[0].id);
+  const activeCamera = cameras.find((c) => c.id === selected)!;
 
   return (
     <section id="live" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-ink)] py-20 text-[var(--color-bg)] sm:py-28">
@@ -39,7 +46,7 @@ export function LiveFarm({ streamUrl }: { streamUrl?: string }) {
           <div className="mt-12 overflow-hidden rounded-[var(--radius-card)] border border-white/10 bg-black/30">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
               <span className="font-mono-data text-xs uppercase tracking-wide text-white/70">
-                Farm Camera — Plot A · {cameras.find((c) => c.id === selected)?.area}
+                Farm Camera — Plot A · {activeCamera.area}
               </span>
               <span className="flex items-center gap-1.5 font-mono-data text-xs font-semibold text-[var(--color-live)]">
                 <span className="live-dot h-1.5 w-1.5 rounded-full bg-[var(--color-live)]" />
@@ -47,18 +54,18 @@ export function LiveFarm({ streamUrl }: { streamUrl?: string }) {
               </span>
             </div>
 
-            <div className="flex aspect-video items-center justify-center bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_70%)] p-8 text-center">
+            <div className="relative aspect-video">
               {streamUrl ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video src={streamUrl} autoPlay muted playsInline className="h-full w-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-3 text-white/50">
-                  <Radio className="h-8 w-8" />
-                  <p className="max-w-xs text-sm">
-                    Live camera connection will appear here once your farm
-                    camera is connected.
-                  </p>
-                </div>
+                <Image
+                  src={activeCamera.photo}
+                  alt={`Recent snapshot from ${activeCamera.label} — ${activeCamera.area}`}
+                  fill
+                  sizes="(min-width: 1024px) 1100px, 100vw"
+                  className="object-cover"
+                />
               )}
             </div>
 
@@ -83,9 +90,9 @@ export function LiveFarm({ streamUrl }: { streamUrl?: string }) {
         </Reveal>
 
         <p className="mt-4 text-xs text-white/40">
-          24×7 monitoring, subject to normal connectivity and maintenance
-          windows. Camera feeds shown to customers are scoped to their own
-          plot only.
+          Shown here: real recent snapshots from Sandwa Farm, not a live
+          video feed. 24×7 live streaming is being rolled out; camera
+          feeds shown to customers will be scoped to their own plot only.
         </p>
       </div>
     </section>

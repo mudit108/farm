@@ -1,0 +1,265 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createSessionClient } from "@/lib/supabase/session";
+import { createServiceClient } from "@/lib/supabase/service";
+import { PaymentService } from "@/lib/payments/payment-service";
+import { sendPlotConfirmationEmail } from "@/lib/email";
+import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
+import { membershipPlans } from "@/lib/demo-data";
+
+export type CreateOrderResult =
+  | { status: "error"; message: string }
+  | {
+      status: "ready";
+      orderId: string;
+      amount: number;
+      currency: string;
+      keyId: string;
+      planId: string;
+    };
+
+type Season = { registration_deadline: string | null; total_plots: number };
+
+/**
+ * Step 1: create a Razorpay order for the chosen plan. Amount comes from
+ * the server's own membershipPlans lookup — never from client input.
+ * Customers may buy more than one plan (upgrade/stack) as long as
+ * today is on/before the season's registration_deadline; the RPC in
+ * verifyPaymentAndClaim enforces this again server-side regardless of
+ * what's checked here.
+ *
+ * startPlot is optional: if provided, the member is choosing exactly
+ * where their plots start (must end up a contiguous, available block —
+ * re-validated authoritatively by the RPC at claim time, not just here).
+ * Left undefined, the next available plots are auto-assigned as before.
+ */
+export async function createPlanOrder(planId: string, startPlot?: number): Promise<CreateOrderResult> {
+  const plan = membershipPlans.find((p) => p.id === planId);
+  if (!plan) {
+    return { status: "error", message: "Please choose a valid plan." };
+  }
+
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { status: "error", message: "Please log in first." };
+  }
+
+  const { data: seasonData } = await supabase.rpc("khet_club_get_season");
+  const season = (seasonData as Season[] | null)?.[0];
+  if (season?.registration_deadline && new Date() > new Date(`${season.registration_deadline}T23:59:59`)) {
+    return {
+      status: "error",
+      message: `Registration closed on ${new Date(season.registration_deadline).toLocaleDateString("en-IN")}.`,
+    };
+  }
+
+  // Preliminary check only (nice UX — avoid charging for a range that's
+  // obviously already gone). Not authoritative: the RPC re-checks with
+  // real row locks at claim time, which is what actually prevents races.
+  if (startPlot !== undefined) {
+    const endPlot = startPlot + plan.plots - 1;
+    const totalPlots = season?.total_plots ?? 80;
+    if (startPlot < 1 || endPlot > totalPlots) {
+      return { status: "error", message: "That plot range is out of bounds." };
+    }
+    const { count } = await supabase
+      .from("khet_club_plots")
+      .select("plot_number", { count: "exact", head: true })
+      .gte("plot_number", startPlot)
+      .lte("plot_number", endPlot)
+      .eq("status", "available");
+    if ((count ?? 0) < plan.plots) {
+      return { status: "error", message: "That plot range isn't fully available. Please pick another." };
+    }
+  }
+
+  try {
+    const order = await PaymentService.createOrder({
+      amount: plan.priceInr * 100,
+      currency: "INR",
+      receipt: `${planId}-${user.id.slice(0, 8)}-${Date.now()}`,
+      notes: { userId: user.id, planId, startPlot: startPlot ? String(startPlot) : "auto" },
+    });
+
+    const admin = createServiceClient();
+    const { error } = await admin.from("khet_club_payments").insert({
+      user_id: user.id,
+      plan_id: planId,
+      razorpay_order_id: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      status: "created",
+      start_plot: startPlot ?? null,
+    });
+    if (error) {
+      console.error("Failed to record payment order:", error);
+      return { status: "error", message: "Something went wrong. Please try again." };
+    }
+
+    return {
+      status: "ready",
+      orderId: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: order.keyId,
+      planId,
+    };
+  } catch (err) {
+    console.error("createPlanOrder failed:", err);
+    return {
+      status: "error",
+      message: "Payments aren't configured yet — please contact us to complete your registration.",
+    };
+  }
+}
+
+export type VerifyPaymentResult =
+  | { status: "success"; plotNumbers: number[] }
+  | { status: "error"; message: string };
+
+function claimErrorMessage(error: { message: string }): string {
+  if (error.message.includes("REGISTRATION_CLOSED")) {
+    return "Registration has just closed for this season — you have been refunded automatically.";
+  }
+  if (error.message.includes("PLOTS_NOT_AVAILABLE")) {
+    return "Someone else just claimed one of your chosen plots — you have been refunded automatically. Please pick a different range.";
+  }
+  if (error.message.includes("NOT_ENOUGH_PLOTS_AVAILABLE")) {
+    return "All plots for this plan just sold out — you have been refunded automatically.";
+  }
+  return "Something went wrong completing your registration — you have been refunded automatically.";
+}
+
+/**
+ * Step 2: called from the Razorpay checkout success handler. Verifies the
+ * signature server-side, marks the payment paid, then claims the plan.
+ * If the claim fails after a verified payment, the payment is refunded
+ * automatically rather than leaving the customer charged with nothing to
+ * show for it.
+ *
+ * Idempotent per payment row via claim_batch_id: if this exact order was
+ * already claimed (e.g. the webhook beat this callback to it), returns
+ * the same plot numbers instead of attempting a second claim.
+ */
+export async function verifyPaymentAndClaim(input: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}): Promise<VerifyPaymentResult> {
+  const valid = await PaymentService.verifyPayment(input);
+  if (!valid) {
+    return { status: "error", message: "Payment verification failed. Please contact support." };
+  }
+
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { status: "error", message: "Please log in first." };
+  }
+
+  const admin = createServiceClient();
+
+  const { data: payment } = await admin
+    .from("khet_club_payments")
+    .select("id, plan_id, status, user_id, claim_batch_id, start_plot")
+    .eq("razorpay_order_id", input.orderId)
+    .maybeSingle();
+
+  if (!payment || payment.user_id !== user.id) {
+    return { status: "error", message: "Payment record not found." };
+  }
+
+  if (payment.claim_batch_id) {
+    const { data: plots } = await supabase
+      .from("khet_club_plots")
+      .select("plot_number")
+      .eq("claim_batch_id", payment.claim_batch_id)
+      .order("plot_number");
+    const plotNumbers = ((plots ?? []) as { plot_number: number }[]).map((p) => p.plot_number);
+    return { status: "success", plotNumbers };
+  }
+
+  if (payment.status !== "paid") {
+    await admin
+      .from("khet_club_payments")
+      .update({ status: "paid", razorpay_payment_id: input.paymentId })
+      .eq("id", payment.id);
+  }
+
+  const { data, error } = await supabase.rpc("khet_club_claim_my_plan", {
+    p_plan_id: payment.plan_id,
+    p_start_plot: payment.start_plot,
+  });
+
+  if (error) {
+    console.error("Post-payment claim failed, refunding:", error);
+    try {
+      const Razorpay = (await import("razorpay")).default;
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      });
+      await razorpay.payments.refund(input.paymentId, {});
+      await admin.from("khet_club_payments").update({ status: "refunded" }).eq("id", payment.id);
+    } catch (refundErr) {
+      console.error("Automatic refund also failed — needs manual review:", refundErr);
+    }
+    return { status: "error", message: claimErrorMessage(error) };
+  }
+
+  const plotNumbers = (data as number[]).slice().sort((a, b) => a - b);
+
+  const { data: batchRow } = await admin
+    .from("khet_club_plots")
+    .select("claim_batch_id")
+    .eq("plot_number", plotNumbers[0])
+    .maybeSingle();
+  if (batchRow?.claim_batch_id) {
+    await admin
+      .from("khet_club_payments")
+      .update({ claim_batch_id: batchRow.claim_batch_id })
+      .eq("id", payment.id);
+  }
+
+  if (user.email) {
+    const plan = membershipPlans.find((p) => p.id === payment.plan_id);
+    await sendPlotConfirmationEmail({
+      to: user.email,
+      fullName: (user.user_metadata?.full_name as string) || "there",
+      plotNumber: plotNumbers[0],
+      allPlotNumbers: plotNumbers,
+      planLabel: plan?.name,
+    });
+  }
+
+  const phone = user.user_metadata?.phone as string | undefined;
+  if (phone) {
+    const plan = membershipPlans.find((p) => p.id === payment.plan_id);
+    const plotList = plotNumbers.map((n) => `#${n}`).join(", ");
+    const whatsappResult = await sendWhatsAppMessage(
+      phone,
+      `🎉 You're confirmed! Plot${plotNumbers.length > 1 ? "s" : ""} ${plotList} assigned for your ${plan?.name ?? "plan"} membership. Welcome to Mera Khet!`
+    );
+    await admin.from("khet_club_whatsapp_messages").insert({
+      user_id: user.id,
+      phone,
+      message: `Plot confirmation: ${plotList}`,
+      kind: "automated",
+      status: whatsappResult.success ? "sent" : "failed",
+      error_message: whatsappResult.success ? null : whatsappResult.error,
+    });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/select-plot");
+  revalidatePath("/dashboard/membership");
+
+  return { status: "success", plotNumbers };
+}

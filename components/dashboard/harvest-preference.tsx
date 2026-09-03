@@ -1,15 +1,44 @@
-"use client";
-
-import { useState } from "react";
-import { Truck, Droplets, TrendingUp, Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { harvestOptions } from "@/lib/demo-data";
-import { cn } from "@/lib/utils";
+import { HarvestPreferenceForm } from "@/components/dashboard/harvest-preference-form";
+import { createSessionClient } from "@/lib/supabase/session";
 
-const icons = { "home-delivery": Truck, processed: Droplets, "sell-to-market": TrendingUp };
+type Preference = {
+  method: string;
+  schedule: string;
+  installment_kg: number | null;
+};
+type PendingRequest = {
+  id: string;
+  requested_method: string;
+  requested_schedule: string;
+  requested_installment_kg: number | null;
+};
 
-export function HarvestPreference() {
-  const [selected, setSelected] = useState("home-delivery");
+export async function HarvestPreference() {
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let pref: Preference | null = null;
+  let pendingRequest: PendingRequest | null = null;
+  if (user) {
+    const [{ data: prefData }, { data: reqData }] = await Promise.all([
+      supabase
+        .from("khet_club_harvest_preferences")
+        .select("method, schedule, installment_kg")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("khet_club_harvest_preference_requests")
+        .select("id, requested_method, requested_schedule, requested_installment_kg")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .maybeSingle(),
+    ]);
+    pref = prefData as Preference | null;
+    pendingRequest = reqData as PendingRequest | null;
+  }
 
   return (
     <Card className="p-6">
@@ -17,39 +46,14 @@ export function HarvestPreference() {
         Harvest Preference
       </p>
       <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-        Choose how you&apos;d like to receive your next harvest.
+        {pref
+          ? "Your harvest preference is locked in — changes go through admin review."
+          : "Choose how you'd like to receive your harvest — including whether it's all at once or split into monthly deliveries."}
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        {harvestOptions.map((opt) => {
-          const Icon = icons[opt.id as keyof typeof icons];
-          const active = selected === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setSelected(opt.id)}
-              className={cn(
-                "relative flex flex-col items-start gap-2 rounded-[var(--radius-sm)] border p-4 text-left transition-colors",
-                active
-                  ? "border-[var(--color-green)] bg-[var(--color-green-soft)]"
-                  : "border-[var(--color-ink)]/10 hover:border-[var(--color-ink)]/25"
-              )}
-            >
-              {active && (
-                <Check className="absolute right-3 top-3 h-4 w-4 text-[var(--color-green-deep)]" />
-              )}
-              <Icon className="h-5 w-5 text-[var(--color-green-deep)]" />
-              <p className="text-sm font-medium">{opt.title}</p>
-              <p className="text-xs text-[var(--color-ink-soft)]">{opt.tagline}</p>
-            </button>
-          );
-        })}
+      <div className="mt-4">
+        <HarvestPreferenceForm currentPreference={pref} pendingRequest={pendingRequest} />
       </div>
-
-      <p className="mt-4 text-xs text-[var(--color-ink-soft)]">
-        {harvestOptions.find((o) => o.id === selected)?.note}
-      </p>
     </Card>
   );
 }

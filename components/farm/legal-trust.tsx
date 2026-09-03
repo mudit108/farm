@@ -10,7 +10,7 @@ export function LegalTrust() {
           </h2>
           <div className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--color-ink-soft)]">
             <p>
-              Your Khet Club membership gives you a contractual allocation
+              Your Mera Khet membership gives you a contractual allocation
               of, and participation in, a designated area of farm plots
               (1, 3, or 6 plots — each plot 7,260 sq ft), according to the
               terms of your membership agreement.
@@ -34,7 +34,7 @@ export function LegalTrust() {
               factors.
             </p>
             <p>
-              Every plot at Khet Club is cultivated 100% organically — no
+              Every plot at Mera Khet is cultivated 100% organically — no
               synthetic pesticides or chemical fertilizers are used.
               Formal organic certification, where applicable, will be
               noted on your membership documents.

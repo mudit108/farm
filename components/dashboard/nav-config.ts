@@ -9,10 +9,12 @@ import {
   CreditCard,
   User,
   LifeBuoy,
+  ClipboardCheck,
 } from "lucide-react";
 
 export const dashboardNav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/select-plot", label: "Select Plan", icon: ClipboardCheck },
   { href: "/dashboard/my-farm", label: "My Farm", icon: Sprout },
   { href: "/dashboard/live-camera", label: "Live Camera", icon: Video },
   { href: "/dashboard/crop-cycle", label: "Crop Cycle", icon: Activity },
@@ -28,7 +30,7 @@ export const dashboardNav = [
 export const bottomNav = [
   dashboardNav[0],
   dashboardNav[1],
-  dashboardNav[2],
-  dashboardNav[4],
-  dashboardNav[8],
+  dashboardNav[3],
+  dashboardNav[5],
+  dashboardNav[9],
 ];

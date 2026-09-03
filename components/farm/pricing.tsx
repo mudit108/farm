@@ -31,7 +31,8 @@ export function Pricing() {
                 }
               >
                 <Badge tone={plan.id === "3-plots" ? "green" : "brown"}>{plan.tagline}</Badge>
-                <p className="mt-4 font-display text-2xl">{plan.label}</p>
+                <p className="mt-4 font-display text-3xl">{plan.name}</p>
+                <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{plan.label}</p>
 
                 <ul className="mt-4 space-y-2 text-sm text-[var(--color-ink-soft)]">
                   <li>🌱 {plan.areaSqFt.toLocaleString()} sq ft{plan.id === "6-plots" ? " / 1 acre" : ` (${plan.approxAcre})`}</li>
@@ -43,7 +44,7 @@ export function Pricing() {
 
                 <Link href="/auth/signup" className="mt-auto pt-6">
                   <Button size="lg" className="w-full">
-                    Own {plan.label}
+                    Own {plan.name}
                   </Button>
                 </Link>
               </Card>
@@ -70,7 +71,7 @@ export function Pricing() {
               <tbody className="divide-y divide-[var(--color-ink)]/10">
                 {membershipPlans.map((plan) => (
                   <tr key={plan.id}>
-                    <td className="px-5 py-3 font-medium">{plan.label}</td>
+                    <td className="px-5 py-3 font-medium">{plan.name} <span className="font-normal text-[var(--color-ink-soft)]">({plan.label})</span></td>
                     <td className="px-5 py-3">{plan.areaSqFt.toLocaleString()} sq ft</td>
                     <td className="px-5 py-3">{plan.wheatMinKg}–{plan.wheatMaxKg.toLocaleString()} kg</td>
                     <td className="px-5 py-3">{plan.approxAcre}</td>

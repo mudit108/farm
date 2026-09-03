@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ArrowUpRight, Calendar } from "lucide-react";
 import { currentCrop } from "@/lib/demo-data";
 import { Reveal } from "@/components/ui/reveal";
@@ -8,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
 import { CropCycleModal } from "@/components/farm/crop-cycle-modal";
 import { WheatIcon } from "@/components/farm/illustrations/wheat-icon";
+import cropPhoto from "@/public/images/wheat-field-golden.jpg";
 
 export function SeasonalCrops() {
   const [open, setOpen] = useState(false);
@@ -23,59 +25,70 @@ export function SeasonalCrops() {
             Right now, we grow one crop — and grow it well.
           </h2>
           <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">
-            Khet Club is focused on a single seasonal crop at a time,
+            Mera Khet is focused on a single seasonal crop at a time,
             so our team can give it full attention from field prep to
             harvest.
           </p>
         </Reveal>
 
         <Reveal delay={100}>
-          <Card className="mt-12 grid gap-8 p-8 sm:p-10 lg:grid-cols-[1.2fr_1fr]">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge tone="gold">
-                  <Calendar className="h-3 w-3" /> {currentCrop.season}
-                </Badge>
-              </div>
-              <h3 className="mt-4 font-display text-3xl uppercase tracking-tight">
-                {currentCrop.name}
-              </h3>
-              <p className="text-sm text-[var(--color-ink-soft)]">{currentCrop.localName}</p>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--color-ink-soft)]">
-                {currentCrop.description}
-              </p>
-
-              <button
-                onClick={() => setOpen(true)}
-                className="group mt-6 flex items-center gap-1 text-sm font-semibold text-[var(--color-green)] transition-colors hover:text-[var(--color-green-deep)]"
-              >
-                View Crop Cycle
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </button>
+          <Card className="mt-12 overflow-hidden">
+            <div className="relative aspect-[16/7]">
+              <Image
+                src={cropPhoto}
+                alt="Golden wheat ears ready for harvest"
+                fill
+                sizes="(min-width: 1024px) 1100px, 100vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/60 via-transparent to-transparent" />
+              <Badge tone="gold" className="absolute bottom-4 left-4">
+                <Calendar className="h-3 w-3" /> {currentCrop.season}
+              </Badge>
             </div>
 
-            <div className="relative overflow-hidden rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-6">
-              <WheatIcon
-                color="var(--color-green)"
-                className="pointer-events-none absolute -right-3 -top-3 h-28 w-28 opacity-15"
-              />
-              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-green-deep)]">
-                At a Glance
-              </p>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-[var(--color-ink-soft)]">Sowing</dt>
-                  <dd className="font-medium text-[var(--color-green-deep)]">Near Diwali</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-[var(--color-ink-soft)]">Cycle length</dt>
-                  <dd className="font-medium text-[var(--color-green-deep)]">~{currentCrop.durationDays} days</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-[var(--color-ink-soft)]">Processed into</dt>
-                  <dd className="font-medium text-[var(--color-green-deep)]">{currentCrop.processedProduct}</dd>
-                </div>
-              </dl>
+            <div className="grid gap-8 p-8 sm:p-10 lg:grid-cols-[1.2fr_1fr]">
+              <div>
+                <h3 className="font-display text-3xl uppercase tracking-tight">
+                  {currentCrop.name}
+                </h3>
+                <p className="text-sm text-[var(--color-ink-soft)]">{currentCrop.localName}</p>
+                <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--color-ink-soft)]">
+                  {currentCrop.description}
+                </p>
+
+                <button
+                  onClick={() => setOpen(true)}
+                  className="group mt-6 flex items-center gap-1 text-sm font-semibold text-[var(--color-green)] transition-colors hover:text-[var(--color-green-deep)]"
+                >
+                  View Crop Cycle
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </button>
+              </div>
+
+              <div className="relative overflow-hidden rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-6">
+                <WheatIcon
+                  color="var(--color-green)"
+                  className="pointer-events-none absolute -right-3 -top-3 h-28 w-28 opacity-15"
+                />
+                <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-green-deep)]">
+                  At a Glance
+                </p>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-[var(--color-ink-soft)]">Sowing</dt>
+                    <dd className="font-medium text-[var(--color-green-deep)]">Near Diwali</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-[var(--color-ink-soft)]">Cycle length</dt>
+                    <dd className="font-medium text-[var(--color-green-deep)]">~{currentCrop.durationDays} days</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-[var(--color-ink-soft)]">Processed into</dt>
+                    <dd className="font-medium text-[var(--color-green-deep)]">{currentCrop.processedProduct}</dd>
+                  </div>
+                </dl>
+              </div>
             </div>
           </Card>
         </Reveal>

@@ -1,17 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // No backend is wired up yet — this just simulates sending a reset
-  // email. Replace with a real password-reset call once a backend is
-  // chosen.
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+    });
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
     setSent(true);
   }
 
@@ -37,7 +48,10 @@ export default function ForgotPasswordPage() {
           <span className="mb-1.5 block text-sm font-medium">Email</span>
           <input required type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
-        <Button type="submit" className="w-full">Send Reset Link</Button>
+        {error && <p className="text-sm text-[var(--color-live)]">{error}</p>}
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Sending…" : "Send Reset Link"}
+        </Button>
       </form>
     </div>
   );

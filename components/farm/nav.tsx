@@ -11,6 +11,7 @@ const links = [
   { href: "#harvest", label: "Your Harvest" },
   { href: "#live", label: "Live Farm" },
   { href: "#pricing", label: "Pricing" },
+  { href: "#register", label: "Register" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -22,7 +23,7 @@ export function Nav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold">
           <Sprout className="h-5 w-5 text-[var(--color-green)]" />
-          Khet Club
+          Mera Khet
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

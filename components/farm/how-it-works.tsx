@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { Reveal } from "@/components/ui/reveal";
+import fieldPhoto from "@/public/images/wheat-field-green.jpg";
 
 const steps = [
   {
@@ -9,7 +11,7 @@ const steps = [
   {
     n: "02",
     title: "Get Your Plot Allocation",
-    body: "A dedicated set of plots within Khet Club is assigned to you.",
+    body: "A dedicated set of plots within Mera Khet is assigned to you.",
   },
   {
     n: "03",
@@ -46,6 +48,18 @@ export function HowItWorks() {
             </Reveal>
           ))}
         </div>
+
+        <Reveal delay={120}>
+          <div className="relative mt-14 aspect-[21/9] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10">
+            <Image
+              src={fieldPhoto}
+              alt="Young green wheat growing under a bright blue sky"
+              fill
+              sizes="(min-width: 1024px) 1100px, 100vw"
+              className="object-cover"
+            />
+          </div>
+        </Reveal>
       </div>
     </section>
   );

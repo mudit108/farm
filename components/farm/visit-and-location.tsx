@@ -1,7 +1,8 @@
+import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
-import { FarmLandscape } from "@/components/farm/illustrations/farm-landscape";
+import aerialPhoto from "@/public/images/aerial-harvest.jpg";
 
 export function VisitAndLocation() {
   return (
@@ -15,7 +16,7 @@ export function VisitAndLocation() {
             Your farm isn&apos;t just on a screen.
           </h2>
           <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">
-            Members can visit Khet Club and see their plot in person,
+            Members can visit Mera Khet and see their plot in person,
             subject to prior scheduling, farm conditions, safety
             requirements and operational availability.
           </p>
@@ -29,7 +30,13 @@ export function VisitAndLocation() {
             Location
           </p>
           <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10">
-            <FarmLandscape className="absolute inset-0 h-full w-full" />
+            <Image
+              src={aerialPhoto}
+              alt="Aerial view of combine harvesters working a wheat field"
+              fill
+              sizes="(min-width: 1024px) 520px, 100vw"
+              className="object-cover"
+            />
             <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1.5 bg-gradient-to-t from-[var(--color-ink)]/70 to-transparent px-6 pb-5 pt-14 text-center">
               <MapPin className="h-6 w-6 text-white" />
               <p className="font-display text-xl text-white">Sandwa, Rajasthan</p>

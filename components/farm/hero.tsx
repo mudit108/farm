@@ -1,8 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PlotMap } from "@/components/farm/plot-map";
-import { WheatFieldBanner } from "@/components/farm/illustrations/wheat-field-banner";
+import heroPhoto from "@/public/images/farmer-hand-wheat-sunset.jpg";
 
 export function Hero() {
   return (
@@ -49,7 +49,16 @@ export function Hero() {
         </div>
 
         <div className="relative">
-          <PlotMap />
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10 sm:aspect-square">
+            <Image
+              src={heroPhoto}
+              alt="A farmer's hand brushing through ripening wheat at golden hour"
+              fill
+              priority
+              sizes="(min-width: 1024px) 560px, 90vw"
+              className="object-cover"
+            />
+          </div>
 
           <div className="absolute -bottom-6 -left-4 w-64 rounded-[var(--radius-card)] border border-[var(--color-ink)]/10 bg-[var(--color-surface)] p-4 shadow-xl sm:-left-10">
             <div className="flex items-center justify-between">
@@ -79,8 +88,6 @@ export function Hero() {
           </div>
         </div>
       </div>
-
-      <WheatFieldBanner className="h-28 w-full sm:h-40" />
     </section>
   );
 }

@@ -1,31 +1,41 @@
 import { FileText, Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
+import { createSessionClient } from "@/lib/supabase/session";
 
-const documents = [
-  { name: "Membership Agreement", type: "PDF" },
-  { name: "Farm Allocation Document — Plot A-024", type: "PDF" },
-  { name: "Receipt — Annual Membership 2026", type: "PDF" },
-];
+export const dynamic = "force-dynamic";
 
-export default function DocumentsPage() {
+type Doc = { id: string; name: string; file_url: string };
+
+export default async function DocumentsPage() {
+  const supabase = await createSessionClient();
+  const { data } = await supabase
+    .from("khet_club_documents")
+    .select("id, name, file_url")
+    .order("created_at", { ascending: false });
+
+  const documents = (data ?? []) as Doc[];
+
   return (
     <div>
       <PageHeader title="Documents" subtitle="Your membership agreement, allocation document, and receipts." />
 
       <div className="space-y-3 p-6 sm:px-10">
         {documents.map((doc) => (
-          <Card key={doc.name} className="flex items-center justify-between p-4">
+          <Card key={doc.id} className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5 text-[var(--color-brown)]" />
-              <div>
-                <p className="text-sm font-medium">{doc.name}</p>
-                <p className="text-xs text-[var(--color-ink-soft)]">{doc.type}</p>
-              </div>
+              <p className="text-sm font-medium">{doc.name}</p>
             </div>
-            <button className="rounded-full p-2 hover:bg-[var(--color-ink)]/5" aria-label={`Download ${doc.name}`}>
+            <a
+              href={doc.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full p-2 hover:bg-[var(--color-ink)]/5"
+              aria-label={`Open ${doc.name}`}
+            >
               <Download className="h-4 w-4" />
-            </button>
+            </a>
           </Card>
         ))}
 

@@ -5,9 +5,16 @@ import { usePathname } from "next/navigation";
 import { Sprout, LogOut } from "lucide-react";
 import { dashboardNav, bottomNav } from "@/components/dashboard/nav-config";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/auth/login";
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
@@ -16,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] p-6 md:flex">
           <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold">
             <Sprout className="h-5 w-5 text-[var(--color-green)]" />
-            Khet Club
+            Mera Khet
           </Link>
 
           <nav className="mt-10 flex flex-1 flex-col gap-1">
@@ -40,12 +47,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
           </nav>
 
-          <Link
-            href="/"
+          <button
+            onClick={handleLogout}
             className="flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-ink)]/5"
           >
             <LogOut className="h-4 w-4" /> Log out
-          </Link>
+          </button>
         </aside>
 
         {/* Main content */}

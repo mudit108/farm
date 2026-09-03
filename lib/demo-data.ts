@@ -1,17 +1,8 @@
-// Realistic placeholder data so the app looks fully functional in local/demo mode.
-// Replace with live queries once a backend/database is wired up.
+// Static site content — the current crop, plan sizes/pricing, harvest
+// fulfillment options, and FAQ copy. Business config, not per-user data,
+// so it's fine to keep as static config here rather than a DB table.
 
-export const demoFarm = {
-  name: "Khet Club",
-  location: "Sandwa, Rajasthan",
-  totalAcres: 5,
-  availableAcres: 1.5,
-  totalPlots: 30, // 5 acres ÷ 1/6 acre per plot
-  availablePlots: 9,
-  camerasOnline: 6,
-};
-
-// Khet Club currently grows a single crop per season. The upcoming
+// Mera Khet currently grows a single crop per season. The upcoming
 // season is Gehu (wheat), sown around Diwali.
 export const currentCrop = {
   id: "gehu",
@@ -34,12 +25,13 @@ export const currentCrop = {
 };
 
 // Kept as an array so components that expect a crop list keep working —
-// Khet Club grows only this one crop for now.
+// Mera Khet grows only this one crop for now.
 export const demoCrops = [currentCrop];
 
 export const membershipPlans = [
   {
     id: "1-plot",
+    name: "Kothi",
     label: "1 Plot",
     plots: 1,
     areaSqFt: 7260,
@@ -51,6 +43,7 @@ export const membershipPlans = [
   },
   {
     id: "3-plots",
+    name: "Annakosh",
     label: "3 Plots",
     plots: 3,
     areaSqFt: 21780,
@@ -62,6 +55,7 @@ export const membershipPlans = [
   },
   {
     id: "6-plots",
+    name: "Mahabhandar",
     label: "6 Plots",
     plots: 6,
     areaSqFt: 43560,
@@ -72,6 +66,30 @@ export const membershipPlans = [
     tagline: "Own an Entire Acre",
   },
 ];
+
+/**
+ * A customer can now own plots from more than one plan purchase (buying
+ * more before the registration deadline). This summarizes their total
+ * holdings across all of them, scaling per-plot figures from the 1-plot
+ * plan's base rate rather than assuming a single plan_id applies to
+ * everything.
+ */
+export function summarizePlotHoldings(plots: { plan_id: string | null }[]) {
+  const totalPlots = plots.length;
+  const uniquePlanIds = Array.from(new Set(plots.map((p) => p.plan_id).filter(Boolean)));
+  const singlePlan =
+    uniquePlanIds.length === 1 ? membershipPlans.find((p) => p.id === uniquePlanIds[0]) ?? null : null;
+  const basePlan = membershipPlans.find((p) => p.id === "1-plot")!;
+
+  return {
+    totalPlots,
+    label: totalPlots === 0 ? null : singlePlan ? singlePlan.name : `${totalPlots} Plots`,
+    areaSqFt: totalPlots * basePlan.areaSqFt,
+    wheatMinKg: totalPlots * basePlan.wheatMinKg,
+    wheatMaxKg: totalPlots * basePlan.wheatMaxKg,
+    isMixedPlans: uniquePlanIds.length > 1,
+  };
+}
 
 // Shared by every plan size — every plan includes the same set of benefits.
 export const planIncludes = [
@@ -93,7 +111,7 @@ export const harvestOptions = [
     title: "Deliver to My Home",
     tagline: "Raw Harvest",
     description:
-      "We deliver your harvest straight to your doorstep, exactly as it came off your plot.",
+      "We deliver your harvest straight to your doorstep, exactly as it came off your plot — all at once, or split into monthly installments of a custom size (e.g. 40 kg/month) if you'd rather receive it gradually.",
     note: "Delivery charges are not included and are billed separately based on your location.",
   },
   {
@@ -101,7 +119,7 @@ export const harvestOptions = [
     title: "Process & Deliver",
     tagline: "Flour / Oil",
     description:
-      "We process your harvest into flour or oil — for example, wheat milled into fresh atta — then deliver it to you.",
+      "We process your harvest into flour or oil — for example, wheat milled into fresh atta — then deliver it to you, either as a single delivery or in monthly installments of a custom size, just like raw harvest.",
     note: "Processing is done in small batches per crop; available conversions vary by crop (see each crop's processed product).",
   },
   {
@@ -114,87 +132,30 @@ export const harvestOptions = [
   },
 ];
 
-// This customer's example membership: the "3 Plots — Stock Up for the Year" plan.
-export const demoPlot = {
-  plotIds: ["A-013", "A-014", "A-015"],
-  plotsCount: 3,
-  areaSqFt: 21780,
-  approxAcre: "~0.50 acre",
-  wheatMinKg: 750,
-  wheatMaxKg: 900,
-  priceInr: 50000,
-  farm: "Khet Club",
-  location: "Sandwa, Rajasthan",
-  crop: "Gehu (Wheat)",
-  sowingDate: "Expected early Nov 2026 (near Diwali)",
-  estimatedHarvest: "Mar–Apr 2027",
-  currentStage: "Field Preparation",
-  progress: 5,
-  health: "Preparing for Season",
-  cameraStatus: "Online",
-};
-
-export const demoUpdates = [
-  {
-    date: "10 Aug 2026",
-    title: "Plots selected for wheat season",
-    description:
-      "Plots A-013 to A-015 have been marked for this season's Gehu (wheat) cultivation.",
-    note: "Land is being cleared ahead of sowing — Field Team",
-  },
-  {
-    date: "22 Aug 2026",
-    title: "Soil testing completed",
-    description:
-      "Soil health checked and organic manure application planned ahead of sowing.",
-    note: "Soil condition looks good for wheat this season — Ramesh, Field Team",
-  },
-  {
-    date: "28 Aug 2026",
-    title: "Field preparation underway",
-    description: "Ploughing and levelling in progress ahead of the Diwali sowing window.",
-    note: "On track for sowing near Diwali — Field Team",
-  },
-];
-
-// Each unit represents 1 Plot (1/6 acre, 7,260 sq ft). 30 plots make up the
-// full 5-acre farm. Plots A-013–A-015 are highlighted as this customer's
-// example 3-Plot membership.
-export const demoPlots = Array.from({ length: 30 }, (_, i) => {
-  const n = i + 1;
-  const assigned = n <= 21;
-  return {
-    id: `A-${String(n).padStart(3, "0")}`,
-    areaSqFt: 7260,
-    status: assigned ? "active" : "available",
-    crop: assigned ? currentCrop.name : null,
-  };
-});
-
 export const demoFaqs = [
   {
     q: "What crop is being grown this season?",
-    a: "Gehu (wheat) — currently the only crop we're growing at Khet Club. Sowing begins near Diwali and the season runs through the Rabi (winter) months.",
+    a: "Gehu (wheat) — currently the only crop we're growing at Mera Khet. Sowing begins near Diwali and the season runs through the Rabi (winter) months.",
   },
   {
     q: "Is the farm organic?",
-    a: "Yes — everything grown at Khet Club is 100% organic, with no synthetic pesticides or chemical fertilizers used on any plot.",
+    a: "Yes — everything grown at Mera Khet is 100% organic, with no synthetic pesticides or chemical fertilizers used on any plot.",
   },
   {
     q: "What are my options for the harvest?",
-    a: "You can choose to (1) have us deliver the raw harvest to your home (delivery charges not included), (2) have us process it into flour — wheat milled into fresh atta — and deliver that to you, or (3) have us sell it to the market on your behalf and send you the proceeds.",
+    a: "You can choose to (1) have us deliver the raw harvest to your home (delivery charges not included), (2) have us process it into flour — wheat milled into fresh atta — and deliver that to you, or (3) have us sell it to the market on your behalf and send you the proceeds. For either delivery option, you can also choose to receive it in monthly installments of a custom size (e.g. 40 kg/month) instead of all at once — set this from your dashboard's Harvest Preference.",
   },
   {
     q: "What do I receive with my membership?",
-    a: "A dedicated allocation of farm plots within Khet Club (1, 3, or 6 plots), 100% organic wheat cultivation managed by our team, 24×7 CCTV access to your plots, regular farm updates, crop-cycle tracking, and eligibility to visit the farm.",
+    a: "A dedicated allocation of farm plots within Mera Khet (1, 3, or 6 plots), 100% organic wheat cultivation managed by our team, 24×7 CCTV access to your plots, regular farm updates, crop-cycle tracking, and eligibility to visit the farm.",
   },
   {
     q: "What plan sizes are available?",
-    a: "Three seasonal plan sizes, each made up of 7,260 sq ft plots: 1 Plot (~0.167 acre, 250–300 kg wheat, ₹20,000/season — Feed Your Family), 3 Plots (~0.5 acre, 750–900 kg wheat, ₹50,000/season — Stock Up for the Year), and 6 Plots (exactly 1 acre, 1,500–1,800 kg wheat, ₹100,000/season — Own an Entire Acre). All plans include the same set of benefits.",
+    a: "Three seasonal plans, each made up of 7,260 sq ft plots: Kothi — 1 Plot (~0.167 acre, 250–300 kg wheat, ₹20,000/season — Feed Your Family), Annakosh — 3 Plots (~0.5 acre, 750–900 kg wheat, ₹50,000/season — Stock Up for the Year), and Mahabhandar — 6 Plots (exactly 1 acre, 1,500–1,800 kg wheat, ₹100,000/season — Own an Entire Acre). All plans include the same set of benefits.",
   },
   {
     q: "How much does a membership cost?",
-    a: "₹20,000 per season for 1 Plot, ₹50,000 for 3 Plots, or ₹1,00,000 for 6 Plots (1 acre). These are current season prices and may be adjusted by Khet Club over time.",
+    a: "₹20,000 per season for Kothi (1 Plot), ₹50,000 for Annakosh (3 Plots), or ₹1,00,000 for Mahabhandar (6 Plots / 1 acre). These are current season prices and may be adjusted by Mera Khet over time.",
   },
   {
     q: "Are annual memberships available?",
@@ -214,7 +175,7 @@ export const demoFaqs = [
   },
   {
     q: "Can I choose my crop?",
-    a: "Not at the moment — Khet Club is growing a single crop (Gehu/wheat) this season. We may introduce other seasonal crops in future seasons.",
+    a: "Not at the moment — Mera Khet is growing a single crop (Gehu/wheat) this season. We may introduce other seasonal crops in future seasons.",
   },
   {
     q: "How does the CCTV work?",

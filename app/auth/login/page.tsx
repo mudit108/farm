@@ -1,23 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // No backend is wired up yet — this just simulates a login so the
-  // dashboard is reachable for demo purposes. Replace with a real
-  // authentication call once a backend is chosen.
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    router.push("/dashboard");
+    setError(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setLoading(false);
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        setError("Please confirm your email before logging in — check your inbox for the link.");
+      } else {
+        setError("Incorrect email or password.");
+      }
+      return;
+    }
+
+    // Full navigation so the new session cookie is picked up by proxy.ts
+    // on the very next request.
+    window.location.href = redirectTo;
   }
 
   return (
@@ -28,7 +46,8 @@ export default function LoginPage() {
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <Field label="Email">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Email</span>
           <input
             type="email"
             required
@@ -36,8 +55,9 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="input"
           />
-        </Field>
-        <Field label="Password">
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Password</span>
           <input
             type="password"
             required
@@ -45,7 +65,9 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="input"
           />
-        </Field>
+        </label>
+
+        {error && <p className="text-sm text-[var(--color-live)]">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Logging in…" : "Log In"}
@@ -64,11 +86,10 @@ export default function LoginPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export default function LoginPage() {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm font-medium">{label}</span>
-      {children}
-    </label>
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,7 +1,9 @@
+import Image from "next/image";
 import { Truck, Droplets, TrendingUp } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { Card } from "@/components/ui/card";
 import { harvestOptions } from "@/lib/demo-data";
+import harvestPhoto from "@/public/images/farmer-harvesting-combine.jpg";
 
 const icons = { "home-delivery": Truck, processed: Droplets, "sell-to-market": TrendingUp };
 
@@ -9,18 +11,32 @@ export function HarvestOptions() {
   return (
     <section id="harvest" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)] py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5">
-        <Reveal>
-          <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
-            Your Harvest
-          </p>
-          <h2 className="mt-3 max-w-lg font-display text-4xl leading-tight tracking-tight sm:text-5xl">
-            Your harvest, your choice.
-          </h2>
-          <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">
-            When your crop is ready, choose how you&apos;d like to receive
-            it — every crop grown 100% organic.
-          </p>
-        </Reveal>
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+          <Reveal>
+            <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
+              Your Harvest
+            </p>
+            <h2 className="mt-3 max-w-lg font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+              Your harvest, your choice.
+            </h2>
+            <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">
+              When your crop is ready, choose how you&apos;d like to receive
+              it — every crop grown 100% organic.
+            </p>
+          </Reveal>
+
+          <Reveal delay={80}>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10">
+              <Image
+                src={harvestPhoto}
+                alt="A farmer harvesting wheat by hand as a combine harvester works the field behind"
+                fill
+                sizes="(min-width: 1024px) 520px, 100vw"
+                className="object-cover"
+              />
+            </div>
+          </Reveal>
+        </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-3">
           {harvestOptions.map((opt, i) => {
@@ -38,6 +54,11 @@ export function HarvestOptions() {
                   <p className="mt-2 flex-1 text-sm leading-relaxed text-[var(--color-ink-soft)]">
                     {opt.description}
                   </p>
+                  {opt.id !== "sell-to-market" && (
+                    <p className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-green-soft)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-green-deep)]">
+                      📅 One-time or monthly installments
+                    </p>
+                  )}
                   <p className="mt-4 border-t border-[var(--color-ink)]/10 pt-3 text-xs text-[var(--color-ink-soft)]">
                     {opt.note}
                   </p>

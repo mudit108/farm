@@ -58,10 +58,10 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 font-display text-lg text-[var(--color-bg)]">
-              <Sprout className="h-5 w-5 text-[var(--color-gold)]" /> Khet Club
+              <Sprout className="h-5 w-5 text-[var(--color-gold)]" /> Mera Khet
             </div>
             <p className="mt-3 max-w-xs text-sm">Rajasthan, India</p>
-            <p className="mt-1 text-sm">hello@khetclub.example.com</p>
+            <p className="mt-1 text-sm">hello@merakhet.example.com</p>
             <p className="text-sm">+91 00000 00000</p>
           </div>
 
@@ -84,7 +84,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/10 pt-6 text-xs">
-          © {new Date().getFullYear()} Khet Club. All rights reserved.
+          © {new Date().getFullYear()} Mera Khet. All rights reserved.
         </div>
       </div>
     </footer>
