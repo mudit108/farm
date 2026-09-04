@@ -39,7 +39,7 @@ export async function submitSupportMessage(
     return { status: "error", message: "Something went wrong. Please try again." };
   }
 
-  revalidatePath("/dashboard/support");
+  revalidatePath("/dashboard/farm-visit");
 
   return { status: "success" };
 }

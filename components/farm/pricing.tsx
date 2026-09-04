@@ -58,7 +58,8 @@ export function Pricing() {
               <p className="text-sm font-medium">Compare plans</p>
               <p className="text-xs text-[var(--color-ink-soft)]">6 plots = exactly 1 acre</p>
             </div>
-            <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
                 <tr>
                   <th className="px-5 py-3 font-medium">Membership</th>
@@ -80,6 +81,7 @@ export function Pricing() {
                 ))}
               </tbody>
             </table>
+            </div>
           </Card>
         </Reveal>
 

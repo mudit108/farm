@@ -130,9 +130,9 @@ export async function adminApproveBatch(formData: FormData): Promise<void> {
     .update({ email_sent: emailSent, whatsapp_sent: whatsappSent })
     .eq("claim_batch_id", claimBatchId);
 
-  revalidatePath("/admin/registrations");
+  revalidatePath("/admin/members");
   revalidatePath("/dashboard/my-farm");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/dashboard/my-farm");
   revalidatePath("/dashboard/select-plot");
 }
 
@@ -209,5 +209,5 @@ export async function adminResendCertificate(formData: FormData): Promise<void> 
     .update({ email_sent: emailSent, whatsapp_sent: whatsappSent })
     .eq("claim_batch_id", claimBatchId);
 
-  revalidatePath("/admin/registrations");
+  revalidatePath("/admin/members");
 }

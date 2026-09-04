@@ -23,7 +23,7 @@ export async function adminSendWhatsAppIndividual(formData: FormData): Promise<v
       status: "failed",
       error_message: "no_phone_on_file",
     });
-    revalidatePath("/admin/whatsapp");
+    revalidatePath("/admin/communications");
     return;
   }
 
@@ -38,7 +38,7 @@ export async function adminSendWhatsAppIndividual(formData: FormData): Promise<v
     error_message: result.success ? null : result.error,
   });
 
-  revalidatePath("/admin/whatsapp");
+  revalidatePath("/admin/communications");
 }
 
 export async function adminBroadcastWhatsApp(formData: FormData): Promise<void> {
@@ -47,5 +47,5 @@ export async function adminBroadcastWhatsApp(formData: FormData): Promise<void> 
 
   await broadcastWhatsAppToCurrentMembers(message, "broadcast");
 
-  revalidatePath("/admin/whatsapp");
+  revalidatePath("/admin/communications");
 }

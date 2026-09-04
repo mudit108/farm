@@ -80,8 +80,8 @@ export async function saveHarvestPreference(
     return { status: "error", message: "Something went wrong. Please try again." };
   }
 
-  revalidatePath("/dashboard/membership");
-  revalidatePath("/admin/customers");
+  revalidatePath("/dashboard/my-farm");
+  revalidatePath("/admin/members");
 
   return { status: "success" };
 }
@@ -129,8 +129,8 @@ export async function requestHarvestPreferenceChange(
     return { status: "error", message: "Something went wrong. Please try again." };
   }
 
-  revalidatePath("/dashboard/membership");
-  revalidatePath("/admin/harvest");
+  revalidatePath("/dashboard/my-farm");
+  revalidatePath("/admin/members");
 
   return { status: "success" };
 }

@@ -259,7 +259,7 @@ export async function verifyPaymentAndClaim(input: {
   revalidatePath("/");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/select-plot");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/dashboard/my-farm");
 
   return { status: "success", plotNumbers };
 }

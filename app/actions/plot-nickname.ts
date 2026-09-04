@@ -39,7 +39,7 @@ export async function updatePlotNickname(
   revalidatePath("/dashboard/select-plot");
   revalidatePath("/dashboard/my-farm");
   revalidatePath("/dashboard");
-  revalidatePath("/admin/customers");
+  revalidatePath("/admin/members");
 
   return { status: "success" };
 }

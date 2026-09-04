@@ -225,7 +225,7 @@ export function PlanSelectionForm({ grid }: { grid: GridPlot[] }) {
                 highlight the {plan.plots > 1 ? `${plan.plots} consecutive plots` : "plot"} that would be
                 reserved for you.
               </p>
-              <div className="grid grid-cols-8 gap-1.5 sm:grid-cols-10">
+              <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10">
                 {grid.map((p) => {
                   const inSelection = selectedRange?.includes(p.plot_number);
                   const isStart = startPlot === p.plot_number;

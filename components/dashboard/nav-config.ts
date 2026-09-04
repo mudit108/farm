@@ -1,36 +1,34 @@
-import {
-  LayoutDashboard,
-  Sprout,
-  Video,
-  Activity,
-  Bell,
-  FileText,
-  MapPin,
-  CreditCard,
-  User,
-  LifeBuoy,
-  ClipboardCheck,
-} from "lucide-react";
+import { LayoutDashboard, Sprout, ClipboardCheck, Activity, User, LifeBuoy } from "lucide-react";
 
+export const dashboardNavGroups = [
+  {
+    label: "Farm",
+    items: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+      { href: "/dashboard/my-farm", label: "My Farm", icon: Sprout },
+      { href: "/dashboard/select-plot", label: "Select Plan", icon: ClipboardCheck },
+      { href: "/dashboard/crop-cycle", label: "Farm Activity", icon: Activity },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href: "/dashboard/account", label: "Account", icon: User },
+      { href: "/dashboard/farm-visit", label: "Help", icon: LifeBuoy },
+    ],
+  },
+];
+
+// Flat list — for the mobile bottom bar, which shows all 6 directly now
+// that the count is small enough to fit (no "More" overflow needed).
+// Defined separately from dashboardNavGroups (rather than derived via
+// flatMap) — TypeScript's inference over flatMap on differently-shaped
+// readonly tuples doesn't flatten to a clean union type.
 export const dashboardNav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/select-plot", label: "Select Plan", icon: ClipboardCheck },
   { href: "/dashboard/my-farm", label: "My Farm", icon: Sprout },
-  { href: "/dashboard/live-camera", label: "Live Camera", icon: Video },
-  { href: "/dashboard/crop-cycle", label: "Crop Cycle", icon: Activity },
-  { href: "/dashboard/updates", label: "Farm Updates", icon: Bell },
-  { href: "/dashboard/documents", label: "Documents", icon: FileText },
-  { href: "/dashboard/farm-visit", label: "Farm Visit", icon: MapPin },
-  { href: "/dashboard/membership", label: "Membership", icon: CreditCard },
-  { href: "/dashboard/profile", label: "Profile", icon: User },
-  { href: "/dashboard/support", label: "Support", icon: LifeBuoy },
-] as const;
-
-// Primary items for the mobile bottom nav (max 5)
-export const bottomNav = [
-  dashboardNav[0],
-  dashboardNav[1],
-  dashboardNav[3],
-  dashboardNav[5],
-  dashboardNav[9],
+  { href: "/dashboard/select-plot", label: "Select Plan", icon: ClipboardCheck },
+  { href: "/dashboard/crop-cycle", label: "Farm Activity", icon: Activity },
+  { href: "/dashboard/account", label: "Account", icon: User },
+  { href: "/dashboard/farm-visit", label: "Help", icon: LifeBuoy },
 ];

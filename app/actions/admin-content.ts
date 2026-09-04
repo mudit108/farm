@@ -7,10 +7,10 @@ import { broadcastWhatsAppToCurrentMembers } from "@/lib/whatsapp/broadcast";
 function revalidateCustomerFacing() {
   revalidatePath("/");
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/updates");
   revalidatePath("/dashboard/crop-cycle");
-  revalidatePath("/dashboard/live-camera");
-  revalidatePath("/dashboard/documents");
+  revalidatePath("/dashboard/crop-cycle");
+  revalidatePath("/dashboard/crop-cycle");
+  revalidatePath("/dashboard/account");
 }
 
 // --- Farm updates ---------------------------------------------------
@@ -30,7 +30,7 @@ export async function adminPublishUpdate(formData: FormData): Promise<void> {
     console.error("adminPublishUpdate failed:", error);
     return;
   }
-  revalidatePath("/admin/updates");
+  revalidatePath("/admin/communications");
   revalidateCustomerFacing();
 
   // Also notify every current-season member on WhatsApp. Best-effort —
@@ -49,7 +49,7 @@ export async function adminDeleteUpdate(formData: FormData): Promise<void> {
     console.error("adminDeleteUpdate failed:", error);
     return;
   }
-  revalidatePath("/admin/updates");
+  revalidatePath("/admin/communications");
   revalidateCustomerFacing();
 }
 
@@ -188,8 +188,8 @@ export async function adminAddDocument(formData: FormData): Promise<void> {
     console.error("adminAddDocument failed:", error);
     return;
   }
-  revalidatePath("/admin/customers");
-  revalidatePath("/dashboard/documents");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/account");
 }
 
 export async function adminDeleteDocument(formData: FormData): Promise<void> {
@@ -202,7 +202,7 @@ export async function adminDeleteDocument(formData: FormData): Promise<void> {
     console.error("adminDeleteDocument failed:", error);
     return;
   }
-  revalidatePath("/dashboard/documents");
+  revalidatePath("/dashboard/account");
 }
 
 export type ResizeFarmResult =
@@ -248,7 +248,7 @@ export async function adminResizeFarm(
   }
 
   revalidatePath("/admin/crops");
-  revalidatePath("/admin/registrations");
+  revalidatePath("/admin/members");
   revalidatePath("/admin/cctv");
   revalidatePath("/");
   revalidatePath("/dashboard");

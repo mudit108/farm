@@ -13,12 +13,12 @@ import { membershipPlans } from "@/lib/demo-data";
  */
 
 function revalidateAll() {
-  revalidatePath("/admin/registrations");
+  revalidatePath("/admin/members");
   revalidatePath("/");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/select-plot");
   revalidatePath("/dashboard/my-farm");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/dashboard/my-farm");
 }
 
 // Frees a single plot (per-row "Free Up" button in the table).

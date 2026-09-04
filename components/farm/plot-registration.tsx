@@ -68,7 +68,7 @@ export async function PlotRegistration() {
         <div className="mt-12 grid gap-10 lg:grid-cols-[1.3fr_1fr]">
           <Reveal delay={80}>
             <Card className="p-6 sm:p-8">
-              <div className="grid grid-cols-8 gap-1.5 sm:grid-cols-10">
+              <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10">
                 {plots.map((p) => (
                   <div
                     key={p.plot_number}

@@ -24,8 +24,8 @@ export async function adminSetHarvestTotal(formData: FormData): Promise<void> {
     return;
   }
 
-  revalidatePath("/admin/harvest");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/my-farm");
 }
 
 export async function adminRecordDelivery(formData: FormData): Promise<void> {
@@ -51,8 +51,8 @@ export async function adminRecordDelivery(formData: FormData): Promise<void> {
     return;
   }
 
-  revalidatePath("/admin/harvest");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/my-farm");
 
   // Best-effort WhatsApp update — never blocks the delivery record itself.
   const [{ data: pref }, { data: deliveries }, { data: userRes }] = await Promise.all([
@@ -94,8 +94,8 @@ export async function adminDeleteDelivery(formData: FormData): Promise<void> {
     return;
   }
 
-  revalidatePath("/admin/harvest");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/my-farm");
 }
 
 /**
@@ -144,8 +144,8 @@ export async function adminApproveHarvestChange(formData: FormData): Promise<voi
     .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: admin.id })
     .eq("id", requestId);
 
-  revalidatePath("/admin/harvest");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/my-farm");
 }
 
 export async function adminRejectHarvestChange(formData: FormData): Promise<void> {
@@ -170,6 +170,6 @@ export async function adminRejectHarvestChange(formData: FormData): Promise<void
     return;
   }
 
-  revalidatePath("/admin/harvest");
-  revalidatePath("/dashboard/membership");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/my-farm");
 }

@@ -29,7 +29,7 @@ export async function updateProfile(
     return { status: "error", message: "Something went wrong. Please try again." };
   }
 
-  revalidatePath("/dashboard/profile");
+  revalidatePath("/dashboard/account");
 
   return { status: "success" };
 }
