@@ -21,7 +21,8 @@ type MyPlot = {
   approved_at: string | null;
 };
 type Cert = { claim_batch_id: string; certificate_number: string };
-type Payment = { id: string; plan_id: string; amount: number; status: string; created_at: string };
+type Payment = { id: string; plan_id: string; amount: number; status: string; created_at: string; claim_batch_id: string | null };
+type Receipt = { claim_batch_id: string; receipt_number: string };
 type Delivery = { id: string; kg_delivered: number; delivered_at: string; notes: string | null };
 
 export default async function MyFarmPage() {
@@ -33,11 +34,12 @@ export default async function MyFarmPage() {
   let myPlots: MyPlot[] = [];
   let certsByBatch = new Map<string, Cert>();
   let payments: Payment[] = [];
+  let receiptsByBatch = new Map<string, Receipt>();
   let confirmedTotalKg: number | null = null;
   let deliveries: Delivery[] = [];
 
   if (user) {
-    const [{ data }, { data: certData }, { data: paymentsData }, { data: prefData }, { data: deliveriesData }] =
+    const [{ data }, { data: certData }, { data: paymentsData }, { data: receiptsData }, { data: prefData }, { data: deliveriesData }] =
       await Promise.all([
         supabase
           .from("khet_club_plots")
@@ -47,8 +49,9 @@ export default async function MyFarmPage() {
         supabase.from("khet_club_certificates").select("claim_batch_id, certificate_number").eq("user_id", user.id),
         supabase
           .from("khet_club_payments")
-          .select("id, plan_id, amount, status, created_at")
+          .select("id, plan_id, amount, status, created_at, claim_batch_id")
           .order("created_at", { ascending: false }),
+        supabase.from("khet_club_receipts").select("claim_batch_id, receipt_number").eq("user_id", user.id),
         supabase
           .from("khet_club_harvest_preferences")
           .select("confirmed_total_kg")
@@ -63,6 +66,7 @@ export default async function MyFarmPage() {
     myPlots = (data ?? []) as MyPlot[];
     certsByBatch = new Map((certData ?? []).map((c) => [c.claim_batch_id, c as Cert]));
     payments = (paymentsData ?? []) as Payment[];
+    receiptsByBatch = new Map((receiptsData ?? []).map((r) => [r.claim_batch_id, r as Receipt]));
     confirmedTotalKg = prefData?.confirmed_total_kg ?? null;
     deliveries = (deliveriesData ?? []) as Delivery[];
   }
@@ -202,6 +206,7 @@ export default async function MyFarmPage() {
               {payments.length > 0 ? (
                 payments.map((pmt) => {
                   const pmtPlan = membershipPlans.find((p) => p.id === pmt.plan_id);
+                  const receipt = pmt.claim_batch_id ? receiptsByBatch.get(pmt.claim_batch_id) : undefined;
                   return (
                     <div key={pmt.id} className="flex items-center justify-between py-3 text-sm">
                       <div>
@@ -210,6 +215,14 @@ export default async function MyFarmPage() {
                           {new Date(pmt.created_at).toLocaleDateString("en-IN")} · ₹
                           {(pmt.amount / 100).toLocaleString("en-IN")}
                         </p>
+                        {receipt && (
+                          <a
+                            href={`/api/receipt/download?batch=${pmt.claim_batch_id}`}
+                            className="mt-0.5 inline-block text-xs font-medium text-[var(--color-green)] hover:underline"
+                          >
+                            Download Receipt ({receipt.receipt_number})
+                          </a>
+                        )}
                       </div>
                       <Badge tone={pmt.status === "paid" ? "green" : pmt.status === "refunded" ? "brown" : "gold"}>
                         {pmt.status}

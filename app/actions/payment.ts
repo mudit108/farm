@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
 import { PaymentService } from "@/lib/payments/payment-service";
-import { sendPlotConfirmationEmail } from "@/lib/email";
+import { sendPlotConfirmationEmail, sendReceiptEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
-import { membershipPlans } from "@/lib/demo-data";
+import { generateReceiptPdf } from "@/lib/receipt";
+import { membershipPlans, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
 
 export type CreateOrderResult =
   | { status: "error"; message: string }
@@ -181,7 +182,7 @@ export async function verifyPaymentAndClaim(input: {
 
   const { data: payment } = await admin
     .from("khet_club_payments")
-    .select("id, plan_id, status, user_id, claim_batch_id, start_plot")
+    .select("id, plan_id, status, user_id, claim_batch_id, start_plot, amount, razorpay_order_id")
     .eq("razorpay_order_id", input.orderId)
     .maybeSingle();
 
@@ -239,6 +240,68 @@ export async function verifyPaymentAndClaim(input: {
       .from("khet_club_payments")
       .update({ claim_batch_id: batchRow.claim_batch_id })
       .eq("id", payment.id);
+  }
+
+  // Receipt generation is immediate — proof of payment, unlike the
+  // certificate, which stays gated behind admin approval. A failed
+  // receipt (email or otherwise) never blocks the plot claim itself,
+  // which has already succeeded by this point.
+  if (batchRow?.claim_batch_id) {
+    try {
+      const plan = membershipPlans.find((p) => p.id === payment.plan_id);
+      const { data: receiptNumber, error: numberError } = await admin.rpc("khet_club_next_receipt_number");
+      if (numberError || !receiptNumber) {
+        console.error("Receipt numbering failed:", numberError);
+      } else {
+        const fullName = (user.user_metadata?.full_name as string) || "Mera Khet Member";
+        const feedingFamiliesInr = plotNumbers.length * FEEDING_FAMILIES_PER_PLOT;
+        const amountInr = payment.amount / 100;
+
+        const { error: receiptInsertError } = await admin.from("khet_club_receipts").insert({
+          receipt_number: receiptNumber,
+          user_id: user.id,
+          payment_id: payment.id,
+          claim_batch_id: batchRow.claim_batch_id,
+          plan_id: payment.plan_id,
+          plot_numbers: plotNumbers,
+          full_name: fullName,
+          amount_paise: payment.amount,
+          feeding_families_inr: feedingFamiliesInr,
+        });
+
+        if (receiptInsertError) {
+          console.error("Receipt insert failed:", receiptInsertError);
+        } else if (plan && user.email) {
+          const pdfBuffer = await generateReceiptPdf({
+            receiptNumber,
+            fullName,
+            email: user.email,
+            planName: plan.name,
+            planLabel: plan.label,
+            plotNumbers,
+            amountInr,
+            feedingFamiliesInr,
+            razorpayOrderId: payment.razorpay_order_id,
+            razorpayPaymentId: input.paymentId,
+            issuedDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
+          });
+
+          const emailResult = await sendReceiptEmail({
+            to: user.email,
+            fullName,
+            receiptNumber,
+            pdfBuffer,
+          });
+
+          await admin
+            .from("khet_club_receipts")
+            .update({ email_sent: emailResult.sent })
+            .eq("receipt_number", receiptNumber);
+        }
+      }
+    } catch (receiptErr) {
+      console.error("Receipt generation threw (plot claim already succeeded, unaffected):", receiptErr);
+    }
   }
 
   if (user.email) {

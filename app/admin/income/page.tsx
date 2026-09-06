@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -159,7 +160,7 @@ export default async function AdminFinancePage({
       <Card className="mt-6 overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">
           <p className="text-sm font-medium">Transactions ({filtered.length})</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {STATUS_FILTERS.map((f) => (
               <Link
                 key={f}
@@ -174,6 +175,12 @@ export default async function AdminFinancePage({
                 {STATUS_LABELS[f]}
               </Link>
             ))}
+            <a
+              href="/api/admin/export/income"
+              className="ml-2 flex items-center gap-1.5 rounded-full border border-[var(--color-ink)]/15 px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)] hover:border-[var(--color-green)] hover:text-[var(--color-green-deep)]"
+            >
+              <Download className="h-3 w-3" /> Export CSV
+            </a>
           </div>
         </div>
 
@@ -276,9 +283,17 @@ export default async function AdminFinancePage({
       )}
 
       <Card className="mt-6 overflow-hidden p-0">
-        <div className="flex items-center justify-between border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">
           <p className="text-sm font-medium">Expense Log ({expenses.length})</p>
-          <p className="text-xs text-[var(--color-ink-soft)]">This month: ₹{thisMonthExpenses.toLocaleString("en-IN")}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-[var(--color-ink-soft)]">This month: ₹{thisMonthExpenses.toLocaleString("en-IN")}</p>
+            <a
+              href="/api/admin/export/expenses"
+              className="flex items-center gap-1.5 rounded-full border border-[var(--color-ink)]/15 px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)] hover:border-[var(--color-green)] hover:text-[var(--color-green-deep)]"
+            >
+              <Download className="h-3 w-3" /> Export CSV
+            </a>
+          </div>
         </div>
         <div className="max-h-[480px] overflow-x-auto overflow-y-auto">
           <table className="w-full min-w-[640px] text-left text-sm">

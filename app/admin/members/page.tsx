@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -221,6 +222,14 @@ export default async function MembersPage() {
   // --- Tab 2: All Accounts ------------------------------------------------
   const accountsContent = (
     <div className="p-6 sm:px-10">
+      <div className="mb-3 flex justify-end">
+        <a
+          href="/api/admin/export/members"
+          className="flex items-center gap-1.5 rounded-full border border-[var(--color-ink)]/15 px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)] hover:border-[var(--color-green)] hover:text-[var(--color-green-deep)]"
+        >
+          <Download className="h-3 w-3" /> Export CSV
+        </a>
+      </div>
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">

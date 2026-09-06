@@ -198,3 +198,60 @@ export async function sendContactNotificationEmail(input: {
     return { sent: false, reason: "send_failed" as const };
   }
 }
+
+/**
+ * Sends the payment receipt as a PDF attachment, immediately after a
+ * payment is verified and plots are claimed — unlike the certificate
+ * email, this doesn't wait for admin approval. Fails soft, same as
+ * every other email here.
+ */
+export async function sendReceiptEmail(input: {
+  to: string;
+  fullName: string;
+  receiptNumber: string;
+  pdfBuffer: Buffer;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("RESEND_API_KEY is not set — skipping receipt email for", input.receiptNumber);
+    return { sent: false, reason: "not_configured" as const };
+  }
+
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: input.to,
+      subject: `Your Mera Khet Payment Receipt (${input.receiptNumber})`,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet</p>
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Thank you, ${escapeHtml(input.fullName)}!</h1>
+        <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+          We've received your payment and your plot(s) have been assigned. Your receipt is attached to this email as a PDF.
+        </p>
+        <p style="font-size: 13px; line-height: 1.6; color: #5B6357; margin: 0;">
+          Your Membership Certificate — a separate document confirming your allocation — will follow once our team reviews and approves it, and you'll be notified when it's ready.
+        </p>
+        <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sujangarh, Rajasthan</p>
+      </div>`,
+      attachments: [
+        {
+          filename: `Mera-Khet-Receipt-${input.receiptNumber}.pdf`,
+          content: input.pdfBuffer,
+        },
+      ],
+    });
+
+    if (error) {
+      console.error("Resend receipt send failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend receipt send threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}

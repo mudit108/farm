@@ -115,6 +115,16 @@ fulfillment options, and FAQ copy — not per-user or per-farm state.
   purely internal data with zero anon/authenticated access at any
   level, verified via live exploit attempt before shipping. Both tabs
   share a live Net Position card (income minus expenses).
+- **CSV export** (`/api/admin/export/{income,expenses,members}`): each
+  fetches fresh data server-side and streams it as a real CSV download —
+  "Export CSV" buttons live on the Finance page (both tabs) and the
+  Members page's "All Accounts" tab. Each route checks
+  `isAllowedAdminEmail` itself, explicitly, rather than relying on
+  `proxy.ts`'s path-prefix matching — these live under `/api/*`, not
+  `/admin/*`, so they need their own auth check regardless of
+  middleware coverage. Proper RFC 4180 CSV escaping (`lib/csv.ts`) — a
+  description or name containing a comma or quote won't corrupt the
+  file when opened in Excel/Sheets.
 - **Real contact form + legal pages**: the homepage "Talk to us" form used
   to be entirely fake (client-side only, never sent anywhere) — it now
   saves to `khet_club_contact_messages` and emails every address in
@@ -159,6 +169,17 @@ fulfillment options, and FAQ copy — not per-user or per-farm state.
   brand line. Hindi renders in a bundled Noto Sans Devanagari font
   (`lib/fonts/`, OFL-licensed, license text included) — the PDF standard
   Helvetica font used everywhere else can't render Devanagari at all.
+- **Payment receipts** (`lib/receipt.tsx`, `khet_club_receipts`):
+  generated immediately when a payment is verified and plots are
+  claimed — deliberately not gated behind admin approval the way
+  certificates are, since a receipt is proof of payment, not a
+  reviewed allocation document. Atomically numbered (`RCT-2026-0001`),
+  emailed as a PDF attachment right away, and downloadable any time
+  from `/dashboard/my-farm` next to the matching payment. Line-items
+  the Feeding Families Fund amount as "included, not additional" and
+  explicitly tells the member their certificate is a separate document
+  still to come — the two are deliberately different documents with
+  different timing, not duplicates of each other.
 - **WhatsApp**: `/admin/whatsapp` — broadcast to every current-season
   member or message an individual, both real (Meta WhatsApp Cloud API).
   Plot confirmations and every published farm update also go out on
