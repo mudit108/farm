@@ -262,3 +262,74 @@ export async function adminResizeFarm(
     plotsRemoved: data!.plots_removed,
   };
 }
+
+export async function adminMarkContactMessage(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") || "");
+  const status = String(formData.get("status") || "");
+  if (!id || !["read", "replied"].includes(status)) return;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("khet_club_contact_messages").update({ status }).eq("id", id);
+  if (error) {
+    console.error("adminMarkContactMessage failed:", error);
+    return;
+  }
+
+  revalidatePath("/admin/communications");
+}
+
+/**
+ * Lets the site's public contact email/phone (footer, WhatsApp button)
+ * be changed from the admin panel instead of requiring a redeploy —
+ * stored on khet_club_season, the general farm-settings singleton.
+ */
+export async function adminUpdateContactInfo(formData: FormData): Promise<void> {
+  const contactEmail = String(formData.get("contactEmail") || "").trim();
+  const contactPhone = String(formData.get("contactPhone") || "").trim();
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_season")
+    .update({
+      contact_email: contactEmail || null,
+      contact_phone: contactPhone || null,
+    })
+    .eq("id", 1);
+
+  if (error) {
+    console.error("adminUpdateContactInfo failed:", error);
+    return;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/crops");
+}
+
+/**
+ * Updates one or more plan prices from the admin panel. This is what
+ * createPlanOrder actually charges — not a display-only setting — so a
+ * change here takes effect on the very next checkout.
+ */
+export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
+  const supabase = createServiceClient();
+
+  const updates: { plan_id: string; price_inr: number }[] = [];
+  for (const planId of ["1-plot", "3-plots", "6-plots"]) {
+    const raw = formData.get(`price_${planId}`);
+    if (raw === null) continue;
+    const price = Number(raw);
+    if (!Number.isFinite(price) || price <= 0) continue;
+    updates.push({ plan_id: planId, price_inr: Math.round(price) });
+  }
+  if (updates.length === 0) return;
+
+  const { error } = await supabase.from("khet_club_plan_prices").upsert(updates);
+  if (error) {
+    console.error("adminUpdatePlanPrices failed:", error);
+    return;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/crops");
+  revalidatePath("/dashboard/select-plot");
+}

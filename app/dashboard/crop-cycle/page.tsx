@@ -118,7 +118,7 @@ export default async function FarmActivityPage() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-              Weather — Sandwa, Rajasthan
+              Weather — Sujangarh, Rajasthan
             </p>
             {weather && <span className="text-[10px] text-[var(--color-ink-soft)]">Live</span>}
           </div>

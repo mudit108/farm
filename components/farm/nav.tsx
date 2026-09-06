@@ -43,7 +43,7 @@ export function Nav() {
             Login
           </Link>
           <Link href="/auth/signup">
-            <Button size="sm">Own Your Farm</Button>
+            <Button size="sm">Reserve Your Plot</Button>
           </Link>
         </div>
 
@@ -67,7 +67,7 @@ export function Nav() {
             <div className="mt-2 flex flex-col gap-3">
               <Link href="/auth/login" className="text-sm font-medium">Login</Link>
               <Link href="/auth/signup">
-                <Button size="sm" className="w-full">Own Your Farm</Button>
+                <Button size="sm" className="w-full">Reserve Your Plot</Button>
               </Link>
             </div>
           </nav>

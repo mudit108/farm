@@ -39,7 +39,7 @@ export function VisitAndLocation() {
             />
             <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1.5 bg-gradient-to-t from-[var(--color-ink)]/70 to-transparent px-6 pb-5 pt-14 text-center">
               <MapPin className="h-6 w-6 text-white" />
-              <p className="font-display text-xl text-white">Sandwa, Rajasthan</p>
+              <p className="font-display text-xl text-white">Sujangarh, Rajasthan</p>
               <p className="max-w-xs text-xs text-white/80">
                 Exact plot coordinates are shared with members after
                 allocation. We don&apos;t publish a private address.

@@ -48,6 +48,20 @@ export async function createPlanOrder(planId: string, startPlot?: number): Promi
     return { status: "error", message: "Please log in first." };
   }
 
+  // Live, admin-editable price — never the static file's priceInr. This
+  // is what actually gets charged, so it must reflect whatever's
+  // currently set in khet_club_plan_prices, not a stale build-time value.
+  const { data: priceRow, error: priceError } = await supabase
+    .from("khet_club_plan_prices")
+    .select("price_inr")
+    .eq("plan_id", planId)
+    .single();
+  if (priceError || !priceRow) {
+    console.error("createPlanOrder: failed to load live price:", priceError);
+    return { status: "error", message: "Something went wrong loading pricing. Please try again." };
+  }
+  const priceInr = priceRow.price_inr;
+
   const { data: seasonData } = await supabase.rpc("khet_club_get_season");
   const season = (seasonData as Season[] | null)?.[0];
   if (season?.registration_deadline && new Date() > new Date(`${season.registration_deadline}T23:59:59`)) {
@@ -79,7 +93,7 @@ export async function createPlanOrder(planId: string, startPlot?: number): Promi
 
   try {
     const order = await PaymentService.createOrder({
-      amount: plan.priceInr * 100,
+      amount: priceInr * 100,
       currency: "INR",
       receipt: `${planId}-${user.id.slice(0, 8)}-${Date.now()}`,
       notes: { userId: user.id, planId, startPlot: startPlot ? String(startPlot) : "auto" },

@@ -77,7 +77,7 @@ function renderConfirmationEmailHtml({
     <p style="font-size: 14px; line-height: 1.6; color: #5B6357; margin: 0 0 8px;">
       We'll be in touch with next steps — including plot location, and how to track your farm once the season starts.
     </p>
-    <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sandwa, Rajasthan</p>
+    <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sujangarh, Rajasthan</p>
   </div>`;
 }
 
@@ -126,7 +126,7 @@ export async function sendCertificateEmail(input: {
         <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
           Your plot allocation has been reviewed and approved. Your official membership certificate is attached to this email as a PDF.
         </p>
-        <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sandwa, Rajasthan</p>
+        <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sujangarh, Rajasthan</p>
       </div>`,
       attachments: [
         {
@@ -143,6 +143,58 @@ export async function sendCertificateEmail(input: {
     return { sent: true as const };
   } catch (err) {
     console.error("Resend certificate send threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}
+
+/**
+ * Notifies every address in ADMIN_EMAILS when a new homepage contact
+ * form message arrives. Fails soft, same as every other email in this
+ * file — a missing/failed notification never blocks the message from
+ * being saved (it's always visible at /admin/communications regardless).
+ */
+export async function sendContactNotificationEmail(input: {
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (!apiKey || adminEmails.length === 0) {
+    console.warn("RESEND_API_KEY or ADMIN_EMAILS not set — skipping contact notification email.");
+    return { sent: false, reason: "not_configured" as const };
+  }
+
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: adminEmails,
+      subject: `New contact form message from ${input.name}`,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — Contact Form</p>
+        <p style="font-size: 15px; margin: 0 0 4px;"><strong>${escapeHtml(input.name)}</strong></p>
+        <p style="font-size: 13px; color: #5B6357; margin: 0 0 16px;">${escapeHtml(input.phone)} · ${escapeHtml(input.email)}</p>
+        <p style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(input.message)}</p>
+        <p style="font-size: 12px; color: #5B6357; margin-top: 24px;">Reply directly to this sender, or view all messages at /admin/communications.</p>
+      </div>`,
+    });
+
+    if (error) {
+      console.error("Resend contact notification failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend contact notification threw:", err);
     return { sent: false, reason: "send_failed" as const };
   }
 }

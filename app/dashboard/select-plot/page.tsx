@@ -17,6 +17,7 @@ type MyPlot = {
 };
 type GridPlot = { plot_number: number; status: "available" | "filled" };
 type Season = { registration_deadline: string | null };
+type PlanPrice = { plan_id: string; price_inr: number };
 
 export default async function SelectPlotPage() {
   const supabase = await createSessionClient();
@@ -24,7 +25,7 @@ export default async function SelectPlotPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: seasonData }, plotsResult, { data: gridData }] = await Promise.all([
+  const [{ data: seasonData }, plotsResult, { data: gridData }, { data: pricesData }] = await Promise.all([
     supabase.rpc("khet_club_get_season"),
     user
       ? supabase
@@ -34,10 +35,12 @@ export default async function SelectPlotPage() {
           .order("plot_number")
       : Promise.resolve({ data: [] as MyPlot[] }),
     supabase.rpc("khet_club_all_plot_statuses"),
+    supabase.from("khet_club_plan_prices").select("plan_id, price_inr"),
   ]);
 
   const myPlots = (plotsResult.data ?? []) as MyPlot[];
   const grid = (gridData ?? []) as GridPlot[];
+  const prices = (pricesData ?? []) as PlanPrice[];
   const season = (seasonData as Season[] | null)?.[0] ?? null;
   const deadline = season?.registration_deadline ? new Date(season.registration_deadline) : null;
   const isOpen = !deadline || new Date() <= new Date(`${season!.registration_deadline}T23:59:59`);
@@ -87,7 +90,7 @@ export default async function SelectPlotPage() {
                 Registration closes {deadline.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
               </p>
             )}
-            <PlanSelectionForm grid={grid} />
+            <PlanSelectionForm grid={grid} prices={prices} />
           </>
         ) : (
           <Card className="max-w-lg p-6 text-center">

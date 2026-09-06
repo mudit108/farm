@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
 import { createServiceClient } from "@/lib/supabase/service";
+import { membershipPlans, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function AdminOverview() {
     { count: camerasOnline },
     { count: pendingVisits },
     { data: pendingVisitRows },
+    { data: paidPayments },
   ] = await Promise.all([
     supabase.from("khet_club_plots").select("status, user_id"),
     supabase.auth.admin.listUsers(),
@@ -24,6 +26,7 @@ export default async function AdminOverview() {
       .eq("status", "requested")
       .order("created_at", { ascending: false })
       .limit(3),
+    supabase.from("khet_club_payments").select("plan_id").eq("status", "paid"),
   ]);
 
   const totalPlots = plots?.length ?? 0;
@@ -31,6 +34,12 @@ export default async function AdminOverview() {
   const activeMemberships = new Set(plots?.filter((p) => p.user_id).map((p) => p.user_id)).size;
 
   const usersById = new Map((usersData?.users ?? []).map((u) => [u.id, u]));
+
+  const plotsByPlanId = new Map(membershipPlans.map((p) => [p.id, p.plots]));
+  const feedingFamiliesFund = (paidPayments ?? []).reduce((sum, pmt) => {
+    const plotsInPlan = plotsByPlanId.get(pmt.plan_id) ?? 0;
+    return sum + plotsInPlan * FEEDING_FAMILIES_PER_PLOT;
+  }, 0);
 
   const stats = [
     { label: "Total Customers", value: String(usersData?.users?.length ?? 0) },
@@ -41,11 +50,12 @@ export default async function AdminOverview() {
     { label: "Cameras Online", value: String(camerasOnline ?? 0) },
     { label: "Season Starts", value: "Near Diwali" },
     { label: "Pending Visit Requests", value: String(pendingVisits ?? 0) },
+    { label: "Feeding Families Fund", value: `₹${feedingFamiliesFund.toLocaleString("en-IN")}` },
   ];
 
   return (
     <div>
-      <PageHeader title="Overview" subtitle="Mera Khet · Sandwa, Rajasthan" />
+      <PageHeader title="Overview" subtitle="Mera Khet · Sujangarh, Rajasthan" />
 
       <div className="grid gap-4 p-6 sm:grid-cols-2 sm:px-10 lg:grid-cols-4">
         {stats.map((s) => (

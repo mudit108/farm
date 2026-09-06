@@ -57,7 +57,7 @@ export default function SignupPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl">Own your farm</h1>
+      <h1 className="font-display text-2xl">Reserve your plot</h1>
       <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
         Create an account, confirm your email, then select your plot.
       </p>

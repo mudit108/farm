@@ -230,7 +230,7 @@ function CertificateDocument({ data }: { data: CertificateData }) {
         <View style={styles.outerBorder}>
           <View style={styles.innerBorder}>
             <Text style={styles.farmName}>MERA KHET</Text>
-            <Text style={styles.farmLocation}>Sandwa, Rajasthan</Text>
+            <Text style={styles.farmLocation}>Sujangarh, Rajasthan</Text>
 
             <View style={styles.divider} />
 

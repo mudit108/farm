@@ -6,7 +6,7 @@ import { Check, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, Badge } from "@/components/ui/card";
 import { createPlanOrder, verifyPaymentAndClaim } from "@/app/actions/payment";
-import { membershipPlans } from "@/lib/demo-data";
+import { membershipPlans, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
 declare global {
@@ -19,6 +19,7 @@ declare global {
 }
 
 type GridPlot = { plot_number: number; status: "available" | "filled" };
+type PlanPrice = { plan_id: string; price_inr: number };
 
 type FlowState =
   | { step: "idle" }
@@ -26,14 +27,26 @@ type FlowState =
   | { step: "success"; plotNumbers: number[] }
   | { step: "error"; message: string };
 
-export function PlanSelectionForm({ grid }: { grid: GridPlot[] }) {
+export function PlanSelectionForm({ grid, prices }: { grid: GridPlot[]; prices: PlanPrice[] }) {
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [scriptReady, setScriptReady] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
   const [mode, setMode] = useState<"auto" | "custom">("auto");
   const [startPlot, setStartPlot] = useState<number | null>(null);
 
-  const plan = membershipPlans.find((p) => p.id === planId) ?? null;
+  const pricesByPlan = useMemo(() => new Map(prices.map((p) => [p.plan_id, p.price_inr])), [prices]);
+  const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
+  const plansWithLivePricing = useMemo(
+    () =>
+      membershipPlans.map((p) => {
+        const priceInr = pricesByPlan.get(p.id) ?? p.priceInr;
+        const savings = Math.max(Math.round(basePricePerPlot * p.plots - priceInr), 0);
+        return { ...p, priceInr, savings };
+      }),
+    [pricesByPlan, basePricePerPlot]
+  );
+
+  const plan = plansWithLivePricing.find((p) => p.id === planId) ?? null;
   const statusByPlot = useMemo(() => new Map(grid.map((p) => [p.plot_number, p.status])), [grid]);
 
   const rangeValid = (start: number, count: number) => {
@@ -131,7 +144,7 @@ export function PlanSelectionForm({ grid }: { grid: GridPlot[] }) {
       />
 
       <div className="grid gap-5 sm:grid-cols-3">
-        {membershipPlans.map((p) => {
+        {plansWithLivePricing.map((p) => {
           const active = planId === p.id;
           return (
             <Card
@@ -167,6 +180,11 @@ export function PlanSelectionForm({ grid }: { grid: GridPlot[] }) {
 
               <p className="mt-4 font-display text-lg">₹{p.priceInr.toLocaleString("en-IN")}</p>
               <p className="text-xs text-[var(--color-ink-soft)]">per season</p>
+              {p.savings > 0 && (
+                <p className="mt-0.5 text-xs font-medium text-[var(--color-green-deep)]">
+                  Save ₹{p.savings.toLocaleString("en-IN")} vs. per-plot rate
+                </p>
+              )}
 
               <Button
                 size="sm"
@@ -276,8 +294,23 @@ export function PlanSelectionForm({ grid }: { grid: GridPlot[] }) {
             </div>
           )}
 
+          <div className="mt-5 space-y-1.5 rounded-[var(--radius-sm)] bg-[var(--color-bg-deep)] p-4 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--color-ink-soft)]">{plan.name} ({plan.label})</span>
+              <span className="font-medium">₹{plan.priceInr.toLocaleString("en-IN")}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-[var(--color-brown)]">
+              <span>— includes Feeding Families Fund</span>
+              <span>₹{(plan.plots * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-[var(--color-ink)]/10 pt-1.5 font-medium">
+              <span>Total due</span>
+              <span>₹{plan.priceInr.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+
           <Button
-            className="mt-5 w-full"
+            className="mt-3 w-full"
             disabled={state.step === "processing" || (mode === "custom" && !selectedRange)}
             onClick={handlePay}
           >

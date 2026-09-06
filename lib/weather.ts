@@ -1,8 +1,8 @@
 import "server-only";
 
-// Sandwa, Churu district, Rajasthan — the farm's real location.
-const FARM_LAT = 27.75;
-const FARM_LON = 74.167;
+// Sujangarh, Churu district, Rajasthan — the farm's real location.
+const FARM_LAT = 27.7;
+const FARM_LON = 74.47;
 
 export type DailyWeather = {
   date: string;

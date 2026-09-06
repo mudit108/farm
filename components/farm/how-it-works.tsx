@@ -11,7 +11,7 @@ const steps = [
   {
     n: "02",
     title: "Get Your Plot Allocation",
-    body: "A dedicated set of plots within Mera Khet is assigned to you.",
+    body: "Let us assign the next available plots, or pick the exact plot numbers you want from the live map.",
   },
   {
     n: "03",

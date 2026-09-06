@@ -5,10 +5,12 @@ import {
   Leaf,
   MapPin,
   MessageCircle,
+  IndianRupee,
 } from "lucide-react";
 
 export const adminNav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/income", label: "Finance", icon: IndianRupee },
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/communications", label: "Communications", icon: MessageCircle },
   { href: "/admin/cctv", label: "CCTV", icon: Video },

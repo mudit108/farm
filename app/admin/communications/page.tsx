@@ -3,7 +3,7 @@ import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { createServiceClient } from "@/lib/supabase/service";
-import { adminPublishUpdate, adminDeleteUpdate } from "@/app/actions/admin-content";
+import { adminPublishUpdate, adminDeleteUpdate, adminMarkContactMessage } from "@/app/actions/admin-content";
 import { adminSendWhatsAppIndividual, adminBroadcastWhatsApp } from "@/app/actions/admin-whatsapp";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +19,20 @@ type LogRow = {
   error_message: string | null;
   created_at: string;
 };
+type ContactMessage = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+  status: "new" | "read" | "replied";
+  created_at: string;
+};
 
 export default async function CommunicationsPage() {
   const supabase = createServiceClient();
 
-  const [{ data: updatesData }, { data: usersData }, { data: plots }, { data: logData }] = await Promise.all([
+  const [{ data: updatesData }, { data: usersData }, { data: plots }, { data: logData }, { data: contactData }] = await Promise.all([
     supabase.from("khet_club_updates").select("id, title, description, created_at").order("created_at", { ascending: false }),
     supabase.auth.admin.listUsers(),
     supabase.from("khet_club_plots").select("user_id").eq("status", "filled").not("user_id", "is", null),
@@ -32,6 +41,10 @@ export default async function CommunicationsPage() {
       .select("id, user_id, phone, message, kind, status, error_message, created_at")
       .order("created_at", { ascending: false })
       .limit(50),
+    supabase
+      .from("khet_club_contact_messages")
+      .select("id, name, phone, email, message, status, created_at")
+      .order("created_at", { ascending: false }),
   ]);
 
   const updates = (updatesData ?? []) as Update[];
@@ -39,7 +52,43 @@ export default async function CommunicationsPage() {
   const usersById = new Map(users.map((u) => [u.id, u]));
   const memberCount = new Set((plots ?? []).map((p) => p.user_id)).size;
   const log = (logData ?? []) as LogRow[];
+  const contactMessages = (contactData ?? []) as ContactMessage[];
+  const newContactCount = contactMessages.filter((m) => m.status === "new").length;
   const isWhatsAppConfigured = Boolean(process.env.WHATSAPP_PHONE_NUMBER_ID);
+
+  const contactContent = (
+    <div className="space-y-3 p-6 sm:px-10">
+      {contactMessages.length === 0 && (
+        <p className="text-sm text-[var(--color-ink-soft)]">No contact form messages yet.</p>
+      )}
+      {contactMessages.map((m) => (
+        <Card key={m.id} className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-medium">{m.name}</p>
+              <p className="text-xs text-[var(--color-ink-soft)]">
+                {m.phone} · {m.email} · {new Date(m.created_at).toLocaleString("en-IN")}
+              </p>
+            </div>
+            <Badge tone={m.status === "new" ? "gold" : m.status === "replied" ? "green" : "brown"}>{m.status}</Badge>
+          </div>
+          <p className="mt-3 text-sm">{m.message}</p>
+          <div className="mt-3 flex gap-3 border-t border-[var(--color-ink)]/10 pt-3">
+            <a href={`mailto:${m.email}`} className="text-xs font-medium text-[var(--color-green)] hover:underline">
+              Reply by Email
+            </a>
+            {m.status !== "replied" && (
+              <form action={adminMarkContactMessage}>
+                <input type="hidden" name="id" value={m.id} />
+                <input type="hidden" name="status" value="replied" />
+                <button className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">Mark Replied</button>
+              </form>
+            )}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
 
   const updatesContent = (
     <div className="p-6 sm:px-10">
@@ -173,9 +222,10 @@ export default async function CommunicationsPage() {
 
   return (
     <div>
-      <PageHeader title="Communications" subtitle="Farm updates and WhatsApp messaging." />
+      <PageHeader title="Communications" subtitle="Farm updates, WhatsApp messaging, and inbound contact messages." />
       <Tabs
         tabs={[
+          { id: "contact", label: `Contact Messages${newContactCount > 0 ? ` (${newContactCount})` : ""}`, content: contactContent },
           { id: "updates", label: "Farm Updates", content: updatesContent },
           { id: "whatsapp", label: "WhatsApp", content: whatsappContent },
         ]}

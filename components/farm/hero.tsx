@@ -10,22 +10,22 @@ export function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:py-24 lg:grid-cols-2 lg:py-28">
         <div>
           <p className="mb-5 font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
-            Sandwa, Rajasthan
+            Sujangarh, Rajasthan
           </p>
           <h1 className="font-display text-5xl leading-[1.05] tracking-tight text-[var(--color-ink)] sm:text-6xl">
-            Own a piece
+            Reserve a piece
             <br />
             of the farm.
           </h1>
           <p className="mt-6 max-w-md text-lg text-[var(--color-ink-soft)]">
             Choose 1, 3, or 6 organic farm plots in Rajasthan — from
-            feeding your family to owning an entire acre. This season:
+            feeding your family to farming a full acre. This season:
             Gehu (wheat), sowing near Diwali.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link href="/auth/signup">
               <Button size="lg">
-                Own Your Farm <ArrowRight className="h-4 w-4" />
+                Reserve Your Plot <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <a href="#how-it-works">

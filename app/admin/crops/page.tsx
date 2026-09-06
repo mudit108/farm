@@ -1,9 +1,9 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { currentCrop } from "@/lib/demo-data";
+import { currentCrop, membershipPlans } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
-import { adminUpdateSeason } from "@/app/actions/admin-content";
+import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices } from "@/app/actions/admin-content";
 import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +16,21 @@ type Season = {
   estimated_harvest: string | null;
   registration_deadline: string | null;
   total_plots: number;
+  contact_email: string | null;
+  contact_phone: string | null;
 };
+type PlanPrice = { plan_id: string; price_inr: number };
 
 export default async function CropsManagementPage() {
   const supabase = createServiceClient();
-  const [{ data }, { count: filledCount }] = await Promise.all([
+  const [{ data }, { count: filledCount }, { data: pricesData }] = await Promise.all([
     supabase.rpc("khet_club_get_season"),
     supabase.from("khet_club_plots").select("plot_number", { count: "exact", head: true }).eq("status", "filled"),
+    supabase.from("khet_club_plan_prices").select("plan_id, price_inr"),
   ]);
   const season = (data as Season[] | null)?.[0] ?? null;
+  const pricesByPlan = new Map(((pricesData ?? []) as PlanPrice[]).map((p) => [p.plan_id, p.price_inr]));
+  const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
 
   return (
     <div>
@@ -51,6 +57,72 @@ export default async function CropsManagementPage() {
           <div className="mt-3">
             <ResizeFarmForm currentTotal={season?.total_plots ?? 80} filledCount={filledCount ?? 0} />
           </div>
+        </Card>
+
+        <Card className="mt-6 max-w-lg p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Plan Pricing
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            This is the actual price charged at checkout — not just a
+            display number. Changes apply to the very next purchase,
+            everywhere prices are shown.
+          </p>
+          <form action={adminUpdatePlanPrices} className="mt-4 space-y-4">
+            {membershipPlans.map((plan) => {
+              const currentPrice = pricesByPlan.get(plan.id) ?? plan.priceInr;
+              const linearPrice = basePricePerPlot * plan.plots;
+              const savings = Math.max(Math.round(linearPrice - currentPrice), 0);
+              return (
+                <label key={plan.id} className="block">
+                  <span className="mb-1.5 flex items-center justify-between text-sm font-medium">
+                    <span>{plan.name} ({plan.label})</span>
+                    {plan.id !== "1-plot" && savings > 0 && (
+                      <span className="text-xs font-normal text-[var(--color-green-deep)]">
+                        Saves ₹{savings.toLocaleString("en-IN")} vs. per-plot rate
+                      </span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[var(--color-ink-soft)]">₹</span>
+                    <input
+                      name={`price_${plan.id}`}
+                      type="number"
+                      min={1}
+                      step={1}
+                      defaultValue={currentPrice}
+                      className="input"
+                    />
+                  </div>
+                </label>
+              );
+            })}
+            <Button type="submit" className="w-full">Save Prices</Button>
+          </form>
+        </Card>
+
+        <Card className="mt-6 max-w-lg p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Public Contact Info
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Shown in the site footer and used for the WhatsApp Us button —
+            change it here any time, no redeploy needed.
+          </p>
+          <form action={adminUpdateContactInfo} className="mt-4 space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium">Contact email</span>
+              <input name="contactEmail" type="email" defaultValue={season?.contact_email ?? ""} className="input" placeholder="hello@example.com" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium">Contact phone / WhatsApp</span>
+              <input name="contactPhone" type="tel" defaultValue={season?.contact_phone ?? ""} className="input" placeholder="10-digit number" />
+              <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">
+                Used to build the WhatsApp link too — a plain 10-digit Indian number works fine.
+              </span>
+            </label>
+            <Button type="submit" className="w-full">Save Contact Info</Button>
+          </form>
         </Card>
 
         <Card className="mt-6 max-w-lg p-6">

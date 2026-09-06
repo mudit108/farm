@@ -52,7 +52,7 @@ export default async function DashboardOverview() {
     <div>
       <PageHeader
         title="Good morning 👋"
-        subtitle={myPlots.length > 0 ? `${holdings.label} · ${plotList}` : "Sandwa, Rajasthan"}
+        subtitle={myPlots.length > 0 ? `${holdings.label} · ${plotList}` : "Sujangarh, Rajasthan"}
       />
 
       <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-3">

@@ -14,10 +14,26 @@ import { LegalTrust } from "@/components/farm/legal-trust";
 import { Faq } from "@/components/farm/faq";
 import { FinalCta } from "@/components/farm/final-cta";
 import { Contact, Footer } from "@/components/farm/contact-and-footer";
+import { createAnonClient } from "@/lib/supabase/anon";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
+type ContactInfo = { contact_email: string | null; contact_phone: string | null };
+
+async function getContactInfo(): Promise<ContactInfo> {
+  const supabase = createAnonClient();
+  const { data, error } = await supabase.rpc("khet_club_get_season");
+  if (error) {
+    console.error("Failed to load contact info:", error.message);
+    return { contact_email: null, contact_phone: null };
+  }
+  const season = (data as ContactInfo[] | null)?.[0];
+  return { contact_email: season?.contact_email ?? null, contact_phone: season?.contact_phone ?? null };
+}
+
+export default async function Home() {
+  const { contact_email, contact_phone } = await getContactInfo();
+
   return (
     <main>
       <Nav />
@@ -35,8 +51,8 @@ export default function Home() {
       <LegalTrust />
       <Faq />
       <FinalCta />
-      <Contact />
-      <Footer />
+      <Contact contactEmail={contact_email} contactPhone={contact_phone} />
+      <Footer contactEmail={contact_email} contactPhone={contact_phone} />
     </main>
   );
 }

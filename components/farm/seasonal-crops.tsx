@@ -57,6 +57,21 @@ export function SeasonalCrops() {
                   {currentCrop.description}
                 </p>
 
+                <div className="mt-6 rounded-[var(--radius-sm)] border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/5 p-4">
+                  <Badge tone="gold">Seed Variety — {currentCrop.variety}</Badge>
+                  <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--color-ink-soft)]">
+                    {currentCrop.varietyDescription}
+                  </p>
+                  <dl className="mt-4 space-y-3">
+                    {currentCrop.varietyBenefits.map((b) => (
+                      <div key={b.title} className="text-sm">
+                        <dt className="font-medium text-[var(--color-ink)]">{b.title}</dt>
+                        <dd className="text-[var(--color-ink-soft)]">{b.description}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+
                 <button
                   onClick={() => setOpen(true)}
                   className="group mt-6 flex items-center gap-1 text-sm font-semibold text-[var(--color-green)] transition-colors hover:text-[var(--color-green-deep)]"
@@ -75,6 +90,10 @@ export function SeasonalCrops() {
                   At a Glance
                 </p>
                 <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-[var(--color-ink-soft)]">Seed variety</dt>
+                    <dd className="font-medium text-[var(--color-green-deep)]">{currentCrop.variety}</dd>
+                  </div>
                   <div className="flex justify-between">
                     <dt className="text-[var(--color-ink-soft)]">Sowing</dt>
                     <dd className="font-medium text-[var(--color-green-deep)]">Near Diwali</dd>

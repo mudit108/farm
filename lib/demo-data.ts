@@ -8,9 +8,26 @@ export const currentCrop = {
   id: "gehu",
   name: "Gehu",
   localName: "Wheat",
+  variety: "RAJ 1482",
   season: "Rabi — sowing begins near Diwali",
   description:
-    "Our upcoming season crop. Wheat is sown just after Diwali and grown through the cooler Rabi months, well suited to Sandwa's soil and winter climate.",
+    "Our upcoming season crop. Wheat is sown just after Diwali and grown through the cooler Rabi months, well suited to Sujangarh's soil and winter climate.",
+  varietyDescription:
+    "We're growing the RAJ 1482 variety this season — developed at the Rajasthan Agricultural Research Institute, Durgapura, and specifically recognized among Indian wheat researchers for its grain quality rather than yield alone. It's a variety commonly sought out for roti and chapati making.",
+  varietyBenefits: [
+    {
+      title: "Bred for Rajasthan's conditions",
+      description: "Developed at Durgapura specifically for local soil and climate, not adapted from elsewhere.",
+    },
+    {
+      title: "Known for roti & chapati quality",
+      description: "A variety millers and households specifically seek out for soft, pliable chapatis — not just a general-purpose wheat.",
+    },
+    {
+      title: "Whole wheat, stone-ground atta",
+      description: "Milled with the bran and germ intact, so it naturally retains more fiber, iron, and B-vitamins than refined flour.",
+    },
+  ],
   stages: [
     "Field Preparation",
     "Sowing",
@@ -63,7 +80,7 @@ export const membershipPlans = [
     wheatMinKg: 1500,
     wheatMaxKg: 1800,
     priceInr: 100000,
-    tagline: "Own an Entire Acre",
+    tagline: "Farm a Full Acre",
   },
 ];
 
@@ -103,7 +120,28 @@ export const planIncludes = [
   "Harvest updates",
   "Choice of harvest delivery, processing, or market sale",
   "Farm visit eligibility",
+  "₹1,000 per plot toward the Feeding Families Fund",
 ];
+
+// Earmarked from the plan price itself, not an add-on charge — see the
+// Feeding Families Fund note wherever pricing is shown.
+export const FEEDING_FAMILIES_PER_PLOT = 1000;
+
+// Single source of truth for expense categories — the DB value (must
+// match khet_club_expenses' CHECK constraint exactly) paired with a
+// human-readable label. Both the admin form and the validation logic
+// import this, so they can never drift out of sync with each other.
+export const EXPENSE_CATEGORIES = [
+  { value: "seed", label: "Seeds" },
+  { value: "labor", label: "Labor" },
+  { value: "irrigation", label: "Irrigation" },
+  { value: "fertilizer", label: "Fertilizer & Manure" },
+  { value: "equipment", label: "Equipment" },
+  { value: "transport", label: "Transportation" },
+  { value: "processing", label: "Processing & Milling" },
+  { value: "feeding_families", label: "Feeding Families Donation" },
+  { value: "other", label: "Other" },
+] as const;
 
 export const harvestOptions = [
   {
@@ -138,6 +176,10 @@ export const demoFaqs = [
     a: "Gehu (wheat) — currently the only crop we're growing at Mera Khet. Sowing begins near Diwali and the season runs through the Rabi (winter) months.",
   },
   {
+    q: "What wheat variety do you grow?",
+    a: "RAJ 1482 — a variety developed at the Rajasthan Agricultural Research Institute, Durgapura, specifically for local soil and climate. It's recognized among Indian wheat researchers for its grain quality, and is a variety millers and households specifically seek out for roti and chapati making, not just a general-purpose wheat. Since we mill it into whole wheat atta with the bran and germ intact, it also retains more fiber, iron, and B-vitamins than refined flour.",
+  },
+  {
     q: "Is the farm organic?",
     a: "Yes — everything grown at Mera Khet is 100% organic, with no synthetic pesticides or chemical fertilizers used on any plot.",
   },
@@ -151,7 +193,7 @@ export const demoFaqs = [
   },
   {
     q: "What plan sizes are available?",
-    a: "Three seasonal plans, each made up of 7,260 sq ft plots: Kothi — 1 Plot (~0.167 acre, 250–300 kg wheat, ₹20,000/season — Feed Your Family), Annakosh — 3 Plots (~0.5 acre, 750–900 kg wheat, ₹50,000/season — Stock Up for the Year), and Mahabhandar — 6 Plots (exactly 1 acre, 1,500–1,800 kg wheat, ₹100,000/season — Own an Entire Acre). All plans include the same set of benefits.",
+    a: "Three seasonal plans, each made up of 7,260 sq ft plots: Kothi — 1 Plot (~0.167 acre, 250–300 kg wheat, ₹20,000/season — Feed Your Family), Annakosh — 3 Plots (~0.5 acre, 750–900 kg wheat, ₹50,000/season — Stock Up for the Year), and Mahabhandar — 6 Plots (exactly 1 acre, 1,500–1,800 kg wheat, ₹100,000/season — Farm a Full Acre). All plans include the same set of benefits.",
   },
   {
     q: "How much does a membership cost?",
@@ -171,7 +213,7 @@ export const demoFaqs = [
   },
   {
     q: "Where is the farm located?",
-    a: "Sandwa, Rajasthan, India. An exact plot map is shared with members after allocation; we don't publish a private residential address.",
+    a: "Sujangarh, Rajasthan, India. An exact plot map is shared with members after allocation; we don't publish a private residential address.",
   },
   {
     q: "Can I choose my crop?",
@@ -179,15 +221,15 @@ export const demoFaqs = [
   },
   {
     q: "How does the CCTV work?",
-    a: "Each plot is covered by one or more field cameras streamed to your dashboard. Camera infrastructure is managed by our team; credentials are never exposed to customers.",
+    a: "Each plot is covered by one or more field cameras. We're rolling out live streaming to member dashboards — until it's fully live for your plot, you'll see recent photos there instead, clearly labeled as such rather than presented as a live feed. Camera infrastructure is managed by our team; credentials are never exposed to customers.",
   },
   {
     q: "Can I watch the farm anytime?",
-    a: "Yes — live camera access is available 24×7 through your dashboard, subject to normal connectivity and maintenance windows.",
+    a: "Your dashboard is accessible 24×7, and shows a recent photo from your plot's camera whenever you check it. Full live video streaming is being rolled out — we'll update this as it becomes available for your plot.",
   },
   {
     q: "Can I visit my farm?",
-    a: "Yes, subject to prior scheduling, farm conditions, safety requirements and operational availability. Requests can be raised from your dashboard.",
+    a: "Yes, subject to prior scheduling, farm conditions, safety requirements and operational availability. Requests can be raised from your dashboard — your exact plot number is shown there, so you'll know precisely which plots are yours when you visit.",
   },
   {
     q: "What happens if the crop fails?",
@@ -198,12 +240,28 @@ export const demoFaqs = [
     a: "One full seasonal cycle — this season runs from sowing near Diwali through the wheat harvest in spring. There is no annual commitment; you can join again each new season.",
   },
   {
+    q: "Have you run previous seasons?",
+    a: "No — this is Mera Khet's first season. We're not going to show you photos of a harvest that didn't happen. What we can offer instead: full operational transparency from day one — camera access, farm updates, and a real dashboard tracking your specific plots — so you can see the season unfold as it actually happens, rather than take our word for a past one. Early members are effectively founding members of Mera Khet.",
+  },
+  {
     q: "What happens after harvest?",
-    a: "You'll receive a harvest update on your dashboard, and can choose how you'd like to receive it: home delivery, processing into flour, or sale to the market with proceeds sent to you.",
+    a: "Your crop is harvested and weighed at the field, and your confirmed total is recorded against your membership. It's then quality-checked before moving to whichever option you've chosen: home delivery, processing into flour, or sale to market with proceeds sent to you. Every delivery is logged on your dashboard with date and quantity, with a running progress bar against your confirmed total — so you can see exactly what's been delivered and what's remaining.",
+  },
+  {
+    q: "How will I know when my delivery is coming?",
+    a: "You'll be notified on WhatsApp and your dashboard once your harvest total is confirmed, and again each time a delivery is logged. Exact timing depends on your chosen fulfillment method and delivery logistics, but you'll always be notified as it happens, not left to check in and ask.",
+  },
+  {
+    q: "How is my harvest weighed and verified?",
+    a: "Your harvest is weighed at the field once it's brought in, and that confirmed total — not the earlier estimate — becomes the number your delivery progress is tracked against on your dashboard. If you're delivering in monthly installments, each individual delivery is also logged separately with its own date and weight, so the full record stays visible to you throughout, not just a single final number.",
   },
   {
     q: "Can I renew my membership?",
     a: "Yes — since plans are seasonal, you can renew for the next season from the Membership section of your dashboard once this season concludes.",
+  },
+  {
+    q: "What is the Feeding Families Fund?",
+    a: "₹1,000 from every plot's price — not an extra charge on top — is earmarked toward donating wheat to families in need. It comes out of the price you already see, so a 3-plot Annakosh membership sets aside ₹3,000, and a 6-plot Mahabhandar sets aside ₹6,000, funded from what you've already paid.",
   },
   {
     q: "Can I gift a farm membership?",

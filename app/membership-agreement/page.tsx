@@ -1,0 +1,149 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { LegalPageLayout } from "@/components/legal/legal-page-layout";
+import { DraftNotice } from "@/components/legal/draft-notice";
+
+export const metadata: Metadata = { title: "Membership Agreement | Mera Khet" };
+
+export default function MembershipAgreementPage() {
+  return (
+    <LegalPageLayout title="Membership Agreement" lastUpdated="[Date to be finalized]">
+      <DraftNotice />
+
+      <p>
+        This Membership Agreement (&quot;Agreement&quot;) is between{" "}
+        <strong>MK Farms</strong> (&quot;Mera Khet,&quot;
+        &quot;we,&quot; &quot;us&quot;) and the individual who purchases a
+        seasonal farm plot membership (&quot;you,&quot; &quot;Member&quot;)
+        through merakhet.example.com or its dashboard.
+      </p>
+
+      <h2>1. What you are purchasing</h2>
+      <p>
+        Your membership gives you a <strong>contractual allocation of, and
+        participation in, a designated area of farm plots</strong> (1, 3,
+        or 6 plots, each plot 7,260 sq ft) at Mera Khet&apos;s farm in
+        Sujangarh, Rajasthan, for one crop season, together with the services
+        described in Section 3.
+      </p>
+      <p>Your membership does <strong>not</strong>, unless a separate signed document explicitly states otherwise:</p>
+      <ul>
+        <li>Transfer legal ownership, title, or any registrable interest in agricultural land</li>
+        <li>Guarantee any specific crop yield, wheat quantity, or quality</li>
+        <li>Guarantee any financial return, profit, or resale value</li>
+        <li>Create a partnership, joint venture, or employment relationship between you and Mera Khet</li>
+      </ul>
+
+      <h2>2. Seasonal, not annual</h2>
+      <p>
+        Membership covers exactly one crop season (currently: wheat, sown
+        near Diwali through spring harvest). There is no automatic renewal
+        and no ongoing commitment — you may choose to purchase a new
+        membership for a future season, at the pricing then in effect.
+      </p>
+
+      <h2>3. What&apos;s included</h2>
+      <ul>
+        <li>Cultivation of your allocated plots according to our standard organic practices for the season&apos;s crop</li>
+        <li>Camera access to your plot(s) via your dashboard, to the extent camera infrastructure is live for that plot</li>
+        <li>Periodic farm updates (photos, notes, crop-stage changes)</li>
+        <li>Eligibility to request a farm visit, subject to scheduling and operational availability</li>
+        <li>Your choice of harvest fulfillment: home delivery, processing into flour, or sale to market on your behalf (Section 6)</li>
+      </ul>
+
+      <h2>4. Wheat quantity is an estimate, not a promise</h2>
+      <p>
+        The wheat ranges shown for each plan (e.g. 250–300 kg for a single
+        plot) are <strong>typical-yield estimates</strong> based on
+        historical performance, not commitments. Actual harvest per plot
+        depends on weather, soil conditions, pests, water availability,
+        and other factors outside our control. If actual yield is lower
+        than the estimated range, no refund or make-up delivery is owed
+        solely on that basis — see Section 8 for how we handle more
+        serious crop loss.
+      </p>
+
+      <h2>5. Payment</h2>
+      <p>
+        Membership fees are payable in full at the time of plot selection,
+        via our payment processor (Razorpay). Plots are only assigned to
+        you once payment is verified. Prices are per season and may change
+        between seasons; the price you paid for your current season&apos;s
+        membership does not change after purchase.
+      </p>
+      <p>
+        <strong>₹1,000 per plot</strong> of your membership price is
+        earmarked toward the Feeding Families Fund — donating wheat to
+        families in need. This is not an additional charge; it is part
+        of the price shown to you at checkout, itemized there for
+        transparency.
+      </p>
+
+      <h2>6. Receiving your harvest</h2>
+      <p>You choose one of the following, from your dashboard, after the crop is harvested and weighed:</p>
+      <ul>
+        <li><strong>Home delivery</strong> of the raw harvest (delivery charges billed separately)</li>
+        <li><strong>Processing</strong> into flour (atta) or another product listed for the current crop, then delivered to you</li>
+        <li><strong>Sale to the market</strong> on your behalf, with proceeds sent to you at prevailing market rates at the time of sale (not guaranteed in advance)</li>
+      </ul>
+      <p>
+        For either delivery option, you may choose to receive your harvest
+        as a single delivery or split into monthly installments of a size
+        you specify.
+      </p>
+
+      <h2>7. Certificates and plot approval</h2>
+      <p>
+        Plot allocation is confirmed at the time of payment. A formal
+        membership certificate is issued once your allocation is reviewed
+        and approved by our team, and is made available for download from
+        your dashboard and sent to your registered email.
+      </p>
+
+      <h2>8. Crop failure and other agricultural risk</h2>
+      <p>
+        Agriculture is inherently seasonal and subject to weather, soil
+        conditions, pests, water availability, and other natural factors
+        beyond our control. We follow standard agronomic practices to
+        manage this risk, but we do not guarantee against partial or total
+        crop loss. <strong>[This is separate from the cancellation refund
+        policy in Section 9 — MK Farms&apos; specific policy for
+        significant crop failure itself, e.g. any partial credit toward a
+        future season, is still to be decided and documented here.]</strong>
+      </p>
+
+      <h2>9. Cancellation and refunds</h2>
+      <p>
+        See our separate <a href="/refund-policy" className="text-[var(--color-green)] underline">Refund &amp; Cancellation Policy</a> for the specific terms and timelines.
+      </p>
+
+      <h2>10. Limitation of liability</h2>
+      <p>
+        To the maximum extent permitted by law, Mera Khet&apos;s total
+        liability to you under this Agreement is limited to the amount you
+        paid for your current season&apos;s membership. We are not liable
+        for indirect, incidental, or consequential losses.
+      </p>
+
+      <h2>11. Governing law</h2>
+      <p>
+        This Agreement is governed by the laws of India. Disputes are
+        subject to the exclusive jurisdiction of the courts of{" "}
+        <strong>[City, State]</strong>.
+      </p>
+
+      <h2>12. Changes to this Agreement</h2>
+      <p>
+        We may update this Agreement between seasons. Changes apply to
+        memberships purchased after the update — not retroactively to a
+        season you&apos;ve already paid for.
+      </p>
+
+      <h2>13. Contact</h2>
+      <p>
+        Questions about this Agreement can be sent via our{" "}
+        <Link href="/#contact" className="text-[var(--color-green)] underline">contact form</Link>.
+      </p>
+    </LegalPageLayout>
+  );
+}

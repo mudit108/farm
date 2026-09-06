@@ -1,10 +1,36 @@
 # Mera Khet
 
-A farm-membership platform in Sandwa, Rajasthan — organic wheat plots,
+A farm-membership platform in Sujangarh, Rajasthan — organic wheat plots,
 seasonal crop tracking, 24×7 CCTV farm monitoring, and a live, account-gated
 plot registration system (admin-configurable farm size, no fixed cap).
 Built with Next.js (App Router), TypeScript, Tailwind CSS, and Supabase
 (Postgres + Auth).
+
+## Before accepting real customers
+
+The legal pages (`/terms`, `/privacy`, `/membership-agreement`,
+`/refund-policy`, `/disclaimer`) are solid drafts covering what a careful
+customer would look for, but they are **not ready to rely on as-is**:
+
+1. The business legal name (**MK Farms**) and the confirmed
+   cancellation policy (**50% refund if canceled more than 14 days
+   before sowing; non-refundable within 14 days of sowing or after
+   sowing begins**) are filled in. What's still a `[bracketed
+   placeholder]`: registered address, jurisdiction (for the governing-law
+   clauses), and — separately from the cancellation policy above — any
+   compensation policy for actual crop failure (Membership Agreement,
+   Section 8).
+2. Have an actual lawyer review all five before they're relied on as
+   binding documents — I drafted these to be genuinely useful and
+   accurate to how the product works, but I'm not a lawyer and this
+   isn't a substitute for real legal review, especially since real
+   payments are involved.
+3. Public contact email/phone are admin-editable at `/admin/crops` →
+   "Public Contact Info" (stored on `khet_club_season`, not env
+   vars) — change them there any time without a redeploy. Until
+   they're set, the footer shows "use the contact form" instead of a
+   fake placeholder, and the WhatsApp button hides itself rather than
+   being a dead click.
 
 ## What's live — the whole app runs on real data now
 
@@ -60,6 +86,48 @@ fulfillment options, and FAQ copy — not per-user or per-farm state.
   shrinking is refused by the database itself if any plot above the new
   total is already claimed, rather than silently deleting a real
   member's plot.
+- **Admin-editable plan pricing**: prices for all 3 plans are set at
+  `/admin/crops` → "Plan Pricing" (`khet_club_plan_prices`), not hardcoded.
+  This is the actual price charged at checkout, not just a display
+  number — `createPlanOrder` reads it live at payment time. The 3-plot
+  and 6-plot plans now also show their real savings versus the 1-plot
+  per-plot rate (₹10,000 / ₹20,000 at current prices) on both the
+  homepage and the dashboard purchase flow — computed live from
+  whatever the admin has actually set, not a fixed claim.
+- **Feeding Families Fund**: ₹1,000 per plot is earmarked from each
+  plan's existing price (not an add-on charge) toward donating wheat to
+  families in need — shown on the homepage pricing cards, the checkout
+  breakdown, the Membership Agreement, and a FAQ entry. The running
+  total is computed live from real paid transactions, not tracked
+  separately, so it can never drift out of sync with actual payments —
+  visible on both `/admin` (quick stat) and the full `/admin/income`
+  breakdown below.
+- **Admin Finance page** (`/admin/income` — URL kept for continuity):
+  now two tabs, Income and Expenses. Income covers every payment — paid,
+  pending, failed, refunded — with summary stats and a filterable
+  transaction table. "Pending" means a Razorpay order was created but
+  the customer never completed checkout — no plot was ever assigned for
+  these, so they're informational, not a liability. Expenses has no
+  automatic data source the way income does (it's not connected to
+  anything like Razorpay) — admin logs real costs manually
+  (`khet_club_expenses`, 9 categories including a dedicated "Feeding
+  Families Donation" one to track actual spend against the fund),
+  purely internal data with zero anon/authenticated access at any
+  level, verified via live exploit attempt before shipping. Both tabs
+  share a live Net Position card (income minus expenses).
+- **Real contact form + legal pages**: the homepage "Talk to us" form used
+  to be entirely fake (client-side only, never sent anywhere) — it now
+  saves to `khet_club_contact_messages` and emails every address in
+  `ADMIN_EMAILS`, with a new "Contact Messages" tab at
+  `/admin/communications` to view and mark them replied. Every footer
+  link now goes somewhere real, including five new legal pages — Terms,
+  Privacy, Membership Agreement, Refund & Cancellation, Disclaimer — all
+  clearly marked as drafts pending real legal review and business-specific
+  details (see "Before accepting real customers" below). "Own Your Farm"
+  language was also removed site-wide (hero, nav, pricing, signup, even
+  the SEO title tags) since it directly contradicted the site's own legal
+  section, which explicitly says membership does *not* transfer land
+  ownership — replaced with "Reserve"/"Choose" throughout.
 - **Harvest delivery tracking**: `/admin/harvest` — once harvest is
   weighed, admin sets a member's real confirmed total (kg) — separate
   from the pre-harvest wheatMinKg/wheatMaxKg estimate — then logs each
@@ -67,8 +135,8 @@ fulfillment options, and FAQ copy — not per-user or per-farm state.
   WhatsApp update with their running progress. Members see their own
   progress bar and delivery history at `/dashboard/membership`.
 - **Live weather**: `/dashboard/crop-cycle` shows real current conditions
-  and a 5-day outlook for the farm's actual coordinates (Sandwa, Churu
-  district, Rajasthan — 27.75°N, 74.167°E), via Open-Meteo
+  and a 5-day outlook for the farm's actual coordinates (Sujangarh, Churu
+  district, Rajasthan — 27.70°N, 74.47°E), via Open-Meteo
   (`lib/weather.ts`). No API key needed — genuinely zero-config. Cached
   30 minutes; shows an honest "unavailable" message rather than fake
   numbers if the request fails. Running on Open-Meteo's free
@@ -235,7 +303,7 @@ click through the rest of the site, dashboard, and admin panel.
 The plot registration table, RLS policies, and the customer/admin
 data-access functions all live in `supabase/migrations/`. They're already
 applied to the live project referenced in `.env.example`. To apply them to
-a *different* Supabase project (e.g. your own), run all eighteen files in
+a *different* Supabase project (e.g. your own), run all twenty-two files in
 order through the Supabase SQL Editor, or `supabase db push` if you use
 the CLI:
 
@@ -332,6 +400,26 @@ the CLI:
     approves it at `/admin/harvest`. A partial unique index allows only
     one pending request per member at a time. Grants scoped minimally
     from the start; verified via live exploit attempt before shipping.
+19. `20260903144500_khet_club_configurable_farm_size.sql` — removes the
+    hardcoded 80-plot upper bound, adds `total_plots` to
+    `khet_club_season`, and adds `khet_club_resize_farm()` — grows or
+    shrinks the farm from `/admin/crops`, refusing to shrink past any
+    already-claimed plot.
+20. `20260905123000_khet_club_contact_messages.sql` — the homepage
+    contact form's real backend (`khet_club_contact_messages`). The
+    first table in this app that needs an `anon` insert policy, since
+    the submitter isn't logged in — grants scoped to exactly the columns
+    a visitor should set, verified via live exploit attempt.
+21. `20260905170000_khet_club_contact_settings.sql` — adds
+    `contact_email` / `contact_phone` to `khet_club_season`, editable
+    from `/admin/crops` → "Public Contact Info," so the footer and
+    WhatsApp Us button can change without a redeploy.
+22. `20260906051200_khet_club_plan_prices.sql` — `khet_club_plan_prices`:
+    admin-editable pricing for all 3 plans at `/admin/crops` → "Plan
+    Pricing." This is the actual price the payment flow charges at
+    checkout, not just a display number — read-only for anon and
+    authenticated, verified via live exploit attempt for both before
+    shipping, given this table controls real money.
 
 The farm's total plot count is no longer fixed by these migrations —
 migration 19 (`khet_club_configurable_farm_size.sql`) makes it a live
@@ -578,8 +666,8 @@ traffic, rather than letting the free tier ride indefinitely by default.
 
 If you resize the farm's location later (different plot, different
 village), update `FARM_LAT` / `FARM_LON` at the top of `lib/weather.ts`
-— they're currently set to Sandwa, Churu district, Rajasthan
-(27.75°N, 74.167°E).
+— they're currently set to Sujangarh, Churu district, Rajasthan
+(27.70°N, 74.47°E).
 
 ## 11. Deploy to Vercel
 

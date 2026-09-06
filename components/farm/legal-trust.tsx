@@ -1,4 +1,14 @@
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
+
+const legalLinks = [
+  { label: "Membership Agreement", href: "/membership-agreement" },
+  { label: "Refund & Cancellation Policy", href: "/refund-policy" },
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Disclaimer", href: "/disclaimer" },
+];
 
 export function LegalTrust() {
   return (
@@ -38,6 +48,43 @@ export function LegalTrust() {
               synthetic pesticides or chemical fertilizers are used.
               Formal organic certification, where applicable, will be
               noted on your membership documents.
+            </p>
+          </div>
+
+          <div className="mt-8 rounded-[var(--radius-card)] border border-[var(--color-ink)]/10 bg-[var(--color-bg)] p-6">
+            <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-brown)]">
+              Who Runs Mera Khet
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-soft)]">
+              Mera Khet is operated by <strong className="text-[var(--color-ink)]">MK Farms</strong>, based
+              in Sujangarh, Rajasthan. Every membership is governed by the
+              real, readable documents below — not just this summary.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+              {legalLinks.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-green)] hover:underline"
+                >
+                  <FileText className="h-3.5 w-3.5" /> {l.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[var(--radius-card)] border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/5 p-6">
+            <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-brown)]">
+              This Is Our First Season
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-soft)]">
+              We won&apos;t show you photos of a previous harvest, because
+              there isn&apos;t one yet. What we can offer instead is full
+              operational transparency from day one — camera access, farm
+              updates, and a real dashboard tracking your specific
+              plots — so you see this season unfold as it actually
+              happens, rather than take our word for a past one. Early
+              members are effectively founding members of Mera Khet.
             </p>
           </div>
         </Reveal>

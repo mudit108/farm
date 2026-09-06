@@ -17,7 +17,7 @@ const cameras: { id: string; label: string; area: string; photo: StaticImageData
 
 /**
  * streamUrl is intentionally undefined in demo mode. The photos below are
- * real recent snapshots from Sandwa Farm's cameras — not a fabricated
+ * real recent snapshots from Sujangarh Farm's cameras — not a fabricated
  * live feed — labeled "DEMO CAMERA" rather than "LIVE" so nobody mistakes
  * a still photo for real-time video. Wire streamUrl up to a real
  * RTSP → HLS/WebRTC gateway URL from the `cameras` table when ready.
@@ -90,7 +90,7 @@ export function LiveFarm({ streamUrl }: { streamUrl?: string }) {
         </Reveal>
 
         <p className="mt-4 text-xs text-white/40">
-          Shown here: real recent snapshots from Sandwa Farm, not a live
+          Shown here: real recent snapshots from Sujangarh Farm, not a live
           video feed. 24×7 live streaming is being rolled out; camera
           feeds shown to customers will be scoped to their own plot only.
         </p>

@@ -19,7 +19,7 @@ export function FinalCta() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link href="/auth/signup">
               <Button size="lg" variant="secondary">
-                Own Your Farm
+                Reserve Your Plot
               </Button>
             </Link>
             <a href="#contact">
