@@ -7,6 +7,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { createServiceClient } from "@/lib/supabase/service";
 import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, EXPENSE_CATEGORIES } from "@/lib/demo-data";
 import { adminAddExpense, adminDeleteExpense } from "@/app/actions/admin-expenses";
+import { adminUpdateFFFAmount } from "@/app/actions/admin-content";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -67,15 +68,17 @@ export default async function AdminFinancePage({
 
   const supabase = createServiceClient();
 
-  const [{ data: allPayments }, { data: usersData }, { data: allExpenses }] = await Promise.all([
+  const [{ data: allPayments }, { data: usersData }, { data: allExpenses }, { data: seasonData }] = await Promise.all([
     supabase.from("khet_club_payments").select("*").order("created_at", { ascending: false }),
     supabase.auth.admin.listUsers(),
     supabase.from("khet_club_expenses").select("*").order("expense_date", { ascending: false }),
+    supabase.rpc("khet_club_get_season"),
   ]);
 
   const payments = (allPayments ?? []) as Payment[];
   const expenses = (allExpenses ?? []) as Expense[];
   const usersById = new Map((usersData?.users ?? []).map((u) => [u.id, u]));
+  const publicFFFTotal = (seasonData as { fff_collected_inr: number }[] | null)?.[0]?.fff_collected_inr ?? 0;
 
   const paid = payments.filter((p) => p.status === "paid");
   const pending = payments.filter((p) => p.status === "created");
@@ -143,7 +146,7 @@ export default async function AdminFinancePage({
         {[
           { label: "Total Revenue (Paid)", value: `₹${(totalRevenue / 100).toLocaleString("en-IN")}` },
           { label: "This Month", value: `₹${(thisMonthRevenue / 100).toLocaleString("en-IN")}` },
-          { label: "Feeding Families Fund", value: `₹${feedingFamiliesFund.toLocaleString("en-IN")}` },
+          { label: "FFF Earmarked (Auto, from Paid Orders)", value: `₹${feedingFamiliesFund.toLocaleString("en-IN")}` },
           { label: "Avg. Order Value", value: `₹${(avgOrderValue / 100).toLocaleString("en-IN")}` },
           { label: "Paid Transactions", value: String(paid.length) },
           { label: "Pending", value: String(pending.length) },
@@ -156,6 +159,30 @@ export default async function AdminFinancePage({
           </Card>
         ))}
       </div>
+
+      <Card className="mt-6 max-w-lg p-5">
+        <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+          Public Feeding Families Fund Total
+        </p>
+        <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+          This is the number shown on the homepage — set it directly here.
+          It doesn&apos;t have to match the auto-earmarked figure above exactly
+          (e.g. it can reflect what&apos;s actually been spent on wheat
+          donations, or include offline contributions the payment system
+          never saw).
+        </p>
+        <form action={adminUpdateFFFAmount} className="mt-4 flex items-end gap-3">
+          <label className="block flex-1">
+            <span className="mb-1.5 block text-sm font-medium">Amount (₹)</span>
+            <input name="fffCollectedInr" type="number" min={0} step={1} defaultValue={publicFFFTotal} className="input" />
+          </label>
+          <Button type="submit">Save</Button>
+        </form>
+        <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
+          ≈ {Math.round((publicFFFTotal / 1000) * 2)} families, at 2 families per ₹1,000 —
+          shown on the homepage automatically from this amount.
+        </p>
+      </Card>
 
       <Card className="mt-6 overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">

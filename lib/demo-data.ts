@@ -119,6 +119,7 @@ export const planIncludes = [
   "Farm photos & videos",
   "Harvest updates",
   "Choice of harvest delivery, processing, or market sale",
+  "On-site storage until your harvest is dispatched",
   "Farm visit eligibility",
   "₹1,000 per plot toward the Feeding Families Fund",
 ];
@@ -149,16 +150,16 @@ export const harvestOptions = [
     title: "Deliver to My Home",
     tagline: "Raw Harvest",
     description:
-      "We deliver your harvest straight to your doorstep, exactly as it came off your plot — all at once, or split into monthly installments of a custom size (e.g. 40 kg/month) if you'd rather receive it gradually.",
-    note: "Delivery charges are not included and are billed separately based on your location.",
+      "We deliver your harvest straight to your doorstep, exactly as it came off your plot — all at once, or split into monthly installments if you'd rather receive it gradually. Packed in 15 kg, 30 kg or 50 kg bags.",
+    note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Delivery charges are billed separately based on distance.",
   },
   {
     id: "processed",
     title: "Process & Deliver",
     tagline: "Flour / Oil",
     description:
-      "We process your harvest into flour or oil — for example, wheat milled into fresh atta — then deliver it to you, either as a single delivery or in monthly installments of a custom size, just like raw harvest.",
-    note: "Processing is done in small batches per crop; available conversions vary by crop (see each crop's processed product).",
+      "We process your harvest into flour or oil — for example, wheat milled into fresh atta — then deliver it to you, either as a single delivery or in monthly installments. Packed in the same 15 kg, 30 kg or 50 kg bags.",
+    note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Processing is done in small batches per crop.",
   },
   {
     id: "sell-to-market",
@@ -250,6 +251,14 @@ export const demoFaqs = [
   {
     q: "How will I know when my delivery is coming?",
     a: "You'll be notified on WhatsApp and your dashboard once your harvest total is confirmed, and again each time a delivery is logged. Exact timing depends on your chosen fulfillment method and delivery logistics, but you'll always be notified as it happens, not left to check in and ask.",
+  },
+  {
+    q: "How long after harvest will I receive my wheat, and how is it packed?",
+    a: "Typically 2–3 weeks after harvest, depending on your location. It's packed in 15 kg, 30 kg or 50 kg bags — so if you've chosen monthly installments, you can pick a bag size that suits how much you use. Delivery charges depend on distance and are billed separately from your membership.",
+  },
+  {
+    q: "Where is my wheat kept between harvest and delivery?",
+    a: "In our own {WAREHOUSE_TONNES}-tonne storage warehouse at the farm. It isn't left in the field or handed over to a third-party facility while it waits. This also means you can choose monthly installments without worrying about where the rest of your harvest is sitting — it stays with us, at the farm, until it's dispatched to you.",
   },
   {
     q: "How is my harvest weighed and verified?",

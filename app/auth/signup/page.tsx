@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { normalizeIndianMobile, PHONE_HELP_TEXT, PHONE_ERROR_TEXT } from "@/lib/phone";
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -13,8 +14,17 @@ export default function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Validate before hitting Supabase — every WhatsApp path messages
+    // this number, so a junk value here means silent unreachability.
+    const normalizedPhone = normalizeIndianMobile(form.phone);
+    if (!normalizedPhone) {
+      setError(PHONE_ERROR_TEXT);
+      return;
+    }
+
+    setLoading(true);
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -23,14 +33,25 @@ export default function SignupPage() {
       options: {
         // Verified name/phone the claim-a-plot step reads later — never
         // taken from client input again after this point.
-        data: { full_name: form.name, phone: form.phone },
+        data: { full_name: form.name, phone: normalizedPhone },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/select-plot`,
       },
     });
 
     setLoading(false);
     if (error) {
-      setError(error.message);
+      // Translate Supabase's internal wording into something a customer
+      // can act on — matching how the login page already handles errors.
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered") || msg.includes("already been registered")) {
+        setError("An account with this email already exists — try logging in instead.");
+      } else if (msg.includes("password")) {
+        setError("Please choose a password with at least 8 characters.");
+      } else if (msg.includes("email")) {
+        setError("Please enter a valid email address.");
+      } else {
+        setError("Couldn't create your account. Please try again, or contact us if it keeps happening.");
+      }
       return;
     }
 
@@ -73,7 +94,8 @@ export default function SignupPage() {
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium">Phone</span>
-          <input required type="tel" className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input required type="tel" inputMode="numeric" placeholder="9876543210" className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">{PHONE_HELP_TEXT} — we send farm updates here on WhatsApp.</span>
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium">Password</span>

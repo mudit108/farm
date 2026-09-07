@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
@@ -57,7 +58,14 @@ function methodTitle(id: string) {
   return harvestOptions.find((o) => o.id === id)?.title ?? id;
 }
 
-export default async function MembersPage() {
+export default async function MembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const query = (q ?? "").trim().toLowerCase();
+
   const supabase = createServiceClient();
 
   const [
@@ -106,6 +114,32 @@ export default async function MembersPage() {
     batches.set(p.claim_batch_id, list);
   }
 
+  // Filter by the search box. Matches name, email, phone, city, or a
+  // plot number — the things you'd actually have on hand when a member
+  // contacts you.
+  const matchesQuery = (rows: PlotRow[]) => {
+    if (!query) return true;
+    const user = rows[0]?.user_id ? usersById.get(rows[0].user_id) : null;
+    const haystack = [
+      rows[0]?.full_name,
+      rows[0]?.email,
+      rows[0]?.phone,
+      rows[0]?.city,
+      user?.email,
+      user?.user_metadata?.full_name as string | undefined,
+      ...rows.map((r) => String(r.plot_number)),
+      ...rows.map((r) => `#${r.plot_number}`),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(query);
+  };
+
+  const visibleBatches = new Map(
+    Array.from(batches.entries()).filter(([, rows]) => matchesQuery(rows))
+  );
+
   const deliveredByUser = new Map<string, number>();
   for (const d of deliveries) {
     deliveredByUser.set(d.user_id, (deliveredByUser.get(d.user_id) ?? 0) + d.kg_delivered);
@@ -147,13 +181,33 @@ export default async function MembersPage() {
         </form>
       </Card>
 
+      <form method="GET" className="mt-6 flex flex-wrap items-center gap-2">
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search by name, email, phone, city, or plot number…"
+          className="input max-w-md flex-1"
+        />
+        <Button type="submit" variant="outline">Search</Button>
+        {query && (
+          <Link href="/admin/members" className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">
+            Clear
+          </Link>
+        )}
+      </form>
+
       {batches.size > 0 && (
         <div className="mt-6">
           <p className="mb-3 font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-            Members ({batches.size})
+            Members ({visibleBatches.size}{query ? ` of ${batches.size}` : ""})
           </p>
+          {visibleBatches.size === 0 && (
+            <p className="text-sm text-[var(--color-ink-soft)]">
+              No members match &ldquo;{q}&rdquo;.
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
-            {Array.from(batches.entries()).map(([batchId, rows]) => {
+            {Array.from(visibleBatches.entries()).map(([batchId, rows]) => {
               const first = rows[0];
               const plotNumbers = rows.map((r) => r.plot_number).sort((a, b) => a - b);
               const cert = certificatesByBatch.get(batchId);

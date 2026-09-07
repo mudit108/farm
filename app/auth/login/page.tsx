@@ -42,7 +42,7 @@ function LoginForm() {
     <div>
       <h1 className="font-display text-2xl">Log in</h1>
       <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-        Welcome back to your farm.
+        Welcome back to Mera Khet.
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>

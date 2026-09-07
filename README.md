@@ -32,6 +32,28 @@ customer would look for, but they are **not ready to rely on as-is**:
    fake placeholder, and the WhatsApp button hides itself rather than
    being a dead click.
 
+## Homepage structure
+
+Section order (`app/page.tsx`): Nav → Hero → How It Works → Seasonal
+Crops → Harvest Options → **Farm Transparency** → Farm Updates → Visit &
+Location → **Feeding Families** → Pricing → Plot Registration → Legal
+Trust → FAQ → Final CTA → Contact → Footer.
+
+Two deliberate structural decisions here, both from a customer-perspective
+audit:
+
+1. **`components/farm/farm-transparency.tsx` is a merge of four
+   previously separate sections** (LiveFarm, DashboardPreview,
+   FarmUpdates' intro, and Transparency). All four opened with a
+   variation of "you can watch your farm" and ran back-to-back — a wall
+   of repetition sitting directly between the visitor and the pricing,
+   where skimming starts and conversions die. One section now carries
+   the camera viewer, the live season snapshot, and the tracked-items
+   list. The old three component files were deleted, not left orphaned.
+2. **Feeding Families sits *before* Pricing**, not after. It's the most
+   emotionally compelling thing on the page, and it can only influence
+   a purchase decision if the visitor sees it before the price.
+
 ## What's live — the whole app runs on real data now
 
 Every page under `/dashboard/*` and `/admin/*`, plus the homepage's public
@@ -97,11 +119,17 @@ fulfillment options, and FAQ copy — not per-user or per-farm state.
 - **Feeding Families Fund**: ₹1,000 per plot is earmarked from each
   plan's existing price (not an add-on charge) toward donating wheat to
   families in need — shown on the homepage pricing cards, the checkout
-  breakdown, the Membership Agreement, and a FAQ entry. The running
-  total is computed live from real paid transactions, not tracked
-  separately, so it can never drift out of sync with actual payments —
-  visible on both `/admin` (quick stat) and the full `/admin/income`
-  breakdown below.
+  breakdown, the Membership Agreement, and a FAQ entry. Two related but
+  distinct numbers exist: an auto-computed "earmarked from paid orders"
+  figure (visible on `/admin` and `/admin/income`, always in sync with
+  real payments, never manually editable) and a separate **public total**
+  (`khet_club_season.fff_collected_inr`) shown on the homepage impact
+  banner (`components/farm/feeding-families-impact.tsx`) — admin-set at
+  `/admin/income` → "Public Feeding Families Fund Total", deliberately
+  not forced to match the auto-computed figure, since admin may have
+  real reasons they differ (actual wheat-purchase timing, offline
+  contributions). Families count on the public banner is computed as
+  2 families per ₹1,000, live from whatever admin has set.
 - **Admin Finance page** (`/admin/income` — URL kept for continuity):
   now two tabs, Income and Expenses. Income covers every payment — paid,
   pending, failed, refunded — with summary stats and a filterable

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Truck, Droplets, TrendingUp, Scale, CheckCircle2, Package, LayoutDashboard } from "lucide-react";
+import { Truck, Droplets, TrendingUp, Scale, CheckCircle2, Package, LayoutDashboard, Warehouse } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { Card } from "@/components/ui/card";
 import { harvestOptions } from "@/lib/demo-data";
@@ -7,14 +7,15 @@ import harvestPhoto from "@/public/images/farmer-harvesting-combine.jpg";
 
 const icons = { "home-delivery": Truck, processed: Droplets, "sell-to-market": TrendingUp };
 
-const processSteps = [
-  { icon: Scale, title: "Weighed & confirmed", body: "Your harvest is weighed at the field and your confirmed total is recorded against your membership." },
-  { icon: CheckCircle2, title: "Quality checked", body: "Checked before it moves to delivery, processing, or market sale — whichever you've chosen." },
-  { icon: Package, title: "Your choice applied", body: "Delivered raw, milled into flour, or sold to market on your behalf — one delivery or monthly installments." },
-  { icon: LayoutDashboard, title: "Tracked on your dashboard", body: "Every delivery is logged with date and quantity, with a running progress bar against your confirmed total." },
-];
+export function HarvestOptions({ warehouseTonnes }: { warehouseTonnes: number }) {
+  const processSteps = [
+    { icon: Scale, title: "Weighed & confirmed", body: "Your harvest is weighed at the field and your confirmed total is recorded against your membership." },
+    { icon: CheckCircle2, title: "Quality checked", body: "Checked before it moves to delivery, processing, or market sale — whichever you've chosen." },
+    { icon: Warehouse, title: "Stored on-site", body: `Held in our own ${warehouseTonnes}-tonne warehouse at the farm — not left in the field or handed to a third party while it waits.` },
+    { icon: Package, title: "Your choice applied", body: "Delivered raw, milled into flour, or sold to market on your behalf — one delivery or monthly installments, in 15/30/50 kg bags." },
+    { icon: LayoutDashboard, title: "Delivered in 2–3 weeks", body: "Your harvest typically reaches you 2–3 weeks after harvest, depending on location. Every delivery is logged on your dashboard with date and quantity." },
+  ];
 
-export function HarvestOptions() {
   return (
     <section id="harvest" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)] py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5">
@@ -50,7 +51,7 @@ export function HarvestOptions() {
             <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-brown)]">
               What Happens After Harvest
             </p>
-            <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
               {processSteps.map((step, i) => (
                 <div key={step.title} className="relative">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-green-soft)]">

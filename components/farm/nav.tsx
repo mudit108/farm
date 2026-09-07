@@ -6,12 +6,12 @@ import { Menu, X, Sprout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const links = [
+  { href: "#story", label: "Our Story" },
   { href: "#how-it-works", label: "How It Works" },
   { href: "#crops", label: "Crops" },
   { href: "#harvest", label: "Your Harvest" },
   { href: "#live", label: "Live Farm" },
   { href: "#pricing", label: "Pricing" },
-  { href: "#register", label: "Register" },
   { href: "#faq", label: "FAQ" },
 ];
 

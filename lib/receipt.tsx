@@ -1,5 +1,17 @@
 import "server-only";
-import { Document, Page, View, Text, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
+import path from "path";
+import { Document, Page, View, Text, StyleSheet, Font, renderToBuffer } from "@react-pdf/renderer";
+
+// Helvetica (the PDF standard font used everywhere else here) has no
+// rupee glyph — a ₹ in Helvetica text renders as literally nothing, so
+// "Total Paid ₹1,00,000" silently became "Total Paid 1,00,000". Noto
+// Sans Devanagari is already bundled for the certificate's Hindi
+// taglines and does contain U+20B9 plus Latin digits and punctuation,
+// so amounts are rendered in it rather than adding another font file.
+Font.register({
+  family: "NotoSansDevanagari",
+  src: path.join(process.cwd(), "lib/fonts/NotoSansDevanagari-Regular.ttf"),
+});
 
 const GREEN_DEEP = "#263422";
 const BROWN = "#8A5A34";
@@ -103,7 +115,7 @@ const styles = StyleSheet.create({
     borderTopColor: INK,
   },
   totalLabel: { fontSize: 11, fontFamily: "Helvetica-Bold" },
-  totalAmt: { fontSize: 13, fontFamily: "Helvetica-Bold", color: GREEN_DEEP },
+  totalAmt: { fontSize: 13, fontFamily: "NotoSansDevanagari", color: GREEN_DEEP },
   footer: {
     marginTop: 32,
     paddingTop: 14,

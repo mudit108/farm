@@ -3,7 +3,8 @@ import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { createServiceClient } from "@/lib/supabase/service";
-import { adminPublishUpdate, adminDeleteUpdate, adminMarkContactMessage } from "@/app/actions/admin-content";
+import { adminPublishUpdate, adminDeleteUpdate, adminMarkContactMessage, adminResolveSupportMessage } from "@/app/actions/admin-content";
+import { isValidIndianMobile } from "@/lib/phone";
 import { adminSendWhatsAppIndividual, adminBroadcastWhatsApp } from "@/app/actions/admin-whatsapp";
 
 export const dynamic = "force-dynamic";
@@ -28,11 +29,19 @@ type ContactMessage = {
   status: "new" | "read" | "replied";
   created_at: string;
 };
+type SupportMessage = {
+  id: string;
+  user_id: string;
+  subject: string;
+  message: string;
+  status: "open" | "resolved";
+  created_at: string;
+};
 
 export default async function CommunicationsPage() {
   const supabase = createServiceClient();
 
-  const [{ data: updatesData }, { data: usersData }, { data: plots }, { data: logData }, { data: contactData }] = await Promise.all([
+  const [{ data: updatesData }, { data: usersData }, { data: plots }, { data: logData }, { data: contactData }, { data: supportData }] = await Promise.all([
     supabase.from("khet_club_updates").select("id, title, description, created_at").order("created_at", { ascending: false }),
     supabase.auth.admin.listUsers(),
     supabase.from("khet_club_plots").select("user_id").eq("status", "filled").not("user_id", "is", null),
@@ -45,6 +54,10 @@ export default async function CommunicationsPage() {
       .from("khet_club_contact_messages")
       .select("id, name, phone, email, message, status, created_at")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("khet_club_support_messages")
+      .select("id, user_id, subject, message, status, created_at")
+      .order("created_at", { ascending: false }),
   ]);
 
   const updates = (updatesData ?? []) as Update[];
@@ -54,7 +67,73 @@ export default async function CommunicationsPage() {
   const log = (logData ?? []) as LogRow[];
   const contactMessages = (contactData ?? []) as ContactMessage[];
   const newContactCount = contactMessages.filter((m) => m.status === "new").length;
+  const supportMessages = (supportData ?? []) as SupportMessage[];
+  const openSupportCount = supportMessages.filter((m) => m.status === "open").length;
   const isWhatsAppConfigured = Boolean(process.env.WHATSAPP_PHONE_NUMBER_ID);
+
+  // Which members currently hold an unreachable phone number. Two ways
+  // this happens: an invalid number that predates signup validation, or
+  // a number that's valid in shape but whose sends keep failing.
+  const failedByUser = new Map<string, number>();
+  for (const row of log) {
+    if (row.status === "failed" && row.user_id) {
+      failedByUser.set(row.user_id, (failedByUser.get(row.user_id) ?? 0) + 1);
+    }
+  }
+  const memberUserIds = new Set((plots ?? []).map((p) => p.user_id).filter(Boolean) as string[]);
+  const unreachableMembers = users
+    .filter((u) => memberUserIds.has(u.id))
+    .map((u) => {
+      const phone = (u.user_metadata?.phone as string) || "";
+      return {
+        id: u.id,
+        name: (u.user_metadata?.full_name as string) || u.email || "Unknown",
+        email: u.email ?? "",
+        phone,
+        invalidFormat: !isValidIndianMobile(phone),
+        failedSends: failedByUser.get(u.id) ?? 0,
+      };
+    })
+    .filter((m) => m.invalidFormat || m.failedSends > 0);
+
+  const supportContent = (
+    <div className="space-y-3 p-6 sm:px-10">
+      {supportMessages.length === 0 && (
+        <p className="text-sm text-[var(--color-ink-soft)]">No member support messages yet.</p>
+      )}
+      {supportMessages.map((m) => {
+        const member = usersById.get(m.user_id);
+        const name = (member?.user_metadata?.full_name as string) || member?.email || "Unknown member";
+        return (
+          <Card key={m.id} className="p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">{m.subject}</p>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  {name} · {member?.email ?? "—"} · {new Date(m.created_at).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <Badge tone={m.status === "open" ? "gold" : "green"}>{m.status}</Badge>
+            </div>
+            <p className="mt-3 whitespace-pre-wrap text-sm">{m.message}</p>
+            <div className="mt-3 flex gap-3 border-t border-[var(--color-ink)]/10 pt-3">
+              {member?.email && (
+                <a href={`mailto:${member.email}?subject=Re: ${encodeURIComponent(m.subject)}`} className="text-xs font-medium text-[var(--color-green)] hover:underline">
+                  Reply by Email
+                </a>
+              )}
+              {m.status === "open" && (
+                <form action={adminResolveSupportMessage}>
+                  <input type="hidden" name="id" value={m.id} />
+                  <button className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">Mark Resolved</button>
+                </form>
+              )}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
 
   const contactContent = (
     <div className="space-y-3 p-6 sm:px-10">
@@ -176,6 +255,34 @@ export default async function CommunicationsPage() {
         </Card>
       </div>
 
+      {unreachableMembers.length > 0 && (
+        <Card className="mt-6 border-[var(--color-live)]/30 bg-[var(--color-live)]/5 p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-live)]">
+            {unreachableMembers.length} member{unreachableMembers.length > 1 ? "s" : ""} may not be receiving WhatsApp
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Either their number isn&apos;t a valid Indian mobile, or messages
+            to it have failed. These members are silently missing farm
+            updates — worth contacting them by email to get a correct number.
+          </p>
+          <div className="mt-4 space-y-2">
+            {unreachableMembers.map((m) => (
+              <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-ink)]/10 pt-2 text-sm">
+                <div>
+                  <p className="font-medium">{m.name}</p>
+                  <p className="text-xs text-[var(--color-ink-soft)]">{m.email}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono-data text-xs">{m.phone || "(no number)"}</span>
+                  {m.invalidFormat && <Badge tone="brown">invalid number</Badge>}
+                  {m.failedSends > 0 && <Badge tone="brown">{m.failedSends} failed</Badge>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card className="mt-6 overflow-hidden p-0">
         <div className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">
           <p className="text-sm font-medium">Recent Messages</p>
@@ -225,6 +332,7 @@ export default async function CommunicationsPage() {
       <PageHeader title="Communications" subtitle="Farm updates, WhatsApp messaging, and inbound contact messages." />
       <Tabs
         tabs={[
+          { id: "support", label: `Member Support${openSupportCount > 0 ? ` (${openSupportCount})` : ""}`, content: supportContent },
           { id: "contact", label: `Contact Messages${newContactCount > 0 ? ` (${newContactCount})` : ""}`, content: contactContent },
           { id: "updates", label: "Farm Updates", content: updatesContent },
           { id: "whatsapp", label: "WhatsApp", content: whatsappContent },

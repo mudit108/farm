@@ -205,6 +205,60 @@ export async function sendContactNotificationEmail(input: {
  * email, this doesn't wait for admin approval. Fails soft, same as
  * every other email here.
  */
+/**
+ * Notifies admin when a paying member submits a support message from
+ * their dashboard. Previously these were written to the database and
+ * read by nothing at all — the same dead-end bug the public contact
+ * form had, but affecting members who've actually paid.
+ */
+export async function sendSupportNotificationEmail(input: {
+  memberName: string;
+  memberEmail: string;
+  subject: string;
+  message: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (!apiKey || adminEmails.length === 0) {
+    console.warn("RESEND_API_KEY or ADMIN_EMAILS not set — skipping support notification email.");
+    return { sent: false, reason: "not_configured" as const };
+  }
+
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: adminEmails,
+      replyTo: input.memberEmail,
+      subject: `Member support: ${input.subject}`,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — Member Support</p>
+        <p style="font-size: 15px; margin: 0 0 4px;"><strong>${escapeHtml(input.memberName)}</strong></p>
+        <p style="font-size: 13px; color: #5B6357; margin: 0 0 16px;">${escapeHtml(input.memberEmail)}</p>
+        <p style="font-size: 14px; font-weight: 600; margin: 0 0 8px;">${escapeHtml(input.subject)}</p>
+        <p style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(input.message)}</p>
+        <p style="font-size: 12px; color: #5B6357; margin-top: 24px;">Reply directly to this email to reach the member, or manage at /admin/communications.</p>
+      </div>`,
+    });
+
+    if (error) {
+      console.error("Resend support notification failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend support notification threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}
+
 export async function sendReceiptEmail(input: {
   to: string;
   fullName: string;
@@ -252,6 +306,82 @@ export async function sendReceiptEmail(input: {
     return { sent: true as const };
   } catch (err) {
     console.error("Resend receipt send threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}
+
+/**
+ * Tells a member their farm visit request was approved or declined.
+ * Previously the status changed in the database and nothing reached the
+ * member at all — they'd only find out by opening their dashboard,
+ * despite needing to physically travel to Sujangarh.
+ */
+export async function sendVisitStatusEmail(input: {
+  to: string;
+  fullName: string;
+  status: "approved" | "declined" | "completed";
+  preferredDate: string;
+  visitors: number;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("RESEND_API_KEY is not set — skipping visit status email.");
+    return { sent: false, reason: "not_configured" as const };
+  }
+
+  // A "completed" visit is a bookkeeping status for admin, not news the
+  // member needs emailed to them after the fact.
+  if (input.status === "completed") {
+    return { sent: false, reason: "not_applicable" as const };
+  }
+
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+  const approved = input.status === "approved";
+
+  const body = approved
+    ? `<p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+         Your farm visit is confirmed for <strong>${escapeHtml(input.preferredDate)}</strong>
+         for ${input.visitors} visitor${input.visitors > 1 ? "s" : ""}.
+       </p>
+       <p style="font-size: 13px; line-height: 1.6; color: #5B6357; margin: 0;">
+         We're at Sujangarh, Rajasthan. Please reply to this email if you need
+         directions, want to change the date, or your plans change — a quick heads-up
+         helps us have someone ready to show you around.
+       </p>`
+    : `<p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+         Unfortunately we aren't able to host your visit on
+         <strong>${escapeHtml(input.preferredDate)}</strong>.
+       </p>
+       <p style="font-size: 13px; line-height: 1.6; color: #5B6357; margin: 0;">
+         This is usually down to farm operations or scheduling on that particular day —
+         not a problem with your request. Please reply to this email with another date
+         that suits you and we'll do our best to accommodate it.
+       </p>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: input.to,
+      subject: approved
+        ? `Your Mera Khet farm visit is confirmed — ${input.preferredDate}`
+        : `About your Mera Khet farm visit request`,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — Farm Visit</p>
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Hello ${escapeHtml(input.fullName)},</h1>
+        ${body}
+        <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sujangarh, Rajasthan</p>
+      </div>`,
+    });
+
+    if (error) {
+      console.error("Resend visit status send failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend visit status send threw:", err);
     return { sent: false, reason: "send_failed" as const };
   }
 }

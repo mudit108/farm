@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
+import { createSessionClient } from "@/lib/supabase/session";
 import { broadcastWhatsAppToCurrentMembers } from "@/lib/whatsapp/broadcast";
+import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
+import { sendVisitStatusEmail } from "@/lib/email";
 
 function revalidateCustomerFacing() {
   revalidatePath("/");
@@ -95,6 +98,15 @@ export async function adminSetVisitStatus(formData: FormData): Promise<void> {
   if (!id || !["approved", "declined", "completed"].includes(status)) return;
 
   const supabase = createServiceClient();
+
+  // Read the visit first — we need the member and date to notify them,
+  // and after the update we'd have no reason to re-query.
+  const { data: visit } = await supabase
+    .from("khet_club_farm_visits")
+    .select("user_id, preferred_date, visitors")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("khet_club_farm_visits")
     .update({ status })
@@ -104,6 +116,48 @@ export async function adminSetVisitStatus(formData: FormData): Promise<void> {
     console.error("adminSetVisitStatus failed:", error);
     return;
   }
+
+  // Notify the member — previously nothing at all reached them, despite
+  // a farm visit requiring real travel to Sujangarh. Best-effort: a
+  // failed notification never undoes the status change.
+  if (visit && (status === "approved" || status === "declined")) {
+    const { data: userRes } = await supabase.auth.admin.getUserById(visit.user_id);
+    const member = userRes?.user;
+    const fullName = (member?.user_metadata?.full_name as string) || "there";
+    const prettyDate = new Date(visit.preferred_date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
+    if (member?.email) {
+      await sendVisitStatusEmail({
+        to: member.email,
+        fullName,
+        status: status as "approved" | "declined",
+        preferredDate: prettyDate,
+        visitors: visit.visitors,
+      });
+    }
+
+    const phone = member?.user_metadata?.phone as string | undefined;
+    if (phone) {
+      const message =
+        status === "approved"
+          ? `Namaste ${fullName}, your Mera Khet farm visit on ${prettyDate} is confirmed for ${visit.visitors} visitor(s). Reply here if you need directions or your plans change.`
+          : `Namaste ${fullName}, unfortunately we can't host your Mera Khet farm visit on ${prettyDate}. Please reply with another date that suits you and we'll try to accommodate it.`;
+      const whatsappResult = await sendWhatsAppMessage(phone, message);
+      await supabase.from("khet_club_whatsapp_messages").insert({
+        user_id: visit.user_id,
+        phone,
+        message: `Visit ${status}: ${prettyDate}`,
+        kind: "automated",
+        status: whatsappResult.success ? "sent" : "failed",
+        error_message: whatsappResult.success ? null : whatsappResult.error,
+      });
+    }
+  }
+
   revalidatePath("/admin/visits");
   revalidatePath("/dashboard/farm-visit");
 }
@@ -332,4 +386,137 @@ export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
   revalidatePath("/");
   revalidatePath("/admin/crops");
   revalidatePath("/dashboard/select-plot");
+}
+
+/**
+ * The publicly-shown Feeding Families Fund total is admin-controlled,
+ * separate from the auto-computed "earmarked from paid orders" figure
+ * on /admin — admin may have real reasons the two differ (offline
+ * contributions, timing of actual wheat purchases).
+ */
+export async function adminUpdateFFFAmount(formData: FormData): Promise<void> {
+  const raw = String(formData.get("fffCollectedInr") || "");
+  const amount = Math.round(Number(raw));
+  if (!Number.isFinite(amount) || amount < 0) return;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("khet_club_season").update({ fff_collected_inr: amount }).eq("id", 1);
+  if (error) {
+    console.error("adminUpdateFFFAmount failed:", error);
+    return;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/income");
+}
+
+/**
+ * Marks a member's dashboard support message resolved. These were
+ * previously written to the database and read by nothing at all.
+ */
+export async function adminResolveSupportMessage(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_support_messages")
+    .update({ status: "resolved" })
+    .eq("id", id);
+
+  if (error) {
+    console.error("adminResolveSupportMessage failed:", error);
+    return;
+  }
+
+  revalidatePath("/admin/communications");
+}
+
+export type CloseSeasonResult =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | { status: "success"; plotsFreed: number; membersArchived: number; newLabel: string };
+
+/**
+ * Closes the current season and opens the next one. Archives a snapshot
+ * first and stamps existing plots/certificates with it — nothing is
+ * ever deleted, so members' certificates and receipts keep resolving.
+ *
+ * Requires the admin to type the current season label exactly, so a
+ * stray click can't wipe a live season.
+ */
+export async function adminCloseSeason(
+  _prev: CloseSeasonResult,
+  formData: FormData
+): Promise<CloseSeasonResult> {
+  const confirmLabel = String(formData.get("confirmLabel") || "").trim();
+  const newLabel = String(formData.get("newSeasonLabel") || "").trim();
+
+  if (!confirmLabel || !newLabel) {
+    return { status: "error", message: "Both the confirmation and the new season name are required." };
+  }
+
+  const session = await createSessionClient();
+  const {
+    data: { user: admin },
+  } = await session.auth.getUser();
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.rpc("khet_club_close_season", {
+    p_confirm_label: confirmLabel,
+    p_new_season_label: newLabel,
+    p_new_crop: "Gehu (Wheat)",
+    p_closed_by: admin?.id ?? null,
+  });
+
+  if (error) {
+    console.error("adminCloseSeason failed:", error);
+    return {
+      status: "error",
+      message: error.message.includes("Confirmation label")
+        ? "That doesn't match the current season name exactly. Nothing was changed."
+        : "Couldn't close the season. Nothing was changed.",
+    };
+  }
+
+  const row = (data as { plots_freed: number; members_archived: number }[] | null)?.[0];
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/crops");
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard");
+
+  return {
+    status: "success",
+    plotsFreed: row?.plots_freed ?? 0,
+    membersArchived: row?.members_archived ?? 0,
+    newLabel,
+  };
+}
+
+/**
+ * Warehouse capacity is stated publicly on the homepage (harvest
+ * process, FAQ, plan inclusions), so it's editable rather than
+ * hardcoded — if the real facility changes, a hardcoded figure would
+ * quietly become a false claim.
+ */
+export async function adminUpdateWarehouseCapacity(formData: FormData): Promise<void> {
+  const raw = String(formData.get("warehouseCapacityTonnes") || "");
+  const tonnes = Math.round(Number(raw));
+  if (!Number.isFinite(tonnes) || tonnes <= 0) return;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_season")
+    .update({ warehouse_capacity_tonnes: tonnes })
+    .eq("id", 1);
+
+  if (error) {
+    console.error("adminUpdateWarehouseCapacity failed:", error);
+    return;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/crops");
 }

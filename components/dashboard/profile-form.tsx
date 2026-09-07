@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateProfile, type ProfileState } from "@/app/actions/profile";
+import { PHONE_HELP_TEXT } from "@/lib/phone";
 
 const initialState: ProfileState = { status: "idle" };
 
@@ -29,7 +30,8 @@ export function ProfileForm({
       </label>
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Phone</span>
-        <input name="phone" type="tel" className="input" defaultValue={phone} />
+        <input name="phone" required type="tel" inputMode="numeric" placeholder="9876543210" className="input" defaultValue={phone} />
+        <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">{PHONE_HELP_TEXT} — farm updates are sent here on WhatsApp.</span>
       </label>
 
       {state.status === "error" && (

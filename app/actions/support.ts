@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
+import { sendSupportNotificationEmail } from "@/lib/email";
 
 export type SupportState =
   | { status: "idle" }
@@ -39,7 +40,17 @@ export async function submitSupportMessage(
     return { status: "error", message: "Something went wrong. Please try again." };
   }
 
+  // Best-effort — a failed notification never blocks the message from
+  // being saved and visible to admin at /admin/communications.
+  await sendSupportNotificationEmail({
+    memberName: (user.user_metadata?.full_name as string) || "A member",
+    memberEmail: user.email || "",
+    subject,
+    message,
+  });
+
   revalidatePath("/dashboard/farm-visit");
+  revalidatePath("/admin/communications");
 
   return { status: "success" };
 }

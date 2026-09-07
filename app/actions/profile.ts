@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
+import { normalizeIndianMobile, PHONE_ERROR_TEXT } from "@/lib/phone";
 
 export type ProfileState =
   | { status: "idle" }
@@ -19,9 +20,14 @@ export async function updateProfile(
     return { status: "error", message: "Please enter your name." };
   }
 
+  const normalizedPhone = normalizeIndianMobile(phone);
+  if (!normalizedPhone) {
+    return { status: "error", message: PHONE_ERROR_TEXT };
+  }
+
   const supabase = await createSessionClient();
   const { error } = await supabase.auth.updateUser({
-    data: { full_name: fullName, phone },
+    data: { full_name: fullName, phone: normalizedPhone },
   });
 
   if (error) {

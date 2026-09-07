@@ -78,6 +78,16 @@ export async function adminApproveBatch(formData: FormData): Promise<void> {
     return;
   }
 
+  // Read the live season label rather than hardcoding it — after a
+  // season rollover a hardcoded string would silently print the wrong
+  // season on every new certificate.
+  const { data: seasonRow } = await supabase
+    .from("khet_club_season")
+    .select("season_label")
+    .eq("id", 1)
+    .maybeSingle();
+  const seasonLabel = seasonRow?.season_label ?? "Current Season";
+
   const pdfBuffer = await generateCertificatePdf({
     certificateNumber,
     fullName: fullName || "Mera Khet Member",
@@ -85,7 +95,7 @@ export async function adminApproveBatch(formData: FormData): Promise<void> {
     planLabel: plan.label,
     plotNumbers,
     areaSqFt,
-    season: "Wheat Season 2026–27",
+    season: seasonLabel,
     issuedDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
   });
 
@@ -157,6 +167,13 @@ export async function adminResendCertificate(formData: FormData): Promise<void> 
   const plan = membershipPlans.find((p) => p.id === cert.plan_id);
   if (!plan) return;
 
+  const { data: seasonRow } = await supabase
+    .from("khet_club_season")
+    .select("season_label")
+    .eq("id", 1)
+    .maybeSingle();
+  const seasonLabel = seasonRow?.season_label ?? "Current Season";
+
   const pdfBuffer = await generateCertificatePdf({
     certificateNumber: cert.certificate_number,
     fullName: cert.full_name,
@@ -164,7 +181,7 @@ export async function adminResendCertificate(formData: FormData): Promise<void> 
     planLabel: plan.label,
     plotNumbers: cert.plot_numbers,
     areaSqFt: cert.area_sq_ft,
-    season: "Wheat Season 2026–27",
+    season: seasonLabel,
     issuedDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
   });
 
