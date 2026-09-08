@@ -2,6 +2,7 @@ import { FileText, Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { ProfileForm } from "@/components/dashboard/profile-form";
+import { PasswordForm } from "@/components/dashboard/password-form";
 import { createSessionClient } from "@/lib/supabase/session";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,16 @@ export default async function AccountPage() {
               fullName={(user?.user_metadata?.full_name as string) ?? ""}
               phone={(user?.user_metadata?.phone as string) ?? ""}
             />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Password</p>
+          <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+            Change your password without logging out.
+          </p>
+          <div className="mt-4">
+            <PasswordForm />
           </div>
         </Card>
 

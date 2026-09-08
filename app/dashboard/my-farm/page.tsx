@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { ClipboardCheck, Download, Clock } from "lucide-react";
+import { ClipboardCheck, Download, Clock, Heart, Users } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { HarvestPreference } from "@/components/dashboard/harvest-preference";
 import { createSessionClient } from "@/lib/supabase/session";
-import { membershipPlans, summarizePlotHoldings } from "@/lib/demo-data";
+import { membershipPlans, summarizePlotHoldings, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,17 @@ export default async function MyFarmPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Season label and sowing date are admin-editable (season rollover,
+  // /admin/crops) — reading them live avoids repeating the hardcoded
+  // "Wheat Season 2026-27" / "Near Diwali 2026" strings this page used
+  // to have, which would have gone stale after the first rollover.
+  const { data: seasonRow } = await supabase.rpc("khet_club_get_season");
+  const season = (seasonRow as { season_label: string; sowing_date: string | null }[] | null)?.[0];
+  const seasonLabel = season?.season_label ?? "Current Season";
+  const sowingLabel = season?.sowing_date
+    ? new Date(season.sowing_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+    : "Near Diwali";
 
   let myPlots: MyPlot[] = [];
   let certsByBatch = new Map<string, Cert>();
@@ -114,7 +125,7 @@ export default async function MyFarmPage() {
               <p className="font-display text-2xl">{plotList}</p>
               <p className="mt-0.5 text-sm text-[var(--color-ink-soft)]">
                 {holdings.label}
-                {holdings.isMixedPlans ? " (multiple purchases)" : ""} — Wheat Season 2026–27
+                {holdings.isMixedPlans ? " (multiple purchases)" : ""} — {seasonLabel}
               </p>
             </div>
             <Badge tone="green">{myPlots[0].status}</Badge>
@@ -143,7 +154,7 @@ export default async function MyFarmPage() {
             </div>
             <div className="flex justify-between">
               <dt className="text-[var(--color-ink-soft)]">Season starts</dt>
-              <dd className="font-medium">Near Diwali 2026</dd>
+              <dd className="font-medium">{sowingLabel}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-[var(--color-ink-soft)]">First assigned</dt>
@@ -152,6 +163,25 @@ export default async function MyFarmPage() {
               </dd>
             </div>
           </dl>
+
+          <div className="mt-5 rounded-[var(--radius-sm)] border border-[var(--color-green)]/20 bg-[var(--color-green-soft)]/40 p-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-[var(--color-green-deep)]" />
+              <p className="text-sm font-medium text-[var(--color-green-deep)]">
+                Everyone shares the season fairly
+              </p>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-[var(--color-ink-soft)]">
+              {plotList} {myPlots.length === 1 ? "is yours" : "are yours"} to
+              follow, visit and watch through the season. When harvest comes,
+              the whole farm&apos;s wheat is brought together and divided
+              equally across every plot — so your share never depends on
+              whether your particular corner of the field did better or worse
+              than the rest. No farmer among us carries a bad patch alone, and
+              nobody quietly gains from someone else&apos;s. One farm, one
+              season, shared honestly.
+            </p>
+          </div>
 
           <p className="mt-4 text-xs text-[var(--color-ink-soft)]">
             Only seasonal plans are offered — this membership covers the
@@ -168,6 +198,33 @@ export default async function MyFarmPage() {
         </Card>
 
         <div className="flex flex-col gap-6">
+          <Card className="p-6">
+            <div className="flex items-center gap-2">
+              <Heart className="h-4 w-4 text-[var(--color-brown)]" />
+              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                Your Feeding Families Impact
+              </p>
+            </div>
+            <div className="mt-3 flex items-baseline gap-6">
+              <div>
+                <p className="font-display text-2xl">
+                  ₹{(myPlots.length * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}
+                </p>
+                <p className="text-xs text-[var(--color-ink-soft)]">Contributed by you</p>
+              </div>
+              <div>
+                <p className="font-display text-2xl">
+                  {Math.round((myPlots.length * FEEDING_FAMILIES_PER_PLOT) / 1000 * 2)}
+                </p>
+                <p className="text-xs text-[var(--color-ink-soft)]">Families fed</p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-[var(--color-ink-soft)]">
+              ₹1,000 from each of your {myPlots.length} plot{myPlots.length === 1 ? "" : "s"} — included in
+              your membership price, not an extra charge.
+            </p>
+          </Card>
+
           <Card className="p-6">
             <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               Membership Certificate{batchIds.length > 1 ? "s" : ""}

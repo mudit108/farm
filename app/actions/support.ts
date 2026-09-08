@@ -9,6 +9,9 @@ export type SupportState =
   | { status: "success" }
   | { status: "error"; message: string };
 
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_HOURS = 1;
+
 export async function submitSupportMessage(
   _prev: SupportState,
   formData: FormData
@@ -27,6 +30,22 @@ export async function submitSupportMessage(
 
   if (!user) {
     return { status: "error", message: "Please log in first." };
+  }
+
+  // Members can already read their own messages (RLS-scoped), so this
+  // count only ever sees their own submissions, never anyone else's.
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+  const { count } = await supabase
+    .from("khet_club_support_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", since);
+
+  if ((count ?? 0) >= RATE_LIMIT_MAX) {
+    return {
+      status: "error",
+      message: "You've sent several messages in the last hour — we've received them and will get back to you. Please wait before sending more.",
+    };
   }
 
   const { error } = await supabase.from("khet_club_support_messages").insert({

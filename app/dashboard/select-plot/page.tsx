@@ -16,7 +16,7 @@ type MyPlot = {
   custom_name: string | null;
 };
 type GridPlot = { plot_number: number; status: "available" | "filled" };
-type Season = { registration_deadline: string | null };
+type Season = { registration_deadline: string | null; season_label: string };
 type PlanPrice = { plan_id: string; price_inr: number };
 
 export default async function SelectPlotPage() {
@@ -90,7 +90,7 @@ export default async function SelectPlotPage() {
                 Registration closes {deadline.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
               </p>
             )}
-            <PlanSelectionForm grid={grid} prices={prices} />
+            <PlanSelectionForm grid={grid} prices={prices} seasonLabel={season?.season_label ?? "Current Season"} />
           </>
         ) : (
           <Card className="max-w-lg p-6 text-center">

@@ -12,7 +12,7 @@ const legalLinks = [
 
 export function LegalTrust() {
   return (
-    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-16">
+    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-12 sm:py-16">
       <div className="mx-auto max-w-3xl px-5">
         <Reveal>
           <h2 className="font-display text-2xl">
@@ -44,10 +44,11 @@ export function LegalTrust() {
               factors.
             </p>
             <p>
-              Every plot at Mera Khet is cultivated 100% organically — no
-              synthetic pesticides or chemical fertilizers are used.
-              Formal organic certification, where applicable, will be
-              noted on your membership documents.
+              Every plot at Mera Khet is cultivated using natural farming
+              practices — no synthetic pesticides or chemical fertilizers
+              are used. We&apos;re currently in our first season and in
+              the transition period toward formal organic certification;
+              we&apos;ll update this once certification is obtained.
             </p>
           </div>
 

@@ -58,14 +58,14 @@ export function Nav() {
 
       {open && (
         <div className="border-t border-[var(--color-ink)]/10 bg-[var(--color-bg)] px-5 pb-6 pt-2 md:hidden">
-          <nav className="flex flex-col gap-4 pt-4">
+          <nav className="flex flex-col pt-2">
             {links.map((l) => (
-              <a key={l.href} href={l.href} className="text-sm" onClick={() => setOpen(false)}>
+              <a key={l.href} href={l.href} className="-mx-2 rounded-[var(--radius-sm)] px-2 py-3 text-sm active:bg-[var(--color-ink)]/5" onClick={() => setOpen(false)}>
                 {l.label}
               </a>
             ))}
-            <div className="mt-2 flex flex-col gap-3">
-              <Link href="/auth/login" className="text-sm font-medium">Login</Link>
+            <div className="mt-3 flex flex-col gap-3 border-t border-[var(--color-ink)]/10 pt-4">
+              <Link href="/auth/login" className="-mx-2 rounded-[var(--radius-sm)] px-2 py-3 text-sm font-medium active:bg-[var(--color-ink)]/5">Login</Link>
               <Link href="/auth/signup">
                 <Button size="sm" className="w-full">Reserve Your Plot</Button>
               </Link>

@@ -57,6 +57,24 @@ export default async function FarmActivityPage() {
   }
 
   const currentIndex = season ? currentCrop.stages.indexOf(season.current_stage) : -1;
+  // "Field Preparation" is stage 0 — camera access is a member benefit
+  // that starts once sowing actually begins, not before. There's
+  // nothing to watch during field prep, so it stays gated even if a
+  // camera has already been technically assigned to the plot.
+  const farmingHasBegun = currentIndex >= 1;
+
+  // Approximate date for each stage, linearly interpolated between the
+  // real sowing and harvest dates — not a fabricated schedule, just
+  // even spacing across the two real anchor points we actually have.
+  const stageDates: (Date | null)[] = (() => {
+    if (!season?.sowing_date || !season?.estimated_harvest) {
+      return currentCrop.stages.map(() => null);
+    }
+    const start = new Date(season.sowing_date).getTime();
+    const end = new Date(season.estimated_harvest).getTime();
+    const totalStages = currentCrop.stages.length - 1;
+    return currentCrop.stages.map((_, i) => new Date(start + ((end - start) * i) / totalStages));
+  })();
 
   const cropCycleContent = (
     <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-3">
@@ -83,7 +101,14 @@ export default async function FarmActivityPage() {
                   )}
                 </div>
                 <div className="pt-0.5">
-                  <p className="font-medium">{stage}</p>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-medium">{stage}</p>
+                    {stageDates[i] && (
+                      <p className="text-xs text-[var(--color-ink-soft)]">
+                        ~{stageDates[i]!.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </p>
+                    )}
+                  </div>
                   {state === "current" && <p className="text-xs text-[var(--color-brown)]">Current stage</p>}
                 </div>
               </li>
@@ -113,6 +138,12 @@ export default async function FarmActivityPage() {
               <dd className="font-medium">{season?.progress ?? 0}%</dd>
             </div>
           </dl>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-ink)]/10">
+            <div
+              className="h-full rounded-full bg-[var(--color-gold)] transition-all"
+              style={{ width: `${season?.progress ?? 0}%` }}
+            />
+          </div>
         </Card>
 
         <Card className="p-6">
@@ -172,12 +203,16 @@ export default async function FarmActivityPage() {
       <Card className="overflow-hidden p-0">
         <div className="flex items-center justify-between border-b border-[var(--color-ink)]/10 px-5 py-3">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <span className={cn("h-2 w-2 rounded-full", isOnline ? "live-dot bg-[var(--color-live)]" : "bg-[var(--color-ink)]/30")} />
-            {camera ? `${camera.camera_name} — ${camera.status}` : "No camera assigned yet"}
+            <span className={cn("h-2 w-2 rounded-full", isOnline && farmingHasBegun ? "live-dot bg-[var(--color-live)]" : "bg-[var(--color-ink)]/30")} />
+            {!farmingHasBegun
+              ? "Camera access starts once sowing begins"
+              : camera
+              ? `${camera.camera_name} — ${camera.status}`
+              : "No camera assigned yet"}
           </div>
         </div>
 
-        {camera ? (
+        {camera && farmingHasBegun ? (
           <div className="relative aspect-video bg-[var(--color-ink)]">
             <Image
               src={samplePhoto}
@@ -198,8 +233,9 @@ export default async function FarmActivityPage() {
             <div className="flex flex-col items-center gap-3 px-8 text-center text-white/50">
               <Radio className="h-8 w-8" />
               <p className="max-w-xs text-sm">
-                A camera hasn&apos;t been assigned to your plot yet. Check
-                back once our team sets one up.
+                {!farmingHasBegun
+                  ? "Camera access begins once sowing starts — there's nothing to show during field preparation yet."
+                  : "A camera hasn't been assigned to your plot yet. Check back once our team sets one up."}
               </p>
             </div>
           </div>

@@ -385,3 +385,91 @@ export async function sendVisitStatusEmail(input: {
     return { sent: false, reason: "send_failed" as const };
   }
 }
+
+/**
+ * Daily summary emailed to every address in ADMIN_EMAILS — new
+ * signups, new paid orders, and anything currently waiting on you
+ * (open visit requests, open support messages, unread contact
+ * messages) — so admin doesn't have to open the dashboard to know
+ * something happened. Triggered by a Vercel Cron hitting
+ * /api/cron/admin-digest once a day.
+ */
+export async function sendAdminDigestEmail(input: {
+  newSignups: { name: string; email: string }[];
+  newPayments: { name: string; email: string; plan: string; amountInr: number }[];
+  pendingVisits: number;
+  openSupportMessages: number;
+  newContactMessages: number;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (!apiKey || adminEmails.length === 0) {
+    console.warn("RESEND_API_KEY or ADMIN_EMAILS not set — skipping admin digest.");
+    return { sent: false, reason: "not_configured" as const };
+  }
+
+  const hasAnythingToReport =
+    input.newSignups.length > 0 ||
+    input.newPayments.length > 0 ||
+    input.pendingVisits > 0 ||
+    input.openSupportMessages > 0 ||
+    input.newContactMessages > 0;
+
+  // A quiet day is fine — no need to email "nothing happened."
+  if (!hasAnythingToReport) {
+    return { sent: false, reason: "nothing_to_report" as const };
+  }
+
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+
+  const rows: string[] = [];
+  if (input.newSignups.length > 0) {
+    rows.push(`<p style="font-size:13px;font-weight:600;margin:20px 0 8px;">New signups (${input.newSignups.length})</p>`);
+    for (const s of input.newSignups) {
+      rows.push(`<p style="font-size:13px;margin:0 0 4px;color:#5B6357;">${escapeHtml(s.name)} — ${escapeHtml(s.email)}</p>`);
+    }
+  }
+  if (input.newPayments.length > 0) {
+    const total = input.newPayments.reduce((sum, p) => sum + p.amountInr, 0);
+    rows.push(`<p style="font-size:13px;font-weight:600;margin:20px 0 8px;">New paid orders (${input.newPayments.length}, ₹${total.toLocaleString("en-IN")} total)</p>`);
+    for (const p of input.newPayments) {
+      rows.push(`<p style="font-size:13px;margin:0 0 4px;color:#5B6357;">${escapeHtml(p.name)} — ${escapeHtml(p.plan)} — ₹${p.amountInr.toLocaleString("en-IN")}</p>`);
+    }
+  }
+  const waiting: string[] = [];
+  if (input.pendingVisits > 0) waiting.push(`${input.pendingVisits} pending farm visit request${input.pendingVisits > 1 ? "s" : ""}`);
+  if (input.openSupportMessages > 0) waiting.push(`${input.openSupportMessages} open support message${input.openSupportMessages > 1 ? "s" : ""}`);
+  if (input.newContactMessages > 0) waiting.push(`${input.newContactMessages} unread contact message${input.newContactMessages > 1 ? "s" : ""}`);
+  if (waiting.length > 0) {
+    rows.push(`<p style="font-size:13px;font-weight:600;margin:20px 0 8px;">Waiting on you</p>`);
+    rows.push(`<p style="font-size:13px;margin:0;color:#5B6357;">${waiting.map(escapeHtml).join(" · ")}</p>`);
+  }
+
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: adminEmails,
+      subject: `Mera Khet daily summary — ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — Daily Summary</p>
+        ${rows.join("\n")}
+        <p style="font-size: 12px; color: #5B6357; margin-top: 28px;">Full details at your admin dashboard.</p>
+      </div>`,
+    });
+
+    if (error) {
+      console.error("Resend admin digest failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend admin digest threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}

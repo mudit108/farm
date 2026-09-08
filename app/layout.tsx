@@ -22,21 +22,30 @@ const jbmono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Organic Farm Plots in Rajasthan | Seasonal Farming & 24×7 Monitoring",
+  title: "Farm Plots in Rajasthan | Natural Farming & 24×7 Monitoring",
   description:
-    "From our soil to your plate — you should know your food. Reserve 1, 3, or 6 organic wheat plots in Rajasthan, farmed for you and tracked from sowing to harvest. Choose home delivery, milling into flour, or market sale for your harvest.",
+    "From our soil to your plate — you should know your food. Reserve 1, 3, or 6 wheat plots in Rajasthan, grown using natural farming practices and tracked from sowing to harvest. Choose home delivery, milling into flour, or market sale for your harvest.",
   metadataBase: new URL("https://merakhet.example.com"),
   openGraph: {
-    title: "Organic Farm Plots in Rajasthan | Mera Khet",
+    title: "Farm Plots in Rajasthan | Mera Khet",
     description:
-      "From our soil to your plate — you should know your food. Organic wheat plots in Sujangarh, Rajasthan, farmed for you and tracked all season.",
+      "From our soil to your plate — you should know your food. Naturally-farmed wheat plots in Sujangarh, Rajasthan, farmed for you and tracked all season.",
     type: "website",
     locale: "en_IN",
+    images: [
+      {
+        url: "/images/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Mera Khet — a farmer walking through a wheat field at sunset in Sujangarh, Rajasthan",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Organic Farm Plots in Rajasthan | Mera Khet",
-    description: "From our soil to your plate — you should know your food. Organic wheat plots in Rajasthan.",
+    title: "Farm Plots in Rajasthan | Mera Khet",
+    description: "From our soil to your plate — you should know your food. Naturally-farmed wheat plots in Rajasthan.",
+    images: ["/images/og-image.jpg"],
   },
 };
 

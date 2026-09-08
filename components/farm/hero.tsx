@@ -15,15 +15,15 @@ export function Hero({ filledPlots, totalPlots }: { filledPlots: number; totalPl
           <p className="mb-5 font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
             Sujangarh, Rajasthan
           </p>
-          <h1 className="font-display text-5xl leading-[1.05] tracking-tight text-[var(--color-ink)] sm:text-6xl">
+          <h1 className="font-display text-[2.5rem] leading-[1.08] tracking-tight text-[var(--color-ink)] sm:text-6xl sm:leading-[1.05]">
             Your own wheat,
             <br />
             grown for you.
           </h1>
           <p className="mt-6 max-w-md text-lg text-[var(--color-ink-soft)]">
-            A plot of real farmland in Rajasthan, farmed organically by
-            our team for one season — and the harvest comes home to you.
-            From our soil to your plate, you know your food.
+            A plot of real farmland in Rajasthan, farmed using natural
+            methods by our team for one season — and the harvest comes
+            home to you. From our soil to your plate, you know your food.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link href="/auth/signup">
@@ -55,7 +55,7 @@ export function Hero({ filledPlots, totalPlots }: { filledPlots: number; totalPl
               />
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-              <span>100% Organic</span>
+              <span>Natural Farming Practices</span>
               <span className="text-[var(--color-ink)]/20">•</span>
               <span>Seasonal Only</span>
               <span className="text-[var(--color-ink)]/20">•</span>

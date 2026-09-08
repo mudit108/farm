@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { currentCrop, membershipPlans } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
-import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity } from "@/app/actions/admin-content";
+import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution } from "@/app/actions/admin-content";
 import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
 import { CloseSeasonForm } from "@/components/admin/close-season-form";
 
@@ -42,7 +42,7 @@ export default async function CropsManagementPage() {
       supabase.from("khet_club_plan_prices").select("plan_id, price_inr"),
       // season_label isn't part of khet_club_get_season()'s return shape,
       // so it's read directly here rather than widening the public RPC.
-      supabase.from("khet_club_season").select("season_label").eq("id", 1).maybeSingle(),
+      supabase.from("khet_club_season").select("season_label, harvest_distribution_model, harvest_deduction_percent").eq("id", 1).maybeSingle(),
       supabase
         .from("khet_club_season_archive")
         .select("id, season_label, crop_name, plots_filled, members_count, revenue_inr, fff_collected_inr, closed_at")
@@ -50,6 +50,8 @@ export default async function CropsManagementPage() {
     ]);
   const season = (data as Season[] | null)?.[0] ?? null;
   const currentSeasonLabel = labelRow?.season_label ?? "Current Season";
+  const distributionModel = labelRow?.harvest_distribution_model ?? "pooled";
+  const deductionPercent = Number(labelRow?.harvest_deduction_percent ?? 0);
   const pastSeasons = (archiveData ?? []) as ArchivedSeason[];
   const pricesByPlan = new Map(((pricesData ?? []) as PlanPrice[]).map((p) => [p.plan_id, p.price_inr]));
   const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
@@ -120,6 +122,47 @@ export default async function CropsManagementPage() {
               );
             })}
             <Button type="submit" className="w-full">Save Prices</Button>
+          </form>
+        </Card>
+
+        <Card className="mt-6 max-w-lg p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Harvest Distribution
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            How the harvest is divided among members. This is described in
+            the Terms of Service and Membership Agreement — those pages
+            update automatically to match whatever you set here, so the
+            legal text never describes a model you&apos;re not actually
+            using.
+          </p>
+          <form action={adminUpdateHarvestDistribution} className="mt-4 space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium">Distribution model</span>
+              <select name="harvestDistributionModel" defaultValue={distributionModel} className="input">
+                <option value="pooled">Pooled — total farm harvest ÷ total plots, equal share per plot</option>
+                <option value="per_plot">Per-plot — each member receives their own plots&apos; actual output</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium">Deduction before distribution (%)</span>
+              <input
+                name="harvestDeductionPercent"
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                defaultValue={deductionPercent}
+                className="input"
+              />
+              <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">
+                Any portion retained before dividing (e.g. seed stock for
+                next season, wastage allowance). Leave at 0 if the full
+                harvest is distributed. This figure appears in the legal
+                documents.
+              </span>
+            </label>
+            <Button type="submit" className="w-full">Save Distribution Settings</Button>
           </form>
         </Card>
 

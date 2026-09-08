@@ -6,7 +6,7 @@ import { WheatIcon } from "@/components/farm/illustrations/wheat-icon";
 
 const inclusions = [
   "Your own numbered plot(s), pick or auto-assign",
-  "100% organic cultivation, managed for you",
+  "Natural farming practices, managed for you",
   "Camera access + updates all season",
   "Your harvest delivered, milled, or sold",
 ];
@@ -25,11 +25,11 @@ export function FinalCta({
     : null;
 
   return (
-    <section className="bg-[var(--color-green-deep)] py-24 text-center text-[var(--color-bg)] sm:py-32">
+    <section className="bg-[var(--color-green-deep)] py-16 text-center text-[var(--color-bg)] sm:py-32">
       <div className="mx-auto max-w-2xl px-5">
         <Reveal>
           <WheatIcon color="var(--color-gold)" className="mx-auto h-12 w-12" />
-          <h2 className="mt-4 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+          <h2 className="mt-4 font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
             Your farm is waiting.
           </h2>
 

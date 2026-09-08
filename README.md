@@ -32,6 +32,89 @@ customer would look for, but they are **not ready to rely on as-is**:
    fake placeholder, and the WhatsApp button hides itself rather than
    being a dead click.
 
+## This round's additions
+
+- **Open Graph / link-preview image** (`public/images/og-image.jpg`,
+  wired via `app/layout.tsx`'s `openGraph.images` / `twitter.images`):
+  every WhatsApp, Facebook, or iMessage share of the site now shows a
+  real photo and the Mera Khet wordmark instead of a blank card. Built
+  from a user-supplied image, cropped to the required 1200×630 OG
+  ratio, with a left-side gradient (matching the site's ink color, not
+  flat black) for text legibility — checked at actual WhatsApp preview
+  thumbnail size (~400px wide) before shipping, not just at full size.
+
+- **Homepage camera section: demo photos are public, live access is
+  not.** The "See Everything" section shows real but static demo
+  snapshots from the farm's cameras, explicitly labeled "DEMO CAMERA" —
+  never "LIVE" — so a visitor can see what camera coverage looks like
+  without it being mistaken for real-time footage. Actual live camera
+  access is a separate, member-only benefit at `/dashboard/crop-cycle`,
+  gated by both login and season stage (see below) — these public demo
+  photos never reveal real-time farm status to someone who hasn't
+  purchased anything.
+- **Member camera access gated on season stage, not just login.**
+  Previously a member with an assigned camera would see a sample photo
+  even during Field Preparation, before sowing — when there's genuinely
+  nothing to show yet. Now gated on `current_stage !== "Field
+  Preparation"` as well, with copy that explains why ("Camera access
+  begins once sowing starts") rather than showing a stale placeholder
+  photo with no context.
+
+- **"100% Organic" corrected sitewide.** The farm is genuinely in its
+  first-season transition period toward formal organic certification —
+  not yet certified — so claiming "100% Organic" as a badge/headline
+  claim was inaccurate. Replaced with "Natural Farming Practices"
+  across all 12 places it appeared: the hero badge, hero subhead, Legal
+  Trust section, Final CTA, Harvest Options, two FAQ entries, the plan
+  inclusions list, the Disclaimer page (which already had a bracketed
+  placeholder anticipating exactly this situation — now filled in
+  honestly), the Membership Agreement, and — the highest-visibility
+  spot on the whole site — the SEO title and meta descriptions shown in
+  Google search results and link previews. The underlying practice
+  claim (no synthetic pesticides or chemical fertilizers) stays, since
+  that part is true; only the "100%"/certified-organic framing changed.
+
+- **Rate limiting on the contact and support forms**: neither had any
+  before, so either could be spammed to flood your inbox or exhaust
+  Resend's quota. Contact (anonymous) is limited to 3 submissions per
+  IP per 15 minutes (`ip_address` recorded on
+  `khet_club_contact_messages`); Support (authenticated) is limited to
+  5 per member per hour, checked via the member's own RLS-scoped read
+  access — no new grants needed. Both limits verified against the live
+  database: inserted rows up to each limit, confirmed the count-check
+  a blocked request would see, confirmed a different IP/user is
+  unaffected, then cleaned up.
+- **Fixed a season-label bug that had actually spread to three places**:
+  `khet_club_get_season()` never returned `season_label` even though
+  the column existed — only `/admin/crops` worked, because it bypasses
+  the RPC with a service-role table read. My Farm, and the Razorpay
+  checkout description shown mid-payment, both silently hardcoded
+  "Wheat Season 2026-27". All three now read the real, live label.
+
+- **Admin search**: Income transactions and the Expense log are now
+  searchable (member/email/order ID/plan for transactions; category/
+  description for expenses) — same URL-param pattern already used on
+  Members.
+- **Daily admin digest** (`/api/cron/admin-digest`, `vercel.json`):
+  new signups, new paid orders, and anything currently waiting on you
+  (pending visits, open support messages, unread contact messages),
+  emailed once a day. Protected by `CRON_SECRET` — set it in Vercel's
+  env vars; Vercel then sends it automatically as a Bearer token on
+  cron-triggered requests, so nobody else can trigger the route. Sends
+  nothing on a quiet day rather than an empty "nothing happened" email.
+- **Password change** — Account page now has its own card
+  (`updatePassword` in `app/actions/profile.ts`), so a member no longer
+  has to log out and use the reset-email flow to change their password.
+- **"Your Impact"** — My Farm now shows the member's own Feeding
+  Families contribution and families-fed count, computed from their
+  real plot count — distinct from the site-wide total shown on the
+  homepage.
+- **Visual season timeline** — Farm Activity's stage list now shows an
+  approximate date per stage, linearly interpolated between the real
+  sowing and harvest dates (not a fabricated schedule — just even
+  spacing between the two real anchor points already stored), plus a
+  real progress bar replacing the old plain percentage text.
+
 ## Homepage structure
 
 Section order (`app/page.tsx`): Nav → Hero → How It Works → Seasonal

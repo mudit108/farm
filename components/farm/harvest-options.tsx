@@ -17,19 +17,19 @@ export function HarvestOptions({ warehouseTonnes }: { warehouseTonnes: number })
   ];
 
   return (
-    <section id="harvest" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)] py-20 sm:py-28">
+    <section id="harvest" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)] py-14 sm:py-28">
       <div className="mx-auto max-w-6xl px-5">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <Reveal>
             <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
               Your Harvest
             </p>
-            <h2 className="mt-3 max-w-lg font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+            <h2 className="mt-3 max-w-lg font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
               Your harvest, your choice.
             </h2>
             <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">
               When your crop is ready, choose how you&apos;d like to receive
-              it — every crop grown 100% organic.
+              it — every crop grown using natural farming practices.
             </p>
           </Reveal>
 
@@ -64,6 +64,12 @@ export function HarvestOptions({ warehouseTonnes }: { warehouseTonnes: number })
                 </div>
               ))}
             </div>
+
+            <p className="mt-6 border-t border-[var(--color-ink)]/10 pt-4 text-xs leading-relaxed text-[var(--color-ink-soft)]">
+              <span className="font-medium text-[var(--color-ink)]">Every plot receives an equal share</span> of
+              the season&apos;s total harvest — so no member carries a weaker
+              patch of the field alone.
+            </p>
           </div>
         </Reveal>
 

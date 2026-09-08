@@ -17,6 +17,7 @@ type Payment = {
   user_id: string;
   plan_id: string;
   razorpay_order_id: string;
+  razorpay_payment_id: string | null;
   amount: number;
   status: "created" | "paid" | "failed" | "refunded";
   created_at: string;
@@ -59,9 +60,10 @@ function statusTone(status: string): "green" | "gold" | "brown" {
 export default async function AdminFinancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, q } = await searchParams;
+  const query = (q ?? "").trim().toLowerCase();
   const activeFilter = STATUS_FILTERS.includes(statusParam as (typeof STATUS_FILTERS)[number])
     ? (statusParam as (typeof STATUS_FILTERS)[number])
     : "all";
@@ -77,6 +79,11 @@ export default async function AdminFinancePage({
 
   const payments = (allPayments ?? []) as Payment[];
   const expenses = (allExpenses ?? []) as Expense[];
+  const filteredExpenses = query
+    ? expenses.filter((e) =>
+        [categoryLabel(e.category), e.description].join(" ").toLowerCase().includes(query)
+      )
+    : expenses;
   const usersById = new Map((usersData?.users ?? []).map((u) => [u.id, u]));
   const publicFFFTotal = (seasonData as { fff_collected_inr: number }[] | null)?.[0]?.fff_collected_inr ?? 0;
 
@@ -114,7 +121,23 @@ export default async function AdminFinancePage({
     expensesByCategory.set(e.category, (expensesByCategory.get(e.category) ?? 0) + e.amount_inr);
   }
 
-  const filtered = activeFilter === "all" ? payments : payments.filter((p) => p.status === activeFilter);
+  const byStatus = activeFilter === "all" ? payments : payments.filter((p) => p.status === activeFilter);
+  const filtered = query
+    ? byStatus.filter((p) => {
+        const u = usersById.get(p.user_id);
+        const haystack = [
+          u?.user_metadata?.full_name as string | undefined,
+          u?.email,
+          p.razorpay_order_id,
+          p.razorpay_payment_id,
+          planLabel(p.plan_id),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      })
+    : byStatus;
 
   const netSummary = (
     <Card className={cn("mb-6 p-5", netPosition >= 0 ? "bg-[var(--color-green-soft)]" : "bg-[var(--color-live)]/10")}>
@@ -183,6 +206,22 @@ export default async function AdminFinancePage({
           shown on the homepage automatically from this amount.
         </p>
       </Card>
+
+      <form method="GET" className="mt-6 flex flex-wrap items-center gap-2">
+        {activeFilter !== "all" && <input type="hidden" name="status" value={activeFilter} />}
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search by member, email, order ID, or plan…"
+          className="input max-w-md flex-1"
+        />
+        <Button type="submit" variant="outline">Search</Button>
+        {query && (
+          <Link href={activeFilter !== "all" ? `/admin/income?status=${activeFilter}` : "/admin/income"} className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">
+            Clear
+          </Link>
+        )}
+      </form>
 
       <Card className="mt-6 overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">
@@ -309,9 +348,24 @@ export default async function AdminFinancePage({
         </div>
       )}
 
+      <form method="GET" className="mt-6 flex flex-wrap items-center gap-2">
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search by category or description…"
+          className="input max-w-md flex-1"
+        />
+        <Button type="submit" variant="outline">Search</Button>
+        {query && (
+          <Link href="/admin/income" className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">
+            Clear
+          </Link>
+        )}
+      </form>
+
       <Card className="mt-6 overflow-hidden p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] px-5 py-3">
-          <p className="text-sm font-medium">Expense Log ({expenses.length})</p>
+          <p className="text-sm font-medium">Expense Log ({filteredExpenses.length}{query ? ` of ${expenses.length}` : ""})</p>
           <div className="flex items-center gap-3">
             <p className="text-xs text-[var(--color-ink-soft)]">This month: ₹{thisMonthExpenses.toLocaleString("en-IN")}</p>
             <a
@@ -334,7 +388,7 @@ export default async function AdminFinancePage({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-ink)]/10">
-              {expenses.map((e) => (
+              {filteredExpenses.map((e) => (
                 <tr key={e.id}>
                   <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">
                     {new Date(e.expense_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
@@ -350,8 +404,10 @@ export default async function AdminFinancePage({
                   </td>
                 </tr>
               ))}
-              {expenses.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-6 text-center text-[var(--color-ink-soft)]">No expenses recorded yet.</td></tr>
+              {filteredExpenses.length === 0 && (
+                <tr><td colSpan={5} className="px-4 py-6 text-center text-[var(--color-ink-soft)]">
+                  {query ? `No expenses match "${q}".` : "No expenses recorded yet."}
+                </td></tr>
               )}
             </tbody>
           </table>

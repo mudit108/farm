@@ -29,7 +29,7 @@ export function Contact({
   const whatsappDigits = toWhatsAppDigits(contactPhone);
 
   return (
-    <section id="contact" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-20">
+    <section id="contact" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-14 sm:py-20">
       <div className="mx-auto max-w-xl px-5">
         <h2 className="font-display text-3xl">Talk to us</h2>
         <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
@@ -43,10 +43,10 @@ export function Contact({
           </p>
         ) : (
           <form action={formAction} className="mt-8 space-y-4">
-            <input name="name" required placeholder="Name" className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--color-green)]" />
-            <input name="phone" required type="tel" placeholder="Phone" className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--color-green)]" />
-            <input name="email" required type="email" placeholder="Email" className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--color-green)]" />
-            <textarea name="message" required placeholder="Message" rows={4} className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--color-green)]" />
+            <input name="name" required placeholder="Name" className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-base outline-none focus:border-[var(--color-green)] sm:text-sm" />
+            <input name="phone" required type="tel" placeholder="Phone" className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-base outline-none focus:border-[var(--color-green)] sm:text-sm" />
+            <input name="email" required type="email" placeholder="Email" className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-base outline-none focus:border-[var(--color-green)] sm:text-sm" />
+            <textarea name="message" required placeholder="Message" rows={4} className="w-full rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-4 py-3 text-base outline-none focus:border-[var(--color-green)] sm:text-sm" />
 
             {state.status === "error" && (
               <p className="text-sm text-[var(--color-live)]">{state.message}</p>

@@ -28,11 +28,11 @@ export async function Pricing() {
   });
 
   return (
-    <section id="pricing" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)] py-20 sm:py-28">
+    <section id="pricing" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)] py-14 sm:py-28">
       <div className="mx-auto max-w-5xl px-5">
         <Reveal>
           <div className="text-center">
-            <h2 className="font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+            <h2 className="font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
               Choose your plan.
             </h2>
             <p className="mx-auto mt-4 max-w-md text-[var(--color-ink-soft)]">

@@ -23,13 +23,13 @@ export async function FarmUpdates() {
   if (updates.length === 0) return null;
 
   return (
-    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-20 sm:py-28">
+    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-14 sm:py-28">
       <div className="mx-auto max-w-3xl px-5">
         <Reveal>
           <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
             Farm Updates
           </p>
-          <h2 className="mt-3 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+          <h2 className="mt-3 font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
             Following the season, together.
           </h2>
         </Reveal>

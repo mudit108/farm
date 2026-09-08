@@ -7,7 +7,7 @@ export function FeedingFamiliesImpact({ collectedInr }: { collectedInr: number }
   const families = Math.round((collectedInr / 1000) * 2);
 
   return (
-    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-brown-soft)] py-20 sm:py-24">
+    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-brown-soft)] py-14 sm:py-24">
       <div className="mx-auto max-w-6xl px-5">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <Reveal>
@@ -17,7 +17,7 @@ export function FeedingFamiliesImpact({ collectedInr }: { collectedInr: number }
             <p className="mt-5 font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
               Feeding Families Fund
             </p>
-            <h2 className="mt-3 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+            <h2 className="mt-3 font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
               Your plot feeds
               <br />
               more than your family.

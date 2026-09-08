@@ -87,11 +87,21 @@ body {
   border: 1px solid color-mix(in srgb, var(--color-ink) 15%, transparent);
   background: var(--color-surface);
   padding: 0.65rem 0.9rem;
-  font-size: 0.875rem;
+  /* 16px minimum — iOS Safari auto-zooms the whole page when a focused
+     input is smaller than this, which is jarring and hard to undo.
+     Scaled back down to 14px only from the sm breakpoint up, where
+     there's no touch keyboard to trigger it. */
+  font-size: 1rem;
   outline: none;
 }
 .input:focus {
   border-color: var(--color-green);
+}
+
+@media (min-width: 640px) {
+  .input {
+    font-size: 0.875rem;
+  }
 }
 
 ::selection {

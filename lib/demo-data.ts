@@ -27,6 +27,10 @@ export const currentCrop = {
       title: "Whole wheat, stone-ground atta",
       description: "Milled with the bran and germ intact, so it naturally retains more fiber, iron, and B-vitamins than refined flour.",
     },
+    {
+      title: "Soil-tested, not guessed",
+      description: "We've sent our soil for laboratory testing so future crop and nutrient decisions are based on what our land actually needs — not assumption.",
+    },
   ],
   stages: [
     "Field Preparation",
@@ -111,7 +115,7 @@ export function summarizePlotHoldings(plots: { plan_id: string | null }[]) {
 // Shared by every plan size — every plan includes the same set of benefits.
 export const planIncludes = [
   "Dedicated farm plot allocation",
-  "100% organic wheat cultivation for the season",
+  "Wheat cultivation using natural farming practices",
   "Farm management by our team",
   "24×7 CCTV access*",
   "Farm progress updates",
@@ -181,8 +185,12 @@ export const demoFaqs = [
     a: "RAJ 1482 — a variety developed at the Rajasthan Agricultural Research Institute, Durgapura, specifically for local soil and climate. It's recognized among Indian wheat researchers for its grain quality, and is a variety millers and households specifically seek out for roti and chapati making, not just a general-purpose wheat. Since we mill it into whole wheat atta with the bran and germ intact, it also retains more fiber, iron, and B-vitamins than refined flour.",
   },
   {
+    q: "How do you know what's right for your soil?",
+    a: "We've sent samples from our fields for laboratory soil testing. Until those results come back, this season's wheat is RAJ 1482 — a variety developed at Durgapura specifically for Rajasthan's soil and climate, so it's a well-matched choice for this region rather than a guess. Once the lab results arrive, they'll guide our crop and nutrient decisions with data about our specific land, and we'll share what we learn with members.",
+  },
+  {
     q: "Is the farm organic?",
-    a: "Yes — everything grown at Mera Khet is 100% organic, with no synthetic pesticides or chemical fertilizers used on any plot.",
+    a: "We use natural farming practices on every plot — no synthetic pesticides or chemical fertilizers. This is our first season, and we're currently in the transition period toward formal third-party organic certification, which we'll update here once obtained.",
   },
   {
     q: "What are my options for the harvest?",
@@ -190,7 +198,7 @@ export const demoFaqs = [
   },
   {
     q: "What do I receive with my membership?",
-    a: "A dedicated allocation of farm plots within Mera Khet (1, 3, or 6 plots), 100% organic wheat cultivation managed by our team, 24×7 CCTV access to your plots, regular farm updates, crop-cycle tracking, and eligibility to visit the farm.",
+    a: "A dedicated allocation of farm plots within Mera Khet (1, 3, or 6 plots), wheat cultivation using natural farming practices managed by our team, 24×7 CCTV access to your plots, regular farm updates, crop-cycle tracking, and eligibility to visit the farm.",
   },
   {
     q: "What plan sizes are available?",
@@ -243,6 +251,10 @@ export const demoFaqs = [
   {
     q: "Have you run previous seasons?",
     a: "No — this is Mera Khet's first season. We're not going to show you photos of a harvest that didn't happen. What we can offer instead: full operational transparency from day one — camera access, farm updates, and a real dashboard tracking your specific plots — so you can see the season unfold as it actually happens, rather than take our word for a past one. Early members are effectively founding members of Mera Khet.",
+  },
+  {
+    q: "Is my share taken from my own specific plots?",
+    a: "Not exactly — and this works in your favour. At harvest, the whole farm's wheat is brought together and divided equally across every plot, so a 1-plot member receives one share, a 3-plot member three, and so on. Your plots are genuinely yours to follow, visit and watch all season. But when it comes to the harvest itself, nobody is left carrying a weaker patch of the field alone, and nobody quietly benefits at someone else's expense. One farm, one season, shared fairly. Full details are in our Membership Agreement.",
   },
   {
     q: "What happens after harvest?",

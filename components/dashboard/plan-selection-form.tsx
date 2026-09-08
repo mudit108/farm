@@ -27,7 +27,7 @@ type FlowState =
   | { step: "success"; plotNumbers: number[] }
   | { step: "error"; message: string };
 
-export function PlanSelectionForm({ grid, prices }: { grid: GridPlot[]; prices: PlanPrice[] }) {
+export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlot[]; prices: PlanPrice[]; seasonLabel: string }) {
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [scriptReady, setScriptReady] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export function PlanSelectionForm({ grid, prices }: { grid: GridPlot[]; prices: 
       currency: order.currency,
       order_id: order.orderId,
       name: "Mera Khet",
-      description: `${plan.name} (${plan.label}) — Wheat Season 2026–27`,
+      description: `${plan.name} (${plan.label}) — ${seasonLabel}`,
       theme: { color: "#3E5A3C" },
       handler: async (response: unknown) => {
         const r = response as {

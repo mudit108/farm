@@ -40,10 +40,14 @@ export type SeasonSnapshot = {
  * repetition sitting between the visitor and the pricing. One section,
  * one idea, one scroll.
  *
- * streamUrl is intentionally undefined in demo mode. The photos below are
- * real recent snapshots from the farm's cameras — not a fabricated live
- * feed — labeled "DEMO CAMERA" rather than "LIVE" so nobody mistakes a
- * still photo for real-time video.
+ * The photos shown publicly here are real but static demo snapshots —
+ * explicitly labeled "DEMO CAMERA", never "LIVE" — so nobody mistakes
+ * a still photo for real-time footage. This is deliberately different
+ * from actual live camera access, which is a member-only benefit that
+ * only starts once sowing begins (see /dashboard/crop-cycle) — these
+ * demo photos never reveal real-time farm status to a visitor who
+ * hasn't purchased anything, they just illustrate what camera coverage
+ * looks like.
  */
 export function FarmTransparency({
   season,
@@ -58,13 +62,13 @@ export function FarmTransparency({
   const activeCamera = cameras.find((c) => c.id === selected)!;
 
   return (
-    <section id="live" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-ink)] py-20 text-[var(--color-bg)] sm:py-28">
+    <section id="live" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-ink)] py-14 text-[var(--color-bg)] sm:py-28">
       <div className="mx-auto max-w-6xl px-5">
         <Reveal>
           <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-gold)]">
             See Everything
           </p>
-          <h2 className="mt-3 max-w-xl font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+          <h2 className="mt-3 max-w-xl font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
             You don&apos;t have to take our word for it.
           </h2>
           <p className="mt-4 max-w-md text-[var(--color-bg)]/70">
@@ -122,9 +126,10 @@ export function FarmTransparency({
         </Reveal>
 
         <p className="mt-4 text-xs text-white/40">
-          Shown here: real recent snapshots from the farm, not a live video
-          feed. 24×7 live streaming is being rolled out; camera feeds shown
-          to members will be scoped to their own plot only.
+          Shown here: real demo snapshots from the farm, not a live video
+          feed — actual live camera access is a member benefit, scoped
+          to your own plot only, that starts once your season&apos;s
+          sowing begins.
         </p>
 
         <Reveal delay={150}>

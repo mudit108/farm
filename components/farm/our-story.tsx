@@ -4,14 +4,14 @@ import storyPhoto from "@/public/images/farmer-hand-wheat-sunset.jpg";
 
 export function OurStory() {
   return (
-    <section id="story" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-20 sm:py-28">
+    <section id="story" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-14 sm:py-28">
       <div className="mx-auto max-w-6xl px-5">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
               Why Mera Khet
             </p>
-            <h2 className="mt-3 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+            <h2 className="mt-3 font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
               Food should never
               <br />
               be a mystery.

@@ -520,3 +520,37 @@ export async function adminUpdateWarehouseCapacity(formData: FormData): Promise<
   revalidatePath("/");
   revalidatePath("/admin/crops");
 }
+
+/**
+ * How the harvest is divided among members. Described in the Terms of
+ * Service and Membership Agreement, so it's configurable rather than
+ * hardcoded — if the model changes between seasons, the legal text
+ * must be able to follow it rather than silently describing something
+ * that is no longer true.
+ */
+export async function adminUpdateHarvestDistribution(formData: FormData): Promise<void> {
+  const model = String(formData.get("harvestDistributionModel") || "");
+  const deductionRaw = String(formData.get("harvestDeductionPercent") || "0");
+  const deduction = Number(deductionRaw);
+
+  if (!["pooled", "per_plot"].includes(model)) return;
+  if (!Number.isFinite(deduction) || deduction < 0 || deduction > 100) return;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_season")
+    .update({
+      harvest_distribution_model: model,
+      harvest_deduction_percent: deduction,
+    })
+    .eq("id", 1);
+
+  if (error) {
+    console.error("adminUpdateHarvestDistribution failed:", error);
+    return;
+  }
+
+  revalidatePath("/admin/crops");
+  revalidatePath("/terms");
+  revalidatePath("/membership-agreement");
+}

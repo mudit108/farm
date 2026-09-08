@@ -6,13 +6,13 @@ import aerialPhoto from "@/public/images/aerial-harvest.jpg";
 
 export function VisitAndLocation() {
   return (
-    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-20 sm:py-28">
+    <section className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-14 sm:py-28">
       <div className="mx-auto grid max-w-6xl gap-14 px-5 lg:grid-cols-2">
         <Reveal>
           <p className="font-mono-data text-xs uppercase tracking-[0.2em] text-[var(--color-brown)]">
             Visit
           </p>
-          <h2 className="mt-3 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+          <h2 className="mt-3 font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
             Your farm isn&apos;t just on a screen.
           </h2>
           <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">

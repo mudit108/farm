@@ -27,10 +27,10 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-20 sm:py-28">
+    <section id="how-it-works" className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] py-14 sm:py-28">
       <div className="mx-auto max-w-6xl px-5">
         <Reveal>
-          <h2 className="max-w-lg font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+          <h2 className="max-w-lg font-display text-[1.75rem] leading-[1.15] tracking-tight sm:text-5xl sm:leading-tight">
             From land to harvest.
           </h2>
         </Reveal>
