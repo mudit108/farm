@@ -45,6 +45,21 @@ export const currentCrop = {
   processedProduct: "Wheat Flour (Atta)",
 };
 
+// A transparency comparison, not a quality one — every "known" claim
+// here is something already stated and true elsewhere on the site
+// (variety, storage, camera access), just reframed as "you'd normally
+// never know this." Deliberately doesn't name a specific individual
+// farmer, since the founder story is intentionally unsigned for now.
+export const wheatComparisonRows = [
+  { label: "Where it's grown", unknown: "Unknown", known: "Sujangarh, Rajasthan — your exact plot" },
+  { label: "What variety it is", unknown: "Usually unlabeled", known: "RAJ 1482, bred for Rajasthan's soil" },
+  { label: "What's used on it", unknown: "Unknown", known: "No synthetic pesticides or chemical fertilizers" },
+  { label: "How it's milled", unknown: "Often refined, unclear", known: "Whole wheat, stone-ground" },
+  { label: "Where it's stored", unknown: "Unknown", known: "Our own 30-tonne on-site warehouse" },
+  { label: "Can you watch it grow", unknown: "No", known: "Yes — farm updates & camera access" },
+  { label: "Can you visit it", unknown: "No", known: "Yes — request a farm visit" },
+];
+
 // Kept as an array so components that expect a crop list keep working —
 // Mera Khet grows only this one crop for now.
 export const demoCrops = [currentCrop];

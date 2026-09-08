@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight, Calendar } from "lucide-react";
-import { currentCrop } from "@/lib/demo-data";
+import { ArrowUpRight, Calendar, Check, X } from "lucide-react";
+import { currentCrop, wheatComparisonRows } from "@/lib/demo-data";
 import { Reveal } from "@/components/ui/reveal";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
@@ -110,6 +110,57 @@ export function SeasonalCrops() {
               </div>
             </div>
           </Card>
+        </Reveal>
+
+        <Reveal delay={150}>
+          <div className="mt-10">
+            <p className="text-center font-mono-data text-xs uppercase tracking-wide text-[var(--color-brown)]">
+              Food Should Never Be a Mystery
+            </p>
+            <h3 className="mt-2 text-center font-display text-xl text-[var(--color-ink)] sm:text-2xl">
+              What you know, versus what you usually don&apos;t.
+            </h3>
+
+            <div className="mt-8 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10 bg-[var(--color-surface)]">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">
+                    <tr>
+                      <th className="px-5 py-3 font-medium">&nbsp;</th>
+                      <th className="px-5 py-3 font-medium">Most wheat &amp; atta you buy</th>
+                      <th className="px-5 py-3 font-medium text-[var(--color-green-deep)]">Mera Khet</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-ink)]/10">
+                    {wheatComparisonRows.map((row) => (
+                      <tr key={row.label}>
+                        <td className="px-5 py-3 font-medium text-[var(--color-ink)]">{row.label}</td>
+                        <td className="px-5 py-3 text-[var(--color-ink-soft)]">
+                          <span className="flex items-center gap-1.5">
+                            <X className="h-3.5 w-3.5 shrink-0 text-[var(--color-live)]/70" />
+                            {row.unknown}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 font-medium text-[var(--color-green-deep)]">
+                          <span className="flex items-center gap-1.5">
+                            <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-green)]" />
+                            {row.known}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <p className="mx-auto mt-4 max-w-lg text-center text-xs text-[var(--color-ink-soft)]">
+              This isn&apos;t about any farmer or seller doing anything wrong —
+              most food changes hands too many times for anyone to trace it
+              back. Mera Khet just skips that: it&apos;s your plot, so
+              there&apos;s nothing to trace.
+            </p>
+          </div>
         </Reveal>
       </div>
 
