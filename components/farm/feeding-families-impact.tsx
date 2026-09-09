@@ -1,9 +1,18 @@
 import Image from "next/image";
-import { Heart, Users } from "lucide-react";
+import Link from "next/link";
+import { Heart, Users, ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import wheatPhoto from "@/public/images/wheat-field-golden.jpg";
 
-export function FeedingFamiliesImpact({ collectedInr }: { collectedInr: number }) {
+export function FeedingFamiliesImpact({
+  collectedInr,
+  remaining,
+  totalPlots,
+}: {
+  collectedInr: number;
+  remaining: number;
+  totalPlots: number;
+}) {
   const families = Math.round((collectedInr / 1000) * 2);
 
   return (
@@ -61,6 +70,21 @@ export function FeedingFamiliesImpact({ collectedInr }: { collectedInr: number }
               />
             </div>
           </Reveal>
+        </div>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-sm">
+          <span className="text-[var(--color-ink-soft)]">
+            {remaining > 0
+              ? `${remaining} of ${totalPlots} plots still open this season.`
+              : "All plots are reserved for this season."}
+          </span>
+          <Link
+            href="/auth/signup"
+            className="group inline-flex items-center gap-1 font-medium text-[var(--color-green-deep)] underline-offset-4 hover:underline"
+          >
+            Reserve your plot
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
       </div>
     </section>

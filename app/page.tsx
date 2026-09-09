@@ -93,7 +93,11 @@ export default async function Home() {
       />
       <FarmUpdates />
       <VisitAndLocation />
-      <FeedingFamiliesImpact collectedInr={season?.fff_collected_inr ?? 0} />
+      <FeedingFamiliesImpact
+        collectedInr={season?.fff_collected_inr ?? 0}
+        remaining={Math.max(plotCounts.total - plotCounts.filled, 0)}
+        totalPlots={plotCounts.total}
+      />
       <Pricing />
       <PlotRegistration />
       <LegalTrust />

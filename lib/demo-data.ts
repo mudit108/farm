@@ -24,7 +24,7 @@ export const currentCrop = {
       description: "A variety millers and households specifically seek out for soft, pliable chapatis — not just a general-purpose wheat.",
     },
     {
-      title: "Whole wheat, stone-ground atta",
+      title: "Whole wheat, milled whole",
       description: "Milled with the bran and germ intact, so it naturally retains more fiber, iron, and B-vitamins than refined flour.",
     },
     {
@@ -51,13 +51,14 @@ export const currentCrop = {
 // never know this." Deliberately doesn't name a specific individual
 // farmer, since the founder story is intentionally unsigned for now.
 export const wheatComparisonRows = [
-  { label: "Where it's grown", unknown: "Unknown", known: "Sujangarh, Rajasthan — your exact plot" },
+  { label: "Where it's grown", unknown: "Could be anywhere", known: "Sujangarh, Rajasthan — your exact plot" },
+  { label: "Who grew it", unknown: "You'll never meet them", known: "Our team — and you can visit" },
   { label: "What variety it is", unknown: "Usually unlabeled", known: "RAJ 1482, bred for Rajasthan's soil" },
-  { label: "What's used on it", unknown: "Unknown", known: "No synthetic pesticides or chemical fertilizers" },
-  { label: "How it's milled", unknown: "Often refined, unclear", known: "Whole wheat, stone-ground" },
-  { label: "Where it's stored", unknown: "Unknown", known: "Our own 30-tonne on-site warehouse" },
+  { label: "What's used on it", unknown: "No way to ask", known: "No synthetic pesticides or chemical fertilizers" },
+  { label: "How old it is", unknown: "Could be months, or seasons", known: "This season's harvest, delivered in 2–3 weeks" },
+  { label: "How it's milled", unknown: "Often refined", known: "Milled whole — bran and germ intact" },
+  { label: "Where it's stored", unknown: "Changes hands, unrecorded", known: "Our own 30-tonne on-site warehouse" },
   { label: "Can you watch it grow", unknown: "No", known: "Yes — farm updates & camera access" },
-  { label: "Can you visit it", unknown: "No", known: "Yes — request a farm visit" },
 ];
 
 // Kept as an array so components that expect a crop list keep working —

@@ -123,7 +123,7 @@ export function SeasonalCrops() {
 
             <div className="mt-8 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10 bg-[var(--color-surface)]">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-sm">
+                <table className="w-full min-w-[680px] text-left text-sm">
                   <thead className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">
                     <tr>
                       <th className="px-5 py-3 font-medium">&nbsp;</th>
