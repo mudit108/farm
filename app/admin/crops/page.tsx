@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { currentCrop, membershipPlans } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
 import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution } from "@/app/actions/admin-content";
+import { adminCreateDiscountCode, adminToggleDiscountCode } from "@/app/actions/admin-discounts";
 import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
 import { CloseSeasonForm } from "@/components/admin/close-season-form";
 
@@ -22,6 +23,17 @@ type Season = {
   warehouse_capacity_tonnes: number;
 };
 type PlanPrice = { plan_id: string; price_inr: number };
+type DiscountCode = {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  max_uses: number | null;
+  times_used: number;
+  expires_at: string | null;
+  is_active: boolean;
+  note: string | null;
+};
 type ArchivedSeason = {
   id: string;
   season_label: string;
@@ -35,7 +47,7 @@ type ArchivedSeason = {
 
 export default async function CropsManagementPage() {
   const supabase = createServiceClient();
-  const [{ data }, { count: filledCount }, { data: pricesData }, { data: labelRow }, { data: archiveData }] =
+  const [{ data }, { count: filledCount }, { data: pricesData }, { data: labelRow }, { data: codesData }, { data: archiveData }] =
     await Promise.all([
       supabase.rpc("khet_club_get_season"),
       supabase.from("khet_club_plots").select("plot_number", { count: "exact", head: true }).eq("status", "filled"),
@@ -43,6 +55,10 @@ export default async function CropsManagementPage() {
       // season_label isn't part of khet_club_get_season()'s return shape,
       // so it's read directly here rather than widening the public RPC.
       supabase.from("khet_club_season").select("season_label, harvest_distribution_model, harvest_deduction_percent").eq("id", 1).maybeSingle(),
+      supabase
+        .from("khet_club_discount_codes")
+        .select("id, code, discount_type, discount_value, max_uses, times_used, expires_at, is_active, note")
+        .order("created_at", { ascending: false }),
       supabase
         .from("khet_club_season_archive")
         .select("id, season_label, crop_name, plots_filled, members_count, revenue_inr, fff_collected_inr, closed_at")
@@ -53,6 +69,7 @@ export default async function CropsManagementPage() {
   const distributionModel = labelRow?.harvest_distribution_model ?? "pooled";
   const deductionPercent = Number(labelRow?.harvest_deduction_percent ?? 0);
   const pastSeasons = (archiveData ?? []) as ArchivedSeason[];
+  const discountCodes = (codesData ?? []) as DiscountCode[];
   const pricesByPlan = new Map(((pricesData ?? []) as PlanPrice[]).map((p) => [p.plan_id, p.price_inr]));
   const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
 
@@ -123,6 +140,78 @@ export default async function CropsManagementPage() {
             })}
             <Button type="submit" className="w-full">Save Prices</Button>
           </form>
+        </Card>
+
+        <Card className="mt-6 max-w-lg p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Discount Codes
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Codes are checked and priced on the server — the amount charged
+            can&apos;t be altered from the browser. A code only counts as
+            used once a payment actually succeeds, so abandoned checkouts
+            don&apos;t burn uses.
+          </p>
+
+          <form action={adminCreateDiscountCode} className="mt-4 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Code</span>
+                <input name="code" required placeholder="FRIEND50" className="input uppercase" autoComplete="off" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Type</span>
+                <select name="discountType" className="input" defaultValue="percent">
+                  <option value="percent">Percent off (%)</option>
+                  <option value="fixed">Fixed amount off (₹)</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Value</span>
+                <input name="discountValue" required type="number" min={1} step={1} placeholder="50" className="input" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Max uses</span>
+                <input name="maxUses" type="number" min={1} step={1} placeholder="Unlimited" className="input" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Expires (optional)</span>
+                <input name="expiresAt" type="date" className="input" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Note</span>
+                <input name="note" placeholder="e.g. for Rahul" className="input" />
+              </label>
+            </div>
+            <Button type="submit" className="w-full">Create Code</Button>
+          </form>
+
+          {discountCodes.length > 0 && (
+            <div className="mt-5 space-y-2 border-t border-[var(--color-ink)]/10 pt-4">
+              {discountCodes.map((c) => (
+                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <div>
+                    <span className="font-mono-data font-medium">{c.code}</span>
+                    <span className="ml-2 text-xs text-[var(--color-ink-soft)]">
+                      {c.discount_type === "percent" ? `${c.discount_value}% off` : `₹${c.discount_value} off`}
+                      {" · "}
+                      {c.times_used}
+                      {c.max_uses ? `/${c.max_uses}` : ""} used
+                      {c.expires_at && ` · expires ${new Date(c.expires_at).toLocaleDateString("en-IN")}`}
+                      {c.note && ` · ${c.note}`}
+                    </span>
+                  </div>
+                  <form action={adminToggleDiscountCode}>
+                    <input type="hidden" name="id" value={c.id} />
+                    <input type="hidden" name="makeActive" value={c.is_active ? "false" : "true"} />
+                    <button className={`text-xs font-medium hover:underline ${c.is_active ? "text-[var(--color-live)]" : "text-[var(--color-green)]"}`}>
+                      {c.is_active ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         <Card className="mt-6 max-w-lg p-5">

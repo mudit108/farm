@@ -35,7 +35,11 @@ type Season = { registration_deadline: string | null; total_plots: number };
  * re-validated authoritatively by the RPC at claim time, not just here).
  * Left undefined, the next available plots are auto-assigned as before.
  */
-export async function createPlanOrder(planId: string, startPlot?: number): Promise<CreateOrderResult> {
+export async function createPlanOrder(
+  planId: string,
+  startPlot?: number,
+  discountCode?: string
+): Promise<CreateOrderResult> {
   const plan = membershipPlans.find((p) => p.id === planId);
   if (!plan) {
     return { status: "error", message: "Please choose a valid plan." };
@@ -61,7 +65,41 @@ export async function createPlanOrder(planId: string, startPlot?: number): Promi
     console.error("createPlanOrder: failed to load live price:", priceError);
     return { status: "error", message: "Something went wrong loading pricing. Please try again." };
   }
-  const priceInr = priceRow.price_inr;
+  const basePriceInr = priceRow.price_inr;
+
+  // Discount is validated and priced entirely server-side against the
+  // live price — nothing the client sends can influence the amount.
+  let priceInr = basePriceInr;
+  let discountCodeId: string | null = null;
+  let discountInr = 0;
+
+  if (discountCode && discountCode.trim()) {
+    const admin0 = createServiceClient();
+    const { data: discountData, error: discountError } = await admin0.rpc("khet_club_validate_discount", {
+      p_code: discountCode.trim(),
+      p_plan_id: planId,
+    });
+    const result = (discountData as {
+      valid: boolean;
+      reason: string | null;
+      code_id: string | null;
+      original_inr: number;
+      discount_inr: number;
+      final_inr: number;
+    }[] | null)?.[0];
+
+    if (discountError) {
+      console.error("createPlanOrder: discount validation failed:", discountError);
+      return { status: "error", message: "Couldn't check that code. Please try again." };
+    }
+    if (!result?.valid) {
+      return { status: "error", message: result?.reason ?? "That code isn't valid." };
+    }
+
+    priceInr = result.final_inr;
+    discountInr = result.discount_inr;
+    discountCodeId = result.code_id;
+  }
 
   const { data: seasonData } = await supabase.rpc("khet_club_get_season");
   const season = (seasonData as Season[] | null)?.[0];
@@ -109,6 +147,8 @@ export async function createPlanOrder(planId: string, startPlot?: number): Promi
       currency: order.currency,
       status: "created",
       start_plot: startPlot ?? null,
+      discount_code_id: discountCodeId,
+      discount_inr: discountInr,
     });
     if (error) {
       console.error("Failed to record payment order:", error);
@@ -182,7 +222,7 @@ export async function verifyPaymentAndClaim(input: {
 
   const { data: payment } = await admin
     .from("khet_club_payments")
-    .select("id, plan_id, status, user_id, claim_batch_id, start_plot, amount, razorpay_order_id")
+    .select("id, plan_id, status, user_id, claim_batch_id, start_plot, amount, razorpay_order_id, discount_code_id, discount_inr")
     .eq("razorpay_order_id", input.orderId)
     .maybeSingle();
 
@@ -205,6 +245,26 @@ export async function verifyPaymentAndClaim(input: {
       .from("khet_club_payments")
       .update({ status: "paid", razorpay_payment_id: input.paymentId })
       .eq("id", payment.id);
+  }
+
+  // Count the discount code's use only now that the payment has
+  // genuinely succeeded — an abandoned checkout never burns a use.
+  // The RPC is idempotent on razorpay_order_id, so a retry or double
+  // verification can't double-count.
+  if (payment.discount_code_id) {
+    const { error: redeemError } = await admin.rpc("khet_club_redeem_discount", {
+      p_code_id: payment.discount_code_id,
+      p_user_id: payment.user_id,
+      p_razorpay_order_id: payment.razorpay_order_id,
+      p_plan_id: payment.plan_id,
+      p_original_inr: payment.amount / 100 + (payment.discount_inr ?? 0),
+      p_discount_inr: payment.discount_inr ?? 0,
+      p_final_inr: payment.amount / 100,
+    });
+    if (redeemError) {
+      // Never block the claim — the member has paid.
+      console.error("Discount redemption record failed:", redeemError);
+    }
   }
 
   const { data, error } = await supabase.rpc("khet_club_claim_my_plan", {
@@ -339,4 +399,90 @@ export async function verifyPaymentAndClaim(input: {
   revalidatePath("/dashboard/my-farm");
 
   return { status: "success", plotNumbers };
+}
+
+export type DiscountPreview =
+  | { status: "idle" }
+  | { status: "invalid"; message: string }
+  | { status: "valid"; originalInr: number; discountInr: number; finalInr: number; code: string };
+
+const DISCOUNT_ATTEMPT_MAX = 10;
+const DISCOUNT_ATTEMPT_WINDOW_MINUTES = 60;
+
+/**
+ * Checks a code and returns the real discounted total so the member can
+ * see it BEFORE the payment window opens — paying without knowing the
+ * final amount is a bad experience and erodes trust.
+ *
+ * This is a read-only preview: it never creates an order and never
+ * consumes a use of the code. createPlanOrder re-validates
+ * independently at order time, so a stale or tampered preview can't
+ * affect what's actually charged.
+ *
+ * Rate-limited on FAILED attempts only, since exposing a validator
+ * without committing to payment would otherwise let someone guess
+ * codes indefinitely.
+ */
+export async function previewDiscountCode(planId: string, code: string): Promise<DiscountPreview> {
+  const trimmed = (code || "").trim();
+  if (!trimmed) return { status: "idle" };
+
+  const session = await createSessionClient();
+  const {
+    data: { user },
+  } = await session.auth.getUser();
+  if (!user) return { status: "invalid", message: "Please log in first." };
+
+  const admin = createServiceClient();
+
+  const since = new Date(Date.now() - DISCOUNT_ATTEMPT_WINDOW_MINUTES * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("khet_club_discount_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("succeeded", false)
+    .gte("attempted_at", since);
+
+  if ((count ?? 0) >= DISCOUNT_ATTEMPT_MAX) {
+    return {
+      status: "invalid",
+      message: "Too many code attempts. Please wait a while before trying again.",
+    };
+  }
+
+  const { data, error } = await admin.rpc("khet_club_validate_discount", {
+    p_code: trimmed,
+    p_plan_id: planId,
+  });
+
+  if (error) {
+    console.error("previewDiscountCode failed:", error);
+    return { status: "invalid", message: "Couldn't check that code. Please try again." };
+  }
+
+  const result = (data as {
+    valid: boolean;
+    reason: string | null;
+    original_inr: number;
+    discount_inr: number;
+    final_inr: number;
+  }[] | null)?.[0];
+
+  await admin.from("khet_club_discount_attempts").insert({
+    user_id: user.id,
+    attempted_code: trimmed.toUpperCase().slice(0, 32),
+    succeeded: Boolean(result?.valid),
+  });
+
+  if (!result?.valid) {
+    return { status: "invalid", message: result?.reason ?? "That code isn't valid." };
+  }
+
+  return {
+    status: "valid",
+    originalInr: result.original_inr,
+    discountInr: result.discount_inr,
+    finalInr: result.final_inr,
+    code: trimmed.toUpperCase(),
+  };
 }

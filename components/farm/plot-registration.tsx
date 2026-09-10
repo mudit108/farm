@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Heart, Ruler, Sprout } from "lucide-react";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { createSessionClient } from "@/lib/supabase/session";
 import { Reveal } from "@/components/ui/reveal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getCurrentMember } from "@/lib/current-member";
+import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, currentCrop } from "@/lib/demo-data";
 
 type PlotRow = { plot_number: number; status: "available" | "filled" };
 
@@ -20,24 +21,11 @@ async function getPlots(): Promise<PlotRow[]> {
   return (data ?? []) as PlotRow[];
 }
 
-async function getMyPlotNumbers(): Promise<number[]> {
-  const supabase = await createSessionClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
 
-  const { data } = await supabase
-    .from("khet_club_plots")
-    .select("plot_number")
-    .eq("user_id", user.id)
-    .order("plot_number");
-
-  return ((data ?? []) as { plot_number: number }[]).map((p) => p.plot_number);
-}
-
-export async function PlotRegistration() {
-  const [plots, myPlotNumbers] = await Promise.all([getPlots(), getMyPlotNumbers()]);
+export async function PlotRegistration({ seasonLabel = "" }: { seasonLabel?: string } = {}) {
+  const [plots, member] = await Promise.all([getPlots(), getCurrentMember()]);
+  const myPlotNumbers = member.plotNumbers;
+  const myPlan = membershipPlans.find((p) => p.id === member.planId);
   const filled = plots.filter((p) => p.status === "filled").length;
   const available = plots.length - filled;
   const myPlotSet = new Set(myPlotNumbers);
@@ -106,20 +94,56 @@ export async function PlotRegistration() {
           <Reveal delay={140}>
             <Card className="p-6 sm:p-8">
               {myPlotNumbers.length > 0 ? (
-                <div className="text-center">
-                  <CheckCircle2 className="mx-auto h-8 w-8 text-[var(--color-green-deep)]" />
-                  <p className="mt-3 font-display text-2xl">
-                    {myPlotNumbers.length > 1 ? "Plots " : "Plot "}
-                    {myPlotNumbers.map((n) => `#${n}`).join(", ")}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-                    Already reserved for your account.
-                  </p>
-                  <Link href="/dashboard/select-plot">
-                    <Button variant="outline" className="mt-5 w-full">
-                      View in Dashboard
-                    </Button>
-                  </Link>
+                <div>
+                  <div className="text-center">
+                    <CheckCircle2 className="mx-auto h-8 w-8 text-[var(--color-green-deep)]" />
+                    <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
+                      {member.firstName ? `Welcome back, ${member.firstName}` : "Welcome back"}
+                    </p>
+                    <p className="mt-1 font-display text-2xl">
+                      {myPlotNumbers.length > 1 ? "Plots " : "Plot "}
+                      {myPlotNumbers.map((n) => `#${n}`).join(", ")}
+                    </p>
+                    {myPlan && (
+                      <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+                        {myPlan.name} ({myPlan.label}) &middot; {seasonLabel}
+                      </p>
+                    )}
+                  </div>
+
+                  <dl className="mt-5 space-y-2.5 border-t border-[var(--color-ink)]/10 pt-4 text-sm">
+                    <div className="flex items-center justify-between">
+                      <dt className="flex items-center gap-2 text-[var(--color-ink-soft)]">
+                        <Sprout className="h-4 w-4" /> Growing
+                      </dt>
+                      <dd className="font-medium">{currentCrop.name} ({currentCrop.localName})</dd>
+                    </div>
+                    {myPlan && (
+                      <div className="flex items-center justify-between">
+                        <dt className="flex items-center gap-2 text-[var(--color-ink-soft)]">
+                          <Ruler className="h-4 w-4" /> Your area
+                        </dt>
+                        <dd className="font-medium">{myPlan.areaSqFt.toLocaleString("en-IN")} sq ft</dd>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <dt className="flex items-center gap-2 text-[var(--color-ink-soft)]">
+                        <Heart className="h-4 w-4" /> You&apos;ve contributed
+                      </dt>
+                      <dd className="font-medium">
+                        &#8377;{(myPlotNumbers.length * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                    <Link href="/dashboard/my-farm">
+                      <Button className="w-full">My Farm</Button>
+                    </Link>
+                    <Link href="/dashboard/select-plot">
+                      <Button variant="outline" className="w-full">Add More Plots</Button>
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <>

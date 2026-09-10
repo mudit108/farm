@@ -15,6 +15,7 @@ import { Faq } from "@/components/farm/faq";
 import { FinalCta } from "@/components/farm/final-cta";
 import { Contact, Footer } from "@/components/farm/contact-and-footer";
 import { createAnonClient } from "@/lib/supabase/anon";
+import { getCurrentMember } from "@/lib/current-member";
 import { currentCrop, membershipPlans } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ type SeasonPublicInfo = {
   registration_deadline: string | null;
   total_plots: number;
   warehouse_capacity_tonnes: number;
+  season_label: string;
 };
 
 async function getSeasonPublicInfo(): Promise<SeasonPublicInfo | null> {
@@ -62,10 +64,11 @@ async function getLowestPrice(): Promise<number> {
 }
 
 export default async function Home() {
-  const [season, plotCounts, fromPriceInr] = await Promise.all([
+  const [season, plotCounts, fromPriceInr, member] = await Promise.all([
     getSeasonPublicInfo(),
     getPlotCounts(),
     getLowestPrice(),
+    getCurrentMember(),
   ]);
 
   const warehouseTonnes = season?.warehouse_capacity_tonnes ?? 30;
@@ -81,7 +84,7 @@ export default async function Home() {
 
   return (
     <main>
-      <Nav />
+      <Nav isLoggedIn={member.isLoggedIn} firstName={member.firstName} />
       <Hero filledPlots={plotCounts.filled} totalPlots={plotCounts.total} />
       <OurStory />
       <HowItWorks />
@@ -99,7 +102,7 @@ export default async function Home() {
         totalPlots={plotCounts.total}
       />
       <Pricing />
-      <PlotRegistration />
+      <PlotRegistration seasonLabel={season?.season_label ?? ""} />
       <LegalTrust />
       <Faq warehouseTonnes={warehouseTonnes} />
       <FinalCta

@@ -5,7 +5,7 @@ import Script from "next/script";
 import { Check, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, Badge } from "@/components/ui/card";
-import { createPlanOrder, verifyPaymentAndClaim } from "@/app/actions/payment";
+import { createPlanOrder, verifyPaymentAndClaim, previewDiscountCode, type DiscountPreview } from "@/app/actions/payment";
 import { membershipPlans, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,9 @@ type FlowState =
 
 export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlot[]; prices: PlanPrice[]; seasonLabel: string }) {
   const [state, setState] = useState<FlowState>({ step: "idle" });
+  const [discountCode, setDiscountCode] = useState("");
+  const [discount, setDiscount] = useState<DiscountPreview>({ status: "idle" });
+  const [checkingCode, setCheckingCode] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
   const [mode, setMode] = useState<"auto" | "custom">("auto");
@@ -71,7 +74,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
 
     setState({ step: "processing" });
 
-    const order = await createPlanOrder(plan.id, mode === "custom" ? startPlot! : undefined);
+    const order = await createPlanOrder(plan.id, mode === "custom" ? startPlot! : undefined, discountCode);
     if (order.status === "error") {
       setState({ step: "error", message: order.message });
       return;
@@ -303,10 +306,75 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
               <span>— includes Feeding Families Fund</span>
               <span>₹{(plan.plots * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}</span>
             </div>
+            {discount.status === "valid" && (
+              <div className="flex items-center justify-between text-xs text-[var(--color-green-deep)]">
+                <span>Discount ({discount.code})</span>
+                <span>−₹{discount.discountInr.toLocaleString("en-IN")}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between border-t border-[var(--color-ink)]/10 pt-1.5 font-medium">
               <span>Total due</span>
-              <span>₹{plan.priceInr.toLocaleString("en-IN")}</span>
+              <span>
+                {discount.status === "valid" ? (
+                  <>
+                    <span className="mr-2 font-normal text-[var(--color-ink-soft)] line-through">
+                      ₹{plan.priceInr.toLocaleString("en-IN")}
+                    </span>
+                    ₹{discount.finalInr.toLocaleString("en-IN")}
+                  </>
+                ) : (
+                  <>₹{plan.priceInr.toLocaleString("en-IN")}</>
+                )}
+              </span>
             </div>
+          </div>
+
+          <div className="mt-3">
+            <span className="mb-1.5 block text-xs font-medium text-[var(--color-ink-soft)]">
+              Discount code (optional)
+            </span>
+            <div className="flex gap-2">
+              <input
+                value={discountCode}
+                onChange={(e) => {
+                  setDiscountCode(e.target.value);
+                  if (discount.status !== "idle") setDiscount({ status: "idle" });
+                }}
+                placeholder="Enter code"
+                autoComplete="off"
+                className="input uppercase"
+                disabled={discount.status === "valid"}
+              />
+              {discount.status === "valid" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setDiscount({ status: "idle" });
+                    setDiscountCode("");
+                  }}
+                >
+                  Remove
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!discountCode.trim() || checkingCode}
+                  onClick={async () => {
+                    setCheckingCode(true);
+                    const result = await previewDiscountCode(plan.id, discountCode);
+                    setDiscount(result);
+                    setCheckingCode(false);
+                  }}
+                >
+                  {checkingCode ? "Checking…" : "Apply"}
+                </Button>
+              )}
+            </div>
+            {discount.status === "invalid" && (
+              <p className="mt-1.5 text-xs text-[var(--color-live)]">{discount.message}</p>
+            )}
           </div>
 
           <Button
@@ -319,7 +387,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                 <Loader2 className="h-4 w-4 animate-spin" /> Processing…
               </>
             ) : (
-              `Pay ₹${plan.priceInr.toLocaleString("en-IN")} & Confirm`
+              `Pay ₹${(discount.status === "valid" ? discount.finalInr : plan.priceInr).toLocaleString("en-IN")} & Confirm`
             )}
           </Button>
 
