@@ -7,6 +7,7 @@ import { generateCertificatePdf } from "@/lib/certificate";
 import { sendCertificateEmail } from "@/lib/email";
 import { sendWhatsAppDocument } from "@/lib/whatsapp/whatsapp-service";
 import { membershipPlans } from "@/lib/demo-data";
+import { ok, fail, type ActionResult } from "@/lib/action-result";
 
 /**
  * Approves an entire claim batch (one purchase, possibly several plots)
@@ -151,9 +152,9 @@ export async function adminApproveBatch(formData: FormData): Promise<void> {
  * attempt failed, or the member lost it) without re-approving or
  * re-generating a new certificate number.
  */
-export async function adminResendCertificate(formData: FormData): Promise<void> {
+export async function adminResendCertificate(formData: FormData): Promise<ActionResult> {
   const claimBatchId = String(formData.get("claimBatchId") || "");
-  if (!claimBatchId) return;
+  if (!claimBatchId) return fail("Missing certificate reference.");
 
   const supabase = createServiceClient();
 
@@ -162,10 +163,10 @@ export async function adminResendCertificate(formData: FormData): Promise<void> 
     .select("certificate_number, user_id, plan_id, plot_numbers, full_name, area_sq_ft")
     .eq("claim_batch_id", claimBatchId)
     .maybeSingle();
-  if (!cert) return;
+  if (!cert) return fail("No certificate found for this member yet.");
 
   const plan = membershipPlans.find((p) => p.id === cert.plan_id);
-  if (!plan) return;
+  if (!plan) return fail("That plan no longer exists.");
 
   const { data: seasonRow } = await supabase
     .from("khet_club_season")
@@ -227,4 +228,14 @@ export async function adminResendCertificate(formData: FormData): Promise<void> 
     .eq("claim_batch_id", claimBatchId);
 
   revalidatePath("/admin/members");
+
+  // Report what actually happened rather than a blanket "sent" — email
+  // and WhatsApp fail independently, and silently, when unconfigured.
+  const sentVia = [emailSent && "email", whatsappSent && "WhatsApp"].filter(Boolean);
+  if (sentVia.length === 0) {
+    return fail(
+      `Certificate ${cert.certificate_number} could not be sent — check that email and WhatsApp are configured.`
+    );
+  }
+  return ok(`Certificate ${cert.certificate_number} sent via ${sentVia.join(" and ")}.`);
 }

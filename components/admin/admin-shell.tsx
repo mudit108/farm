@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ToastProvider } from "@/components/ui/toast";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sprout, LogOut, ShieldCheck, Menu, X } from "lucide-react";
@@ -56,6 +57,7 @@ export function AdminShell({
   );
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-[var(--color-bg)]">
       {/* Mobile top bar — the sidebar below is desktop-only, so this is
           the ONLY way to navigate or log out on mobile. */}
@@ -115,5 +117,6 @@ export function AdminShell({
         </div>
       )}
     </div>
+    </ToastProvider>
   );
 }

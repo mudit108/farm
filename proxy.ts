@@ -57,9 +57,26 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // An already-signed-in member landing on Login or Signup is a dead
+  // end — send them to their dashboard instead.
+  //
+  // Deliberately matched as EXACT paths, not a /auth prefix:
+  //   /auth/update-password REQUIRES an active session (the reset email
+  //     creates one), so redirecting it away would silently break
+  //     password reset entirely.
+  //   /auth/callback must run to exchange the auth code.
+  //   /auth/admin-login must stay reachable for someone signed in as a
+  //     customer who needs to reach the admin panel.
+  if (user && (path === "/auth/login" || path === "/auth/signup")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/auth/login", "/auth/signup"],
 };

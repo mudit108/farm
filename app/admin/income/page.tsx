@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActionForm } from "@/components/admin/action-form";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
@@ -194,13 +195,13 @@ export default async function AdminFinancePage({
           donations, or include offline contributions the payment system
           never saw).
         </p>
-        <form action={adminUpdateFFFAmount} className="mt-4 flex items-end gap-3">
+        <ActionForm action={adminUpdateFFFAmount} className="mt-4 flex items-end gap-3">
           <label className="block flex-1">
             <span className="mb-1.5 block text-sm font-medium">Amount (₹)</span>
             <input name="fffCollectedInr" type="number" min={0} step={1} defaultValue={publicFFFTotal} className="input" />
           </label>
           <Button type="submit">Save</Button>
-        </form>
+        </ActionForm>
         <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
           ≈ {Math.round((publicFFFTotal / 1000) * 2)} families, at 2 families per ₹1,000 —
           shown on the homepage automatically from this amount.
@@ -309,7 +310,7 @@ export default async function AdminFinancePage({
 
       <Card className="max-w-lg p-5">
         <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Record an Expense</p>
-        <form action={adminAddExpense} className="mt-4 space-y-4">
+        <ActionForm action={adminAddExpense} className="mt-4 space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium">Category</span>
             <select name="category" required defaultValue="" className="input">
@@ -334,7 +335,7 @@ export default async function AdminFinancePage({
             </label>
           </div>
           <Button type="submit" className="w-full">Add Expense</Button>
-        </form>
+        </ActionForm>
       </Card>
 
       {expensesByCategory.size > 0 && (
@@ -397,10 +398,10 @@ export default async function AdminFinancePage({
                   <td className="px-4 py-2.5">{e.description}</td>
                   <td className="px-4 py-2.5 font-mono-data font-medium">₹{e.amount_inr.toLocaleString("en-IN")}</td>
                   <td className="px-4 py-2.5 text-right">
-                    <form action={adminDeleteExpense}>
+                    <ActionForm action={adminDeleteExpense}>
                       <input type="hidden" name="id" value={e.id} />
                       <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
-                    </form>
+                    </ActionForm>
                   </td>
                 </tr>
               ))}

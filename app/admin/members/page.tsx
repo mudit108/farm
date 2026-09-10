@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActionForm } from "@/components/admin/action-form";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
@@ -168,7 +169,7 @@ export default async function MembersPage({
           For offline reservations — phone/walk-in signups you want reflected here.
           Currently {available} plot{available === 1 ? "" : "s"} available.
         </p>
-        <form action={adminAssignPlan} className="mt-4 grid gap-3 sm:grid-cols-6">
+        <ActionForm action={adminAssignPlan} className="mt-4 grid gap-3 sm:grid-cols-6">
           <select name="planId" required className="input sm:col-span-1" defaultValue="">
             <option value="" disabled>Plan</option>
             {membershipPlans.map((plan) => (
@@ -182,7 +183,7 @@ export default async function MembersPage({
           <input name="email" placeholder="Email" className="input sm:col-span-1" />
           <input name="city" placeholder="City" className="input sm:col-span-1" />
           <Button type="submit" size="sm" className="sm:col-span-1">Assign</Button>
-        </form>
+        </ActionForm>
       </Card>
 
       <form method="GET" className="mt-6 flex flex-wrap items-center gap-2">
@@ -250,19 +251,19 @@ export default async function MembersPage({
                       <a href={`/api/certificate/download?batch=${batchId}`} className="text-xs font-medium text-[var(--color-green)] hover:underline">
                         Download
                       </a>
-                      <form action={adminResendCertificate}>
+                      <ActionForm action={adminResendCertificate}>
                         <input type="hidden" name="claimBatchId" value={batchId} />
                         <button className="text-xs font-medium text-[var(--color-brown)] hover:underline">Resend</button>
-                      </form>
+                      </ActionForm>
                     </div>
                   ) : (
-                    <form action={adminApproveBatch} className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
+                    <ActionForm action={adminApproveBatch} successMessage="Approved — certificate issued and sent." className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
                       <input type="hidden" name="claimBatchId" value={batchId} />
                       <Button type="submit" size="sm" className="w-full">Approve & Issue Certificate</Button>
-                    </form>
+                    </ActionForm>
                   )}
 
-                  <form action={adminFreeBatch} className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--color-ink)]/10 pt-3">
+                  <ActionForm action={adminFreeBatch} className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--color-ink)]/10 pt-3">
                     <input type="hidden" name="claimBatchId" value={batchId} />
                     <input
                       name="confirmRemove"
@@ -276,7 +277,7 @@ export default async function MembersPage({
                     <span className="w-full text-xs text-[var(--color-ink-soft)]">
                       Removes this member&apos;s entire allocation. Archived to the clear log, but they&apos;d need to purchase again.
                     </span>
-                  </form>
+                  </ActionForm>
                 </Card>
               );
             })}
@@ -351,12 +352,12 @@ export default async function MembersPage({
         <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
           Add a document link for a specific customer (by email), or leave email blank for a shared document everyone can see.
         </p>
-        <form action={adminAddDocument} className="mt-4 grid gap-3 sm:grid-cols-4">
+        <ActionForm action={adminAddDocument} className="mt-4 grid gap-3 sm:grid-cols-4">
           <input name="name" required placeholder="Document name" className="input sm:col-span-1" />
           <input name="fileUrl" required placeholder="File URL" className="input sm:col-span-1" />
           <input name="email" placeholder="Customer email (optional)" className="input sm:col-span-1" />
           <Button type="submit" size="sm" className="sm:col-span-1">Add Document</Button>
-        </form>
+        </ActionForm>
         {docs.length > 0 && (
           <div className="mt-4 divide-y divide-[var(--color-ink)]/10">
             {docs.map((d) => (
@@ -368,10 +369,10 @@ export default async function MembersPage({
                     <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="underline">{d.file_url}</a>
                   </p>
                 </div>
-                <form action={adminDeleteDocument}>
+                <ActionForm action={adminDeleteDocument}>
                   <input type="hidden" name="id" value={d.id} />
                   <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Remove</button>
-                </form>
+                </ActionForm>
               </div>
             ))}
           </div>
@@ -414,7 +415,7 @@ export default async function MembersPage({
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     {p.status === "filled" ? (
-                      <form action={adminMarkPlotAvailable} className="flex items-center justify-end gap-1.5">
+                      <ActionForm action={adminMarkPlotAvailable} className="flex items-center justify-end gap-1.5">
                         <input type="hidden" name="plotNumber" value={p.plot_number} />
                         {p.user_id ? (
                           <>
@@ -430,12 +431,12 @@ export default async function MembersPage({
                         ) : (
                           <button className="text-xs font-medium text-[var(--color-brown)] hover:underline">Free Up</button>
                         )}
-                      </form>
+                      </ActionForm>
                     ) : (
-                      <form action={adminMarkPlotFilled}>
+                      <ActionForm action={adminMarkPlotFilled}>
                         <input type="hidden" name="plotNumber" value={p.plot_number} />
                         <button className="text-xs font-medium text-[var(--color-green)] hover:underline">Quick Fill</button>
-                      </form>
+                      </ActionForm>
                     )}
                   </td>
                 </tr>
@@ -473,14 +474,14 @@ export default async function MembersPage({
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <form action={adminRejectHarvestChange}>
+                    <ActionForm action={adminRejectHarvestChange}>
                       <input type="hidden" name="requestId" value={req.id} />
                       <Button type="submit" size="sm" variant="outline">Reject</Button>
-                    </form>
-                    <form action={adminApproveHarvestChange}>
+                    </ActionForm>
+                    <ActionForm action={adminApproveHarvestChange}>
                       <input type="hidden" name="requestId" value={req.id} />
                       <Button type="submit" size="sm">Approve</Button>
-                    </form>
+                    </ActionForm>
                   </div>
                 </div>
               );
@@ -527,17 +528,17 @@ export default async function MembersPage({
             )}
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <form action={adminSetHarvestTotal} className="flex gap-2">
+              <ActionForm action={adminSetHarvestTotal} className="flex gap-2">
                 <input type="hidden" name="userId" value={pref.user_id} />
                 <input name="totalKg" type="number" min={1} placeholder="Confirmed total (kg)" defaultValue={total ?? ""} className="input flex-1" />
                 <Button type="submit" size="sm" variant="outline">Set Total</Button>
-              </form>
-              <form action={adminRecordDelivery} className="flex flex-wrap gap-2">
+              </ActionForm>
+              <ActionForm action={adminRecordDelivery} className="flex flex-wrap gap-2">
                 <input type="hidden" name="userId" value={pref.user_id} />
                 <input name="kgDelivered" type="number" min={1} required placeholder="kg" className="input w-20" />
                 <input name="deliveredAt" type="date" className="input flex-1" />
                 <Button type="submit" size="sm">Record Delivery</Button>
-              </form>
+              </ActionForm>
             </div>
           </Card>
         );
@@ -576,12 +577,12 @@ export default async function MembersPage({
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       {isVoided ? (
-                        <form action={adminRestoreDelivery}>
+                        <ActionForm action={adminRestoreDelivery}>
                           <input type="hidden" name="id" value={d.id} />
                           <button className="text-xs font-medium text-[var(--color-green)] hover:underline">Restore</button>
-                        </form>
+                        </ActionForm>
                       ) : (
-                        <form action={adminVoidDelivery} className="flex items-center justify-end gap-1.5">
+                        <ActionForm action={adminVoidDelivery} className="flex items-center justify-end gap-1.5">
                           <input type="hidden" name="id" value={d.id} />
                           <input
                             name="voidReason"
@@ -590,7 +591,7 @@ export default async function MembersPage({
                             autoComplete="off"
                           />
                           <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Void</button>
-                        </form>
+                        </ActionForm>
                       )}
                     </td>
                   </tr>

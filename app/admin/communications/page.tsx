@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ActionForm } from "@/components/admin/action-form";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
@@ -123,10 +124,10 @@ export default async function CommunicationsPage() {
                 </a>
               )}
               {m.status === "open" && (
-                <form action={adminResolveSupportMessage}>
+                <ActionForm action={adminResolveSupportMessage}>
                   <input type="hidden" name="id" value={m.id} />
                   <button className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">Mark Resolved</button>
-                </form>
+                </ActionForm>
               )}
             </div>
           </Card>
@@ -157,11 +158,11 @@ export default async function CommunicationsPage() {
               Reply by Email
             </a>
             {m.status !== "replied" && (
-              <form action={adminMarkContactMessage}>
+              <ActionForm action={adminMarkContactMessage}>
                 <input type="hidden" name="id" value={m.id} />
                 <input type="hidden" name="status" value="replied" />
                 <button className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">Mark Replied</button>
-              </form>
+              </ActionForm>
             )}
           </div>
         </Card>
@@ -172,7 +173,7 @@ export default async function CommunicationsPage() {
   const updatesContent = (
     <div className="p-6 sm:px-10">
       <Card className="max-w-lg p-6">
-        <form action={adminPublishUpdate} className="space-y-4">
+        <ActionForm action={adminPublishUpdate} className="space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium">Title</span>
             <input name="title" required className="input" placeholder="Groundnut entering flowering stage" />
@@ -182,7 +183,7 @@ export default async function CommunicationsPage() {
             <textarea name="description" rows={3} className="input" />
           </label>
           <Button type="submit" className="w-full">Publish Update</Button>
-        </form>
+        </ActionForm>
       </Card>
       <p className="mt-3 max-w-lg text-xs text-[var(--color-ink-soft)]">
         Publishing also broadcasts this update to every current-season member on WhatsApp automatically.
@@ -198,10 +199,10 @@ export default async function CommunicationsPage() {
               <p className="mt-1 font-medium">{u.title}</p>
               {u.description && <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{u.description}</p>}
             </div>
-            <form action={adminDeleteUpdate}>
+            <ActionForm action={adminDeleteUpdate}>
               <input type="hidden" name="id" value={u.id} />
               <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
-            </form>
+            </ActionForm>
           </Card>
         ))}
       </div>
@@ -226,7 +227,7 @@ export default async function CommunicationsPage() {
           <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
             Sends to all {memberCount} current-season member{memberCount === 1 ? "" : "s"} (anyone with a filled plot).
           </p>
-          <form action={adminBroadcastWhatsApp} className="mt-4 space-y-3">
+          <ActionForm action={adminBroadcastWhatsApp} className="mt-4 space-y-3">
             <textarea
               name="message"
               required
@@ -235,12 +236,12 @@ export default async function CommunicationsPage() {
               className="input"
             />
             <Button type="submit" className="w-full">Send to All {memberCount} Members</Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <Card className="p-5">
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Message an Individual</p>
-          <form action={adminSendWhatsAppIndividual} className="mt-4 space-y-3">
+          <ActionForm action={adminSendWhatsAppIndividual} className="mt-4 space-y-3">
             <select name="userId" required defaultValue="" className="input">
               <option value="" disabled>Choose a member</option>
               {users.map((u) => (
@@ -251,7 +252,7 @@ export default async function CommunicationsPage() {
             </select>
             <textarea name="message" required rows={4} placeholder="Your message…" className="input" />
             <Button type="submit" className="w-full">Send Message</Button>
-          </form>
+          </ActionForm>
         </Card>
       </div>
 

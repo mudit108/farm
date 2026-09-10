@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ActionForm } from "@/components/admin/action-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { currentCrop, membershipPlans } from "@/lib/demo-data";
@@ -109,7 +110,7 @@ export default async function CropsManagementPage() {
             display number. Changes apply to the very next purchase,
             everywhere prices are shown.
           </p>
-          <form action={adminUpdatePlanPrices} className="mt-4 space-y-4">
+          <ActionForm action={adminUpdatePlanPrices} className="mt-4 space-y-4">
             {membershipPlans.map((plan) => {
               const currentPrice = pricesByPlan.get(plan.id) ?? plan.priceInr;
               const linearPrice = basePricePerPlot * plan.plots;
@@ -139,7 +140,7 @@ export default async function CropsManagementPage() {
               );
             })}
             <Button type="submit" className="w-full">Save Prices</Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <Card className="mt-6 max-w-lg p-5">
@@ -153,7 +154,7 @@ export default async function CropsManagementPage() {
             don&apos;t burn uses.
           </p>
 
-          <form action={adminCreateDiscountCode} className="mt-4 space-y-3">
+          <ActionForm action={adminCreateDiscountCode} className="mt-4 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium">Code</span>
@@ -184,7 +185,7 @@ export default async function CropsManagementPage() {
               </label>
             </div>
             <Button type="submit" className="w-full">Create Code</Button>
-          </form>
+          </ActionForm>
 
           {discountCodes.length > 0 && (
             <div className="mt-5 space-y-2 border-t border-[var(--color-ink)]/10 pt-4">
@@ -201,13 +202,13 @@ export default async function CropsManagementPage() {
                       {c.note && ` · ${c.note}`}
                     </span>
                   </div>
-                  <form action={adminToggleDiscountCode}>
+                  <ActionForm action={adminToggleDiscountCode}>
                     <input type="hidden" name="id" value={c.id} />
                     <input type="hidden" name="makeActive" value={c.is_active ? "false" : "true"} />
                     <button className={`text-xs font-medium hover:underline ${c.is_active ? "text-[var(--color-live)]" : "text-[var(--color-green)]"}`}>
                       {c.is_active ? "Deactivate" : "Reactivate"}
                     </button>
-                  </form>
+                  </ActionForm>
                 </div>
               ))}
             </div>
@@ -225,7 +226,7 @@ export default async function CropsManagementPage() {
             legal text never describes a model you&apos;re not actually
             using.
           </p>
-          <form action={adminUpdateHarvestDistribution} className="mt-4 space-y-4">
+          <ActionForm action={adminUpdateHarvestDistribution} className="mt-4 space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Distribution model</span>
               <select name="harvestDistributionModel" defaultValue={distributionModel} className="input">
@@ -252,7 +253,7 @@ export default async function CropsManagementPage() {
               </span>
             </label>
             <Button type="submit" className="w-full">Save Distribution Settings</Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <Card className="mt-6 max-w-lg p-5">
@@ -264,7 +265,7 @@ export default async function CropsManagementPage() {
             inclusions). Update this if the real facility changes, so the
             site never claims a capacity you don&apos;t have.
           </p>
-          <form action={adminUpdateWarehouseCapacity} className="mt-4 flex items-end gap-3">
+          <ActionForm action={adminUpdateWarehouseCapacity} className="mt-4 flex items-end gap-3">
             <label className="block flex-1">
               <span className="mb-1.5 block text-sm font-medium">Capacity (tonnes)</span>
               <input
@@ -277,7 +278,7 @@ export default async function CropsManagementPage() {
               />
             </label>
             <Button type="submit">Save</Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <Card className="mt-6 max-w-lg p-5">
@@ -288,7 +289,7 @@ export default async function CropsManagementPage() {
             Shown in the site footer and used for the WhatsApp Us button —
             change it here any time, no redeploy needed.
           </p>
-          <form action={adminUpdateContactInfo} className="mt-4 space-y-4">
+          <ActionForm action={adminUpdateContactInfo} className="mt-4 space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Contact email</span>
               <input name="contactEmail" type="email" defaultValue={season?.contact_email ?? ""} className="input" placeholder="hello@example.com" />
@@ -301,14 +302,14 @@ export default async function CropsManagementPage() {
               </span>
             </label>
             <Button type="submit" className="w-full">Save Contact Info</Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <Card className="mt-6 max-w-lg p-6">
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
             Season State — shown to every customer
           </p>
-          <form action={adminUpdateSeason} className="mt-4 space-y-4">
+          <ActionForm action={adminUpdateSeason} className="mt-4 space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Current stage</span>
               <select name="currentStage" defaultValue={season?.current_stage} className="input">
@@ -341,7 +342,7 @@ export default async function CropsManagementPage() {
               </span>
             </label>
             <Button type="submit" className="w-full">Update Season</Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <Card className="mt-6 max-w-lg p-5">

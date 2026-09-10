@@ -1,4 +1,5 @@
 import { Video } from "lucide-react";
+import { ActionForm } from "@/components/admin/action-form";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export default async function CctvManagementPage() {
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
             Add Camera
           </p>
-          <form action={adminUpsertCamera} className="mt-4 grid gap-3 sm:grid-cols-4">
+          <ActionForm action={adminUpsertCamera} className="mt-4 grid gap-3 sm:grid-cols-4">
             <input name="name" required placeholder="Camera name" className="input" />
             <input name="plotNumber" type="number" min={1} max={maxPlot} placeholder="Plot # (optional)" className="input" />
             <input name="streamUrl" placeholder="rtsp:// or https://…m3u8" className="input" />
@@ -51,7 +52,7 @@ export default async function CctvManagementPage() {
             <Button type="submit" size="sm" className="sm:col-span-4">
               Add Camera
             </Button>
-          </form>
+          </ActionForm>
         </Card>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -66,7 +67,7 @@ export default async function CctvManagementPage() {
                 Plot: {cam.plot_number ?? "—"}
               </p>
 
-              <form action={adminUpsertCamera} className="mt-4 space-y-2">
+              <ActionForm action={adminUpsertCamera} className="mt-4 space-y-2">
                 <input type="hidden" name="id" value={cam.id} />
                 <input name="name" defaultValue={cam.name} className="input" placeholder="Name" />
                 <input name="plotNumber" type="number" min={1} max={maxPlot} defaultValue={cam.plot_number ?? ""} className="input" placeholder="Plot #" />
@@ -81,11 +82,11 @@ export default async function CctvManagementPage() {
                     Save
                   </Button>
                 </div>
-              </form>
-              <form action={adminDeleteCamera} className="mt-2">
+              </ActionForm>
+              <ActionForm action={adminDeleteCamera} className="mt-2">
                 <input type="hidden" name="id" value={cam.id} />
                 <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
-              </form>
+              </ActionForm>
             </Card>
           ))}
         </div>

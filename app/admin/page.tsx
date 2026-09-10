@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -56,6 +57,25 @@ export default async function AdminOverview() {
   return (
     <div>
       <PageHeader title="Overview" subtitle="Mera Khet · Sujangarh, Rajasthan" />
+
+      <div className="px-6 pt-4 sm:px-10">
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+          <div>
+            <p className="text-sm font-medium">Download all data</p>
+            <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">
+              Every member, plot, payment, receipt, certificate, delivery,
+              message and expense — as CSVs in one ZIP. Contains personal
+              data; store it securely.
+            </p>
+          </div>
+          <a
+            href="/api/admin/export/all"
+            className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--color-ink)]/15 px-4 py-2 text-sm font-medium hover:border-[var(--color-green)] hover:text-[var(--color-green-deep)]"
+          >
+            <Download className="h-4 w-4" /> Export Everything
+          </a>
+        </Card>
+      </div>
 
       <div className="grid gap-4 p-6 sm:grid-cols-2 sm:px-10 lg:grid-cols-4">
         {stats.map((s) => (

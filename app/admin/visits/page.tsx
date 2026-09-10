@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ActionForm } from "@/components/admin/action-form";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -58,24 +59,24 @@ export default async function VisitsPage() {
                 </Badge>
                 {v.status === "requested" && (
                   <>
-                    <form action={adminSetVisitStatus}>
+                    <ActionForm action={adminSetVisitStatus}>
                       <input type="hidden" name="id" value={v.id} />
                       <input type="hidden" name="status" value="declined" />
                       <Button size="sm" variant="outline" type="submit">Decline</Button>
-                    </form>
-                    <form action={adminSetVisitStatus}>
+                    </ActionForm>
+                    <ActionForm action={adminSetVisitStatus}>
                       <input type="hidden" name="id" value={v.id} />
                       <input type="hidden" name="status" value="approved" />
                       <Button size="sm" type="submit">Approve</Button>
-                    </form>
+                    </ActionForm>
                   </>
                 )}
                 {v.status === "approved" && (
-                  <form action={adminSetVisitStatus}>
+                  <ActionForm action={adminSetVisitStatus}>
                     <input type="hidden" name="id" value={v.id} />
                     <input type="hidden" name="status" value="completed" />
                     <Button size="sm" variant="outline" type="submit">Mark Completed</Button>
-                  </form>
+                  </ActionForm>
                 )}
               </div>
             </Card>
