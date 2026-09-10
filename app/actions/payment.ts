@@ -119,7 +119,22 @@ export async function createPlanOrder(
     if (startPlot < 1 || endPlot > totalPlots) {
       return { status: "error", message: "That plot range is out of bounds." };
     }
-    const { count } = await supabase
+    // MUST use the service client, not the session client.
+    //
+    // RLS on khet_club_plots is "users can read own plot"
+    // (user_id = auth.uid()). Available plots have user_id = NULL, so
+    // that predicate is never true for them — a customer's own session
+    // sees ZERO available plots. Running this count through the session
+    // client therefore always returned 0, which made this check fail
+    // 100% of the time and made "Choose my own plots" completely
+    // unusable, no matter how free the plots actually were.
+    //
+    // Reading plot availability server-side to validate a purchase is
+    // not user-scoped data access, so service_role is correct here. The
+    // public plot grid gets the same information through the
+    // khet_club_all_plot_statuses() security-definer RPC.
+    const availabilityClient = createServiceClient();
+    const { count } = await availabilityClient
       .from("khet_club_plots")
       .select("plot_number", { count: "exact", head: true })
       .gte("plot_number", startPlot)
