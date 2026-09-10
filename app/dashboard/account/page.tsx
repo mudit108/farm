@@ -33,6 +33,7 @@ export default async function AccountPage() {
               email={user?.email ?? ""}
               fullName={(user?.user_metadata?.full_name as string) ?? ""}
               phone={(user?.user_metadata?.phone as string) ?? ""}
+              city={(user?.user_metadata?.city as string) ?? ""}
             />
           </div>
         </Card>

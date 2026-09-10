@@ -16,7 +16,8 @@ import { adminAddDocument, adminDeleteDocument } from "@/app/actions/admin-conte
 import {
   adminSetHarvestTotal,
   adminRecordDelivery,
-  adminDeleteDelivery,
+  adminVoidDelivery,
+  adminRestoreDelivery,
   adminApproveHarvestChange,
   adminRejectHarvestChange,
 } from "@/app/actions/admin-harvest";
@@ -39,7 +40,7 @@ type PlotRow = {
 };
 type CertRow = { claim_batch_id: string; certificate_number: string; email_sent: boolean; whatsapp_sent: boolean };
 type Pref = { user_id: string; method: string; schedule: string; installment_kg: number | null; confirmed_total_kg: number | null };
-type Delivery = { id: string; user_id: string; kg_delivered: number; delivered_at: string; notes: string | null };
+type Delivery = { id: string; user_id: string; kg_delivered: number; delivered_at: string; notes: string | null; voided_at: string | null; void_reason: string | null };
 type ChangeRequest = {
   id: string;
   user_id: string;
@@ -84,7 +85,7 @@ export default async function MembersPage({
       .order("plot_number"),
     supabase.from("khet_club_certificates").select("claim_batch_id, certificate_number, email_sent, whatsapp_sent"),
     supabase.from("khet_club_harvest_preferences").select("user_id, method, schedule, installment_kg, confirmed_total_kg"),
-    supabase.from("khet_club_harvest_deliveries").select("id, user_id, kg_delivered, delivered_at, notes").order("delivered_at", { ascending: false }),
+    supabase.from("khet_club_harvest_deliveries").select("id, user_id, kg_delivered, delivered_at, notes, voided_at, void_reason").order("delivered_at", { ascending: false }),
     supabase
       .from("khet_club_harvest_preference_requests")
       .select("id, user_id, requested_method, requested_schedule, requested_installment_kg, requested_at")
@@ -140,8 +141,11 @@ export default async function MembersPage({
     Array.from(batches.entries()).filter(([, rows]) => matchesQuery(rows))
   );
 
+  // Voided deliveries are still fetched (so admin can see and restore
+  // them) but must never count toward a member's delivered total.
   const deliveredByUser = new Map<string, number>();
   for (const d of deliveries) {
+    if (d.voided_at) continue;
     deliveredByUser.set(d.user_id, (deliveredByUser.get(d.user_id) ?? 0) + d.kg_delivered);
   }
 
@@ -258,11 +262,20 @@ export default async function MembersPage({
                     </form>
                   )}
 
-                  <form action={adminFreeBatch} className="mt-2">
+                  <form action={adminFreeBatch} className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--color-ink)]/10 pt-3">
                     <input type="hidden" name="claimBatchId" value={batchId} />
+                    <input
+                      name="confirmRemove"
+                      placeholder="Type REMOVE"
+                      className="w-28 rounded-[var(--radius-sm)] border border-[var(--color-live)]/30 bg-[var(--color-surface)] px-2 py-1 text-xs"
+                      autoComplete="off"
+                    />
                     <button className="text-xs font-medium text-[var(--color-live)] hover:underline">
                       Free Up All {rows.length} Plot{rows.length > 1 ? "s" : ""}
                     </button>
+                    <span className="w-full text-xs text-[var(--color-ink-soft)]">
+                      Removes this member&apos;s entire allocation. Archived to the clear log, but they&apos;d need to purchase again.
+                    </span>
                   </form>
                 </Card>
               );
@@ -401,9 +414,22 @@ export default async function MembersPage({
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     {p.status === "filled" ? (
-                      <form action={adminMarkPlotAvailable}>
+                      <form action={adminMarkPlotAvailable} className="flex items-center justify-end gap-1.5">
                         <input type="hidden" name="plotNumber" value={p.plot_number} />
-                        <button className="text-xs font-medium text-[var(--color-brown)] hover:underline">Free Up</button>
+                        {p.user_id ? (
+                          <>
+                            <input
+                              name="confirmPlotNumber"
+                              placeholder={`Type ${p.plot_number}`}
+                              className="w-20 rounded-[var(--radius-sm)] border border-[var(--color-live)]/30 bg-[var(--color-surface)] px-2 py-1 text-xs"
+                              autoComplete="off"
+                              title="This plot belongs to a registered member — type the plot number to confirm."
+                            />
+                            <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Free Up</button>
+                          </>
+                        ) : (
+                          <button className="text-xs font-medium text-[var(--color-brown)] hover:underline">Free Up</button>
+                        )}
                       </form>
                     ) : (
                       <form action={adminMarkPlotFilled}>
@@ -535,17 +561,37 @@ export default async function MembersPage({
             <tbody className="divide-y divide-[var(--color-ink)]/10">
               {deliveries.map((d) => {
                 const user = usersById.get(d.user_id);
+                const isVoided = Boolean(d.voided_at);
                 return (
-                  <tr key={d.id}>
+                  <tr key={d.id} className={isVoided ? "opacity-55" : ""}>
                     <td className="px-4 py-2.5">{(user?.user_metadata?.full_name as string) || user?.email || "—"}</td>
                     <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">{new Date(d.delivered_at).toLocaleDateString("en-IN")}</td>
-                    <td className="px-4 py-2.5 font-mono-data">{d.kg_delivered} kg</td>
-                    <td className="px-4 py-2.5 text-[var(--color-ink-soft)]">{d.notes ?? "—"}</td>
+                    <td className={`px-4 py-2.5 font-mono-data ${isVoided ? "line-through" : ""}`}>{d.kg_delivered} kg</td>
+                    <td className="px-4 py-2.5 text-[var(--color-ink-soft)]">
+                      {isVoided ? (
+                        <span className="text-xs">Voided — {d.void_reason}</span>
+                      ) : (
+                        d.notes ?? "—"
+                      )}
+                    </td>
                     <td className="px-4 py-2.5 text-right">
-                      <form action={adminDeleteDelivery}>
-                        <input type="hidden" name="id" value={d.id} />
-                        <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
-                      </form>
+                      {isVoided ? (
+                        <form action={adminRestoreDelivery}>
+                          <input type="hidden" name="id" value={d.id} />
+                          <button className="text-xs font-medium text-[var(--color-green)] hover:underline">Restore</button>
+                        </form>
+                      ) : (
+                        <form action={adminVoidDelivery} className="flex items-center justify-end gap-1.5">
+                          <input type="hidden" name="id" value={d.id} />
+                          <input
+                            name="voidReason"
+                            placeholder="Reason"
+                            className="w-28 rounded-[var(--radius-sm)] border border-[var(--color-ink)]/15 bg-[var(--color-surface)] px-2 py-1 text-xs"
+                            autoComplete="off"
+                          />
+                          <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Void</button>
+                        </form>
+                      )}
                     </td>
                   </tr>
                 );

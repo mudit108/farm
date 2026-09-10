@@ -14,7 +14,7 @@ export const dashboardNavGroups = [
     label: "Account",
     items: [
       { href: "/dashboard/account", label: "Account", icon: User },
-      { href: "/dashboard/farm-visit", label: "Help", icon: LifeBuoy },
+      { href: "/dashboard/farm-visit", label: "Visits & Support", icon: LifeBuoy },
     ],
   },
 ];
@@ -30,5 +30,5 @@ export const dashboardNav = [
   { href: "/dashboard/select-plot", label: "Select Plan", icon: ClipboardCheck },
   { href: "/dashboard/crop-cycle", label: "Farm Activity", icon: Activity },
   { href: "/dashboard/account", label: "Account", icon: User },
-  { href: "/dashboard/farm-visit", label: "Help", icon: LifeBuoy },
+  { href: "/dashboard/farm-visit", label: "Visits & Support", icon: LifeBuoy },
 ];

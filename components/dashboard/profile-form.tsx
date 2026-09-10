@@ -11,10 +11,12 @@ export function ProfileForm({
   email,
   fullName,
   phone,
+  city,
 }: {
   email: string;
   fullName: string;
   phone: string;
+  city: string;
 }) {
   const [state, formAction, isPending] = useActionState(updateProfile, initialState);
 
@@ -32,6 +34,11 @@ export function ProfileForm({
         <span className="mb-1.5 block text-sm font-medium">Phone</span>
         <input name="phone" required type="tel" inputMode="numeric" placeholder="9876543210" className="input" defaultValue={phone} />
         <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">{PHONE_HELP_TEXT} — farm updates are sent here on WhatsApp.</span>
+      </label>
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Delivery city</span>
+        <input name="city" required type="text" placeholder="e.g. Jaipur" className="input" defaultValue={city} />
+        <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Where your harvest should be delivered.</span>
       </label>
 
       {state.status === "error" && (

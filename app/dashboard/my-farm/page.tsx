@@ -72,6 +72,7 @@ export default async function MyFarmPage() {
           .from("khet_club_harvest_deliveries")
           .select("id, kg_delivered, delivered_at, notes")
           .eq("user_id", user.id)
+          .is("voided_at", null)
           .order("delivered_at", { ascending: false }),
       ]);
     myPlots = (data ?? []) as MyPlot[];

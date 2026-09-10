@@ -32,7 +32,7 @@ export default async function HelpPage() {
 
   return (
     <div>
-      <PageHeader title="Help" subtitle="Request a farm visit or reach our support team." />
+      <PageHeader title="Visits & Support" subtitle="Request a farm visit or reach our support team." />
 
       <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-2">
         <Card className="p-6">

@@ -22,7 +22,7 @@ export default async function MembershipAgreementPage() {
         <strong>MK Farms</strong> (&quot;Mera Khet,&quot;
         &quot;we,&quot; &quot;us&quot;) and the individual who purchases a
         seasonal farm plot membership (&quot;you,&quot; &quot;Member&quot;)
-        through merakhet.example.com or its dashboard.
+        through www.merakhet.in or its dashboard.
       </p>
 
       <h2>1. What you are purchasing</h2>
@@ -51,7 +51,7 @@ export default async function MembershipAgreementPage() {
 
       <h2>3. What&apos;s included</h2>
       <ul>
-        <li>Cultivation of your allocated plots using natural farming practices (no synthetic pesticides or chemical fertilizers) for the season&apos;s crop — see our <Link href="/disclaimer" className="text-[var(--color-green)] underline">Disclaimer</Link> for our current organic certification status</li>
+        <li>Cultivation of your allocated plots with fertilizer applied based on soil testing and crop need — see our <Link href="/disclaimer" className="text-[var(--color-green)] underline">Disclaimer</Link> for our current organic certification status</li>
         <li>Camera access to your plot(s) via your dashboard, to the extent camera infrastructure is live for that plot</li>
         <li>Periodic farm updates (photos, notes, crop-stage changes)</li>
         <li>Eligibility to request a farm visit, subject to scheduling and operational availability</li>

@@ -21,9 +21,9 @@ export function Hero({ filledPlots, totalPlots }: { filledPlots: number; totalPl
             grown for you.
           </h1>
           <p className="mt-6 max-w-md text-lg text-[var(--color-ink-soft)]">
-            A plot of real farmland in Rajasthan, farmed using natural
-            methods by our team for one season — and the harvest comes
-            home to you. From our soil to your plate, you know your food.
+            A plot of real farmland in Rajasthan, farmed for you by
+            our team for one season — and the harvest comes home to
+            you. From our soil to your plate, you know your food.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link href="/auth/signup">
@@ -55,7 +55,7 @@ export function Hero({ filledPlots, totalPlots }: { filledPlots: number; totalPl
               />
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-              <span>Natural Farming Practices</span>
+              <span>Responsibly Farmed</span>
               <span className="text-[var(--color-ink)]/20">•</span>
               <span>Seasonal Only</span>
               <span className="text-[var(--color-ink)]/20">•</span>

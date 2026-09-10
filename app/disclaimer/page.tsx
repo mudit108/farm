@@ -28,15 +28,15 @@ export default function DisclaimerPage() {
 
       <h2>Organic Claims and Certification Status</h2>
       <p>
-        Plots are cultivated without synthetic pesticides or chemical
-        fertilizers — what we refer to elsewhere on this site as
-        &quot;natural farming practices.&quot; This is Mera Khet&apos;s
-        first season, and we do not yet hold formal third-party organic
-        certification. We are in the transition period toward obtaining
-        it, and will name the certifying body here and update every
-        other reference on this site once certification is granted. Until
-        then, please treat &quot;organic&quot; on this site as a
-        description of our farming methods, not a certified status.
+        Fertilizer is applied based on soil testing and each
+        crop&apos;s actual needs, rather than indiscriminate use. This
+        is Mera Khet&apos;s first season, and we do not currently hold
+        formal third-party organic certification. We are actively
+        working toward it, aiming to reach certified organic status by
+        next season, and will name the certifying body here once
+        obtained. Until then, please treat any mention of &quot;organic&quot;
+        on this site as a stated goal, not a current or certified
+        status.
       </p>
 
       <h2>Health and nutrition information</h2>

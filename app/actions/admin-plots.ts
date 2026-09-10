@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { createServiceClient } from "@/lib/supabase/service";
+import { createSessionClient } from "@/lib/supabase/session";
 import { membershipPlans } from "@/lib/demo-data";
 
 /**
@@ -27,6 +28,61 @@ export async function adminMarkPlotAvailable(formData: FormData): Promise<void> 
   if (!Number.isInteger(plotNumber)) return;
 
   const supabase = createServiceClient();
+
+  // Read the plot first — needed both to decide whether this is a real
+  // member's allocation and to archive what's about to be wiped.
+  const { data: plot } = await supabase
+    .from("khet_club_plots")
+    .select("plot_number, user_id, full_name, phone, email, city, plan_id, claim_batch_id, assigned_at")
+    .eq("plot_number", plotNumber)
+    .maybeSingle();
+
+  if (!plot) return;
+
+  const wasMemberHeld = Boolean(plot.user_id);
+
+  // Guard: a plot held by a real account is someone's paid allocation.
+  // Clearing it requires the admin to type the plot number back, so a
+  // stray click in a long table can't destroy a membership. Offline
+  // reservations (no linked account) stay one-click, since there's no
+  // member to harm.
+  if (wasMemberHeld) {
+    const confirmValue = String(formData.get("confirmPlotNumber") || "").trim();
+    if (confirmValue !== String(plotNumber)) {
+      console.warn(
+        `adminMarkPlotAvailable blocked: plot ${plotNumber} is member-held and confirmation did not match.`
+      );
+      return;
+    }
+  }
+
+  const session = await createSessionClient();
+  const {
+    data: { user: admin },
+  } = await session.auth.getUser();
+
+  // Archive before wiping — this is the only record of who held it.
+  const { error: logError } = await supabase.from("khet_club_plot_clear_log").insert({
+    plot_number: plot.plot_number,
+    previous_user_id: plot.user_id,
+    previous_full_name: plot.full_name,
+    previous_phone: plot.phone,
+    previous_email: plot.email,
+    previous_city: plot.city,
+    previous_plan_id: plot.plan_id,
+    previous_claim_batch_id: plot.claim_batch_id,
+    previous_assigned_at: plot.assigned_at,
+    was_member_held: wasMemberHeld,
+    cleared_by: admin?.id ?? null,
+  });
+
+  // If the archive fails, do NOT proceed — clearing without a record is
+  // exactly the situation this is meant to prevent.
+  if (logError) {
+    console.error("adminMarkPlotAvailable aborted — could not archive plot:", logError);
+    return;
+  }
+
   const { error } = await supabase
     .from("khet_club_plots")
     .update({
@@ -90,7 +146,51 @@ export async function adminFreeBatch(formData: FormData): Promise<void> {
   const claimBatchId = String(formData.get("claimBatchId") || "");
   if (!claimBatchId) return;
 
+  // This removes an entire membership (up to 6 plots) at once, so it
+  // always requires deliberate confirmation — there is no "safe" case
+  // here the way there is for a single offline-reserved plot.
+  const confirmValue = String(formData.get("confirmRemove") || "").trim().toUpperCase();
+  if (confirmValue !== "REMOVE") {
+    console.warn("adminFreeBatch blocked: confirmation text did not match.");
+    return;
+  }
+
   const supabase = createServiceClient();
+
+  const { data: plots } = await supabase
+    .from("khet_club_plots")
+    .select("plot_number, user_id, full_name, phone, email, city, plan_id, claim_batch_id, assigned_at")
+    .eq("claim_batch_id", claimBatchId);
+
+  if (!plots || plots.length === 0) return;
+
+  const session = await createSessionClient();
+  const {
+    data: { user: admin },
+  } = await session.auth.getUser();
+
+  // Archive every plot in the batch before wiping any of them.
+  const { error: logError } = await supabase.from("khet_club_plot_clear_log").insert(
+    plots.map((p) => ({
+      plot_number: p.plot_number,
+      previous_user_id: p.user_id,
+      previous_full_name: p.full_name,
+      previous_phone: p.phone,
+      previous_email: p.email,
+      previous_city: p.city,
+      previous_plan_id: p.plan_id,
+      previous_claim_batch_id: p.claim_batch_id,
+      previous_assigned_at: p.assigned_at,
+      was_member_held: Boolean(p.user_id),
+      cleared_by: admin?.id ?? null,
+    }))
+  );
+
+  if (logError) {
+    console.error("adminFreeBatch aborted — could not archive plots:", logError);
+    return;
+  }
+
   const { error } = await supabase
     .from("khet_club_plots")
     .update({

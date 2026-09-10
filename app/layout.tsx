@@ -22,14 +22,14 @@ const jbmono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Farm Plots in Rajasthan | Natural Farming & 24×7 Monitoring",
+  title: "Farm Plots in Rajasthan | Soil-Tested Farming & 24×7 Monitoring",
   description:
-    "From our soil to your plate — you should know your food. Reserve 1, 3, or 6 wheat plots in Rajasthan, grown using natural farming practices and tracked from sowing to harvest. Choose home delivery, milling into flour, or market sale for your harvest.",
-  metadataBase: new URL("https://merakhet.example.com"),
+    "From our soil to your plate — you should know your food. Reserve 1, 3, or 6 wheat plots in Rajasthan, fertilized based on soil testing and tracked from sowing to harvest. Choose home delivery, milling into flour, or market sale for your harvest.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.merakhet.in"),
   openGraph: {
     title: "Farm Plots in Rajasthan | Mera Khet",
     description:
-      "From our soil to your plate — you should know your food. Naturally-farmed wheat plots in Sujangarh, Rajasthan, farmed for you and tracked all season.",
+      "From our soil to your plate — you should know your food. Soil-tested wheat plots in Sujangarh, Rajasthan, farmed for you and tracked all season.",
     type: "website",
     locale: "en_IN",
     images: [
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Farm Plots in Rajasthan | Mera Khet",
-    description: "From our soil to your plate — you should know your food. Naturally-farmed wheat plots in Rajasthan.",
+    description: "From our soil to your plate — you should know your food. Soil-tested wheat plots in Rajasthan.",
     images: ["/images/og-image.jpg"],
   },
 };

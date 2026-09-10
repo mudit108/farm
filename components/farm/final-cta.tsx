@@ -6,7 +6,7 @@ import { WheatIcon } from "@/components/farm/illustrations/wheat-icon";
 
 const inclusions = [
   "Your own numbered plot(s), pick or auto-assign",
-  "Natural farming practices, managed for you",
+  "Soil-tested, responsible fertilizer use",
   "Camera access + updates all season",
   "Your harvest delivered, milled, or sold",
 ];

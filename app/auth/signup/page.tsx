@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { normalizeIndianMobile, PHONE_HELP_TEXT, PHONE_ERROR_TEXT } from "@/lib/phone";
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -33,7 +33,7 @@ export default function SignupPage() {
       options: {
         // Verified name/phone the claim-a-plot step reads later — never
         // taken from client input again after this point.
-        data: { full_name: form.name, phone: normalizedPhone },
+        data: { full_name: form.name, phone: normalizedPhone, city: form.city.trim() },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/select-plot`,
       },
     });
@@ -96,6 +96,11 @@ export default function SignupPage() {
           <span className="mb-1.5 block text-sm font-medium">Phone</span>
           <input required type="tel" inputMode="numeric" placeholder="9876543210" className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">{PHONE_HELP_TEXT} — we send farm updates here on WhatsApp.</span>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Delivery city</span>
+          <input required type="text" placeholder="e.g. Jaipur" className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+          <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Where your harvest should be delivered. You can change this later.</span>
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium">Password</span>

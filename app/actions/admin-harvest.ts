@@ -57,7 +57,7 @@ export async function adminRecordDelivery(formData: FormData): Promise<void> {
   // Best-effort WhatsApp update — never blocks the delivery record itself.
   const [{ data: pref }, { data: deliveries }, { data: userRes }] = await Promise.all([
     supabase.from("khet_club_harvest_preferences").select("confirmed_total_kg").eq("user_id", userId).maybeSingle(),
-    supabase.from("khet_club_harvest_deliveries").select("kg_delivered").eq("user_id", userId),
+    supabase.from("khet_club_harvest_deliveries").select("kg_delivered").eq("user_id", userId).is("voided_at", null),
     supabase.auth.admin.getUserById(userId),
   ]);
 
@@ -83,14 +83,64 @@ export async function adminRecordDelivery(formData: FormData): Promise<void> {
   }
 }
 
-export async function adminDeleteDelivery(formData: FormData): Promise<void> {
+/**
+ * Voids a delivery record rather than deleting it. A delivery is the
+ * record that a member physically received wheat — if one is removed by
+ * mistake, their delivered total silently changes and there's no
+ * evidence of the handover left to check against in a dispute.
+ *
+ * The row is kept and flagged instead, so it stays in the history and
+ * can be restored with a single update. Requires a reason, so the log
+ * explains itself months later.
+ */
+export async function adminVoidDelivery(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") || "");
+  const reason = String(formData.get("voidReason") || "").trim();
+  if (!id) return;
+
+  if (!reason) {
+    console.warn("adminVoidDelivery blocked: a reason is required.");
+    return;
+  }
+
+  const session = await createSessionClient();
+  const {
+    data: { user: admin },
+  } = await session.auth.getUser();
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_harvest_deliveries")
+    .update({
+      voided_at: new Date().toISOString(),
+      voided_by: admin?.id ?? null,
+      void_reason: reason,
+    })
+    .eq("id", id)
+    .is("voided_at", null);
+
+  if (error) {
+    console.error("adminVoidDelivery failed:", error);
+    return;
+  }
+
+  revalidatePath("/admin/members");
+  revalidatePath("/dashboard/my-farm");
+}
+
+/** Undoes a void — the reason it's worth keeping the row at all. */
+export async function adminRestoreDelivery(formData: FormData): Promise<void> {
   const id = String(formData.get("id") || "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from("khet_club_harvest_deliveries").delete().eq("id", id);
+  const { error } = await supabase
+    .from("khet_club_harvest_deliveries")
+    .update({ voided_at: null, voided_by: null, void_reason: null })
+    .eq("id", id);
+
   if (error) {
-    console.error("adminDeleteDelivery failed:", error);
+    console.error("adminRestoreDelivery failed:", error);
     return;
   }
 

@@ -54,7 +54,7 @@ export const wheatComparisonRows = [
   { label: "Where it's grown", unknown: "Could be anywhere", known: "Sujangarh, Rajasthan — your exact plot" },
   { label: "Who grew it", unknown: "You'll never meet them", known: "Our team — and you can visit" },
   { label: "What variety it is", unknown: "Usually unlabeled", known: "RAJ 1482, bred for Rajasthan's soil" },
-  { label: "What's used on it", unknown: "No way to ask", known: "No synthetic pesticides or chemical fertilizers" },
+  { label: "What's used on it", unknown: "No way to ask", known: "Soil-tested — fertilizer applied to actual crop need" },
   { label: "How old it is", unknown: "Could be months, or seasons", known: "This season's harvest, delivered in 2–3 weeks" },
   { label: "How it's milled", unknown: "Often refined", known: "Milled whole — bran and germ intact" },
   { label: "Where it's stored", unknown: "Changes hands, unrecorded", known: "Our own 30-tonne on-site warehouse" },
@@ -131,7 +131,7 @@ export function summarizePlotHoldings(plots: { plan_id: string | null }[]) {
 // Shared by every plan size — every plan includes the same set of benefits.
 export const planIncludes = [
   "Dedicated farm plot allocation",
-  "Wheat cultivation using natural farming practices",
+  "Wheat cultivation with soil-tested, responsible fertilizer use",
   "Farm management by our team",
   "24×7 CCTV access*",
   "Farm progress updates",
@@ -206,7 +206,7 @@ export const demoFaqs = [
   },
   {
     q: "Is the farm organic?",
-    a: "We use natural farming practices on every plot — no synthetic pesticides or chemical fertilizers. This is our first season, and we're currently in the transition period toward formal third-party organic certification, which we'll update here once obtained.",
+    a: "Not yet, and we won't claim otherwise. Fertilizer is applied based on soil testing and each crop's actual needs — not indiscriminate use. This is our first season, and we're actively working toward certified organic farming, which we're aiming to reach next season. We'll update this the moment certification is achieved.",
   },
   {
     q: "What are my options for the harvest?",
@@ -214,7 +214,7 @@ export const demoFaqs = [
   },
   {
     q: "What do I receive with my membership?",
-    a: "A dedicated allocation of farm plots within Mera Khet (1, 3, or 6 plots), wheat cultivation using natural farming practices managed by our team, 24×7 CCTV access to your plots, regular farm updates, crop-cycle tracking, and eligibility to visit the farm.",
+    a: "A dedicated allocation of farm plots within Mera Khet (1, 3, or 6 plots), wheat cultivation with soil-tested, responsible fertilizer management by our team, 24×7 CCTV access to your plots, regular farm updates, crop-cycle tracking, and eligibility to visit the farm.",
   },
   {
     q: "What plan sizes are available?",

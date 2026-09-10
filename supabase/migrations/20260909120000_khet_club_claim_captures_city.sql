@@ -1,0 +1,16 @@
+-- The plots table has always had a `city` column, but nothing ever
+-- populated it: the claim function read full_name and phone from user
+-- metadata and ignored city entirely, and signup never collected it.
+-- Result: city was empty for every member, making it impossible to
+-- plan delivery routes from real data.
+--
+-- This adds city to the same metadata read the function already does.
+-- Existing members are unaffected (their city stays null until they
+-- fill it in from their profile page, which now syncs it to their
+-- plot rows via the service client — `authenticated` is granted UPDATE
+-- on `custom_name` only, so a session-client write would fail silently).
+-- Applied to project aoorwbjnskretualzzhi ("merakhet").
+--
+-- Full function body is identical to the previous version except for
+-- the v_city declaration, the metadata read, and the city column in
+-- the final UPDATE. See 20260901061800 for the original.

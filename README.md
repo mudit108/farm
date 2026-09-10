@@ -34,6 +34,22 @@ customer would look for, but they are **not ready to rely on as-is**:
 
 ## This round's additions
 
+- **"Natural farming practices" corrected sitewide — second such
+  correction.** The founder clarified that fertilizer is currently
+  applied based on soil testing and crop need, not necessarily
+  chemical-free, with certified organic being an active goal for next
+  season, not a current fact. "No synthetic pesticides or chemical
+  fertilizers" and "natural farming practices" were both live claims
+  that no longer matched reality. Corrected across all 11 places they
+  appeared: the hero badge and subhead, Harvest Options, Final CTA,
+  Legal Trust, the comparison table, two FAQ entries, the plan
+  inclusions list, the Disclaimer, the Membership Agreement, and — as
+  with the "100% Organic" fix before it — the SEO title and meta
+  descriptions. New language: "soil-tested, responsible fertilizer
+  use," with the organic goal framed as an aim with a target ("aiming
+  to reach next season"), not a promised date, so a certification
+  delay doesn't turn into a new false claim.
+
 - **Open Graph / link-preview image** (`public/images/og-image.jpg`,
   wired via `app/layout.tsx`'s `openGraph.images` / `twitter.images`):
   every WhatsApp, Facebook, or iMessage share of the site now shows a

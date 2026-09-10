@@ -29,7 +29,8 @@ export function HarvestOptions({ warehouseTonnes }: { warehouseTonnes: number })
             </h2>
             <p className="mt-4 max-w-md text-[var(--color-ink-soft)]">
               When your crop is ready, choose how you&apos;d like to receive
-              it — every crop grown using natural farming practices.
+              it — every crop grown with soil-tested, responsible
+              fertilizer use.
             </p>
           </Reveal>
 

@@ -44,11 +44,13 @@ export function LegalTrust() {
               factors.
             </p>
             <p>
-              Every plot at Mera Khet is cultivated using natural farming
-              practices — no synthetic pesticides or chemical fertilizers
-              are used. We&apos;re currently in our first season and in
-              the transition period toward formal organic certification;
-              we&apos;ll update this once certification is obtained.
+              Every plot at Mera Khet is fertilized based on soil
+              testing and each crop&apos;s actual needs — not
+              indiscriminate use. This is our first season, and
+              we&apos;re actively working toward certified organic
+              farming, which we&apos;re aiming to reach next season.
+              We&apos;ll update this the moment certification is
+              obtained.
             </p>
           </div>
 
