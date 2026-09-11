@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     "/api/receipt/download": ["./lib/fonts/**"],
     "/dashboard/select-plot": ["./lib/fonts/**"], // covers the payment Server Action bundle (receipts are generated here)
     "/admin/registrations": ["./lib/fonts/**"], // covers the admin approval Server Action bundle
+    "/api/story-card": ["./lib/fonts/**", "./public/images/story-card-bg.jpg"],
   },
 };
 

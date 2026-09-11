@@ -227,6 +227,25 @@ export default async function MyFarmPage() {
           </Card>
 
           <Card className="p-6">
+            <div className="flex items-center gap-2">
+              <Download className="h-4 w-4 text-[var(--color-brown)]" />
+              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                Share Your Story
+              </p>
+            </div>
+            <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+              A shareable card with your name, plot, and impact — ready for WhatsApp
+              Status or Instagram Stories.
+            </p>
+            <a href="/api/story-card" download>
+              <Button variant="outline" className="mt-4 w-full">
+                Download Your Story Card
+              </Button>
+            </a>
+            <p className="mt-2 text-center text-xs text-[var(--color-ink-soft)]">#MyMeraKhet</p>
+          </Card>
+
+          <Card className="p-6">
             <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               Membership Certificate{batchIds.length > 1 ? "s" : ""}
             </p>
