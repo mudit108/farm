@@ -22,6 +22,7 @@ type Payment = {
   amount: number;
   status: "created" | "paid" | "failed" | "refunded";
   created_at: string;
+  discount_inr: number;
 };
 type Expense = {
   id: string;
@@ -122,8 +123,40 @@ export default async function AdminFinancePage({
     expensesByCategory.set(e.category, (expensesByCategory.get(e.category) ?? 0) + e.amount_inr);
   }
 
-  const byStatus = activeFilter === "all" ? payments : payments.filter((p) => p.status === activeFilter);
-  const filtered = query
+  // --- Checkout funnel --------------------------------------------------
+  // A payment row is created the moment someone opens the Razorpay
+  // window, and only flips to 'paid' on success — so rows stuck at
+  // 'created' are people who started buying and didn't finish.
+  //
+  // Age matters: an order from five minutes ago is genuinely still in
+  // progress, while one from three days ago is abandoned. Labelling
+  // both "Pending" (as this page used to) hides the difference and makes
+  // the abandoned ones invisible. One hour is a generous cutoff — no
+  // real checkout takes that long.
+  const ABANDON_AFTER_MINUTES = 60;
+  // One timestamp for the whole render — calling Date.now() inside the
+  // JSX would be an impure call during render (React flags it), and
+  // would also let different rows compute their age against slightly
+  // different "now" values.
+  const nowMs = now.getTime();
+  const abandonCutoff = new Date(nowMs - ABANDON_AFTER_MINUTES * 60 * 1000);
+  const inProgress = pending.filter((p) => new Date(p.created_at) > abandonCutoff);
+  const abandoned = pending
+    .filter((p) => new Date(p.created_at) <= abandonCutoff)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map((p) => ({
+      ...p,
+      daysAgo: Math.floor((nowMs - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+    }));
+
+  const abandonedValue = abandoned.reduce((sum, p) => sum + p.amount, 0);
+  // Conversion is measured against settled attempts only — orders still
+  // legitimately in progress haven't had a chance to convert yet, so
+  // counting them would understate the real rate.
+  const settledAttempts = paid.length + abandoned.length + failed.length;
+  const conversionRate = settledAttempts > 0 ? Math.round((paid.length / settledAttempts) * 100) : 0;
+
+  const byStatus = activeFilter === "all" ? payments : payments.filter((p) => p.status === activeFilter);  const filtered = query
     ? byStatus.filter((p) => {
         const u = usersById.get(p.user_id);
         const haystack = [
@@ -173,7 +206,7 @@ export default async function AdminFinancePage({
           { label: "FFF Earmarked (Auto, from Paid Orders)", value: `₹${feedingFamiliesFund.toLocaleString("en-IN")}` },
           { label: "Avg. Order Value", value: `₹${(avgOrderValue / 100).toLocaleString("en-IN")}` },
           { label: "Paid Transactions", value: String(paid.length) },
-          { label: "Pending", value: String(pending.length) },
+          { label: "In Progress (<1hr)", value: String(inProgress.length) },
           { label: "Failed", value: String(failed.length) },
           { label: "Refunded", value: String(refunded.length) },
         ].map((s) => (
@@ -183,6 +216,106 @@ export default async function AdminFinancePage({
           </Card>
         ))}
       </div>
+
+      <Card className="mt-6 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Checkout Funnel
+          </p>
+          <p className="text-xs text-[var(--color-ink-soft)]">
+            A payment record is created the moment someone opens the payment
+            window — anything still unpaid after an hour is treated as abandoned.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-4">
+          <div>
+            <p className="font-display text-2xl">{settledAttempts}</p>
+            <p className="text-xs text-[var(--color-ink-soft)]">Checkouts started</p>
+          </div>
+          <div>
+            <p className="font-display text-2xl text-[var(--color-green-deep)]">{paid.length}</p>
+            <p className="text-xs text-[var(--color-ink-soft)]">Completed</p>
+          </div>
+          <div>
+            <p className="font-display text-2xl">{conversionRate}%</p>
+            <p className="text-xs text-[var(--color-ink-soft)]">Conversion rate</p>
+          </div>
+          <div>
+            <p className="font-display text-2xl text-[var(--color-live)]">
+              ₹{(abandonedValue / 100).toLocaleString("en-IN")}
+            </p>
+            <p className="text-xs text-[var(--color-ink-soft)]">
+              Abandoned value ({abandoned.length})
+            </p>
+          </div>
+        </div>
+
+        {abandoned.length > 0 && (
+          <div className="mt-5 border-t border-[var(--color-ink)]/10 pt-4">
+            <p className="text-sm font-medium">
+              People who started but didn&apos;t finish
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">
+              These are real, contactable people who wanted a plot. A short
+              WhatsApp or call asking whether they hit a problem is usually
+              worth more than any amount of new advertising.
+            </p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[620px] text-left text-sm">
+                <thead className="border-b border-[var(--color-ink)]/10 text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                  <tr>
+                    <th className="px-2 py-2 font-medium">Member</th>
+                    <th className="px-2 py-2 font-medium">Contact</th>
+                    <th className="px-2 py-2 font-medium">Plan</th>
+                    <th className="px-2 py-2 font-medium">Amount</th>
+                    <th className="px-2 py-2 font-medium">Started</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-ink)]/10">
+                  {abandoned.map((p) => {
+                    const u = usersById.get(p.user_id);
+                    const name = (u?.user_metadata?.full_name as string) || "—";
+                    const phone = (u?.user_metadata?.phone as string) || "";
+                    const email = u?.email ?? "";
+                    return (
+                      <tr key={p.id}>
+                        <td className="px-2 py-2.5 font-medium">{name}</td>
+                        <td className="px-2 py-2.5 text-xs text-[var(--color-ink-soft)]">
+                          {phone && (
+                            <a
+                              href={`https://wa.me/91${phone}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-[var(--color-green-deep)] hover:underline"
+                            >
+                              {phone}
+                            </a>
+                          )}
+                          {phone && email && " · "}
+                          {email}
+                        </td>
+                        <td className="px-2 py-2.5">{planLabel(p.plan_id)}</td>
+                        <td className="px-2 py-2.5 font-mono-data">
+                          ₹{(p.amount / 100).toLocaleString("en-IN")}
+                          {p.discount_inr > 0 && (
+                            <span className="ml-1 text-xs text-[var(--color-brown)]">
+                              (had discount)
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2.5 text-xs text-[var(--color-ink-soft)]">
+                          {p.daysAgo === 0 ? "Today" : `${p.daysAgo}d ago`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Card>
 
       <Card className="mt-6 max-w-lg p-5">
         <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">

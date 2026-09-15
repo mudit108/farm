@@ -49,15 +49,41 @@ export default function PrivacyPage() {
         camera, never another member&apos;s.
       </p>
 
-      <h2>4. Data retention</h2>
+      <h2>4. Analytics and cookies</h2>
+      <p>
+        On our public pages, we use analytics tools to understand how
+        people find and use the site — how many visitors we get, which
+        pages they read, and where they lose interest. This helps us
+        improve the site. Depending on what we have enabled, these may
+        include:
+      </p>
+      <ul>
+        <li><strong>Microsoft Clarity</strong> — anonymized heatmaps and session replays showing how visitors scroll and click</li>
+        <li><strong>Plausible Analytics</strong> — privacy-focused, cookie-free visitor statistics</li>
+        <li><strong>Google Analytics</strong> — visitor statistics (IP addresses anonymized)</li>
+      </ul>
+      <p>
+        These tools run <strong>only on our public pages</strong>. We
+        deliberately do not run them on your member dashboard, on the
+        admin area, or on login and signup pages — so your plot details,
+        delivery address, payment history and support messages are never
+        captured by session recording or passed to an analytics provider.
+      </p>
+      <p>
+        You can block these tools with any standard ad or tracker blocker,
+        or by enabling &quot;Do Not Track&quot; in your browser. Doing so
+        will not affect your membership or any part of the service.
+      </p>
+
+      <h2>5. Data retention</h2>
       <p>
         We retain account and membership data for as long as your account
         is active, and as needed to meet our legal and accounting
         obligations after a season ends. You can request deletion of your
-        account by contacting us (Section 6).
+        account by contacting us (Section 7).
       </p>
 
-      <h2>5. Your rights</h2>
+      <h2>6. Your rights</h2>
       <p>You can:</p>
       <ul>
         <li>Access and update your profile information from your dashboard at any time</li>
@@ -65,14 +91,14 @@ export default function PrivacyPage() {
         <li>Request deletion of your account, subject to any records we&apos;re legally required to keep (e.g. payment records)</li>
       </ul>
 
-      <h2>6. Contact</h2>
+      <h2>7. Contact</h2>
       <p>
         For any privacy question or request, reach us via our{" "}
         <Link href="/#contact" className="text-[var(--color-green)] underline">contact form</Link>.
         {" "}<strong>[If required for your business under applicable rules, name a designated Grievance Officer and their contact details here.]</strong>
       </p>
 
-      <h2>7. Changes</h2>
+      <h2>8. Changes</h2>
       <p>We may update this policy from time to time; the &quot;last updated&quot; date above will reflect the most recent change.</p>
     </LegalPageLayout>
   );

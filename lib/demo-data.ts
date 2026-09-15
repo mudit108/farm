@@ -160,9 +160,41 @@ export const EXPENSE_CATEGORIES = [
   { value: "equipment", label: "Equipment" },
   { value: "transport", label: "Transportation" },
   { value: "processing", label: "Processing & Milling" },
+  { value: "marketing", label: "Marketing & Advertising" },
+  { value: "customer_exp", label: "Customer Experience" },
+  { value: "technology", label: "Technology & CCTV" },
+  { value: "admin", label: "Admin & Office" },
   { value: "feeding_families", label: "Feeding Families Donation" },
   { value: "other", label: "Other" },
 ] as const;
+
+/**
+ * Maps each granular expense category to a budget bucket.
+ *
+ * The expense list stays detailed (seeds vs labor vs irrigation is
+ * useful for actually running a farm) while the budget tracks the nine
+ * higher-level allocations. Without this mapping the budget page could
+ * never show real spend against most categories.
+ *
+ * `feeding_families` is deliberately absent: FFF is funded from the
+ * \u20b91,000/plot earmark taken off revenue BEFORE the budget is
+ * allocated, so counting a donation against a budget bucket would
+ * double-count it. Those expenses are excluded from budget spend.
+ */
+export const EXPENSE_TO_BUDGET: Record<string, string> = {
+  seed: "farming",
+  labor: "farming",
+  irrigation: "farming",
+  fertilizer: "farming",
+  equipment: "farming",
+  processing: "processing",
+  transport: "delivery",
+  customer_exp: "customer_exp",
+  technology: "technology",
+  marketing: "marketing",
+  admin: "operations",
+  other: "operations",
+};
 
 export const harvestOptions = [
   {

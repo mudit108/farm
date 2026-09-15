@@ -4,20 +4,11 @@ import { Reveal } from "@/components/ui/reveal";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { membershipPlans, planIncludes, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
-import { createAnonClient } from "@/lib/supabase/anon";
+import { getPlanPrices } from "@/lib/public-data";
 
-async function getLivePrices(): Promise<Map<string, number>> {
-  const supabase = createAnonClient();
-  const { data, error } = await supabase.from("khet_club_plan_prices").select("plan_id, price_inr");
-  if (error || !data) {
-    console.error("Failed to load live plan prices:", error?.message);
-    return new Map(membershipPlans.map((p) => [p.id, p.priceInr]));
-  }
-  return new Map(data.map((row) => [row.plan_id as string, row.price_inr as number]));
-}
 
 export async function Pricing() {
-  const pricesByPlan = await getLivePrices();
+  const pricesByPlan = await getPlanPrices();
   const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
 
   const plans = membershipPlans.map((plan) => {

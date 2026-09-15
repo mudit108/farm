@@ -6,24 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCurrentMember } from "@/lib/current-member";
+import { getPlotStatuses } from "@/lib/public-data";
 import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, currentCrop } from "@/lib/demo-data";
 
-type PlotRow = { plot_number: number; status: "available" | "filled" };
 
-async function getPlots(): Promise<PlotRow[]> {
-  const supabase = createAnonClient();
-  const { data, error } = await supabase.rpc("khet_club_all_plot_statuses");
-
-  if (error) {
-    console.error("Failed to load khet_club_all_plot_statuses:", error.message);
-    return [];
-  }
-  return (data ?? []) as PlotRow[];
-}
 
 
 export async function PlotRegistration({ seasonLabel = "" }: { seasonLabel?: string } = {}) {
-  const [plots, member] = await Promise.all([getPlots(), getCurrentMember()]);
+  const [plots, member] = await Promise.all([getPlotStatuses(), getCurrentMember()]);
   const myPlotNumbers = member.plotNumbers;
   const myPlan = membershipPlans.find((p) => p.id === member.planId);
   const filled = plots.filter((p) => p.status === "filled").length;

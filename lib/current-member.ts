@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createSessionClient } from "@/lib/supabase/session";
 
 export type CurrentMember = {
@@ -15,7 +16,11 @@ export type CurrentMember = {
  * returns only what the public page needs — no email, phone or payment
  * detail leaks onto a page that also renders for anonymous visitors.
  */
-export async function getCurrentMember(): Promise<CurrentMember> {
+// Wrapped in cache(): this is called by BOTH the nav (via the page)
+// and the plot-registration grid on the same render. Each call
+// otherwise costs an auth.getUser() network round trip to Supabase
+// plus a plots query — paid twice on every homepage load.
+export const getCurrentMember = cache(async (): Promise<CurrentMember> => {
   const empty: CurrentMember = {
     isLoggedIn: false,
     firstName: "",
@@ -46,4 +51,4 @@ export async function getCurrentMember(): Promise<CurrentMember> {
     plotNumbers: rows.map((r) => r.plot_number),
     planId: rows[0]?.plan_id ?? null,
   };
-}
+});
