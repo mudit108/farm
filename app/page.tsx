@@ -3,11 +3,8 @@ import { Hero } from "@/components/farm/hero";
 import { OurStory } from "@/components/farm/our-story";
 import { HowItWorks } from "@/components/farm/how-it-works";
 import { SeasonalCrops } from "@/components/farm/seasonal-crops";
-import { HarvestOptions } from "@/components/farm/harvest-options";
-import { FarmTransparency, type SeasonSnapshot } from "@/components/farm/farm-transparency";
-import { FarmUpdates } from "@/components/farm/farm-updates";
-import { VisitAndLocation } from "@/components/farm/visit-and-location";
 import { FeedingFamiliesImpact } from "@/components/farm/feeding-families-impact";
+import { FarmProofStrip } from "@/components/farm/farm-proof-strip";
 import { Pricing } from "@/components/farm/pricing";
 import { PlotRegistration } from "@/components/farm/plot-registration";
 import { LegalTrust } from "@/components/farm/legal-trust";
@@ -55,14 +52,6 @@ export default async function Home() {
 
   const warehouseTonnes = season?.warehouse_capacity_tonnes ?? 30;
 
-  const seasonSnapshot: SeasonSnapshot | null = season
-    ? {
-        current_stage: season.current_stage,
-        progress: season.progress,
-        sowing_date: season.sowing_date,
-        estimated_harvest: season.estimated_harvest,
-      }
-    : null;
 
   return (
     <main>
@@ -71,13 +60,10 @@ export default async function Home() {
       <OurStory />
       <HowItWorks />
       <SeasonalCrops />
-      <HarvestOptions warehouseTonnes={warehouseTonnes} />
-      <FarmTransparency
-        season={seasonSnapshot}
+      <FarmProofStrip
+        currentStage={season?.current_stage ?? null}
         cropName={`${currentCrop.name} (${currentCrop.localName})`}
       />
-      <FarmUpdates />
-      <VisitAndLocation />
       <FeedingFamiliesImpact
         collectedInr={season?.fff_collected_inr ?? 0}
         remaining={Math.max(plotCounts.total - plotCounts.filled, 0)}

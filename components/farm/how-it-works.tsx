@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import fieldPhoto from "@/public/images/wheat-field-green.jpg";
 
@@ -49,8 +51,20 @@ export function HowItWorks() {
           ))}
         </div>
 
+        <Reveal delay={100}>
+          <div className="mt-8">
+            <Link
+              href="/how-it-works"
+              className="group inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-green-deep)] underline-offset-4 hover:underline"
+            >
+              See the full season, step by step
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        </Reveal>
+
         <Reveal delay={120}>
-          <div className="relative mt-14 aspect-[21/9] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10">
+          <div className="relative mt-10 aspect-[21/9] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-ink)]/10">
             <Image
               src={fieldPhoto}
               alt="Young green wheat growing under a bright blue sky"

@@ -5,14 +5,20 @@ import { useState } from "react";
 import { Menu, X, Sprout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Root-relative ("/#story") rather than bare ("#story") so these work
+// from sub-pages too. A bare anchor on /how-it-works would look for
+// that id on the CURRENT page and silently do nothing.
+//
+// "Your Harvest" points at the dedicated page: that content moved off
+// the homepage in the restructure, so "#harvest" no longer exists there.
 const links = [
-  { href: "#story", label: "Our Story" },
-  { href: "#how-it-works", label: "How It Works" },
-  { href: "#crops", label: "Crops" },
-  { href: "#harvest", label: "Your Harvest" },
-  { href: "#live", label: "Live Farm" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#story", label: "Our Story" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/#crops", label: "Crops" },
+  { href: "/how-it-works#harvest", label: "Your Harvest" },
+  { href: "/the-farm", label: "The Farm" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function Nav({
