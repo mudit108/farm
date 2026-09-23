@@ -76,7 +76,7 @@ export default async function TheFarmPage() {
               <div className="card fact-card fade d3">
                 <p className="fact-num">
                   <CountUp to={tonnes} />
-                  <span>t</span>
+                  <span className="unit">t</span>
                 </p>
                 <p className="fact-label">On-site storage warehouse — your harvest never leaves our hands</p>
               </div>
@@ -86,7 +86,7 @@ export default async function TheFarmPage() {
               </div>
               <div className="card fact-card fade d5">
                 <p className="fact-num">
-                  1<span>st</span>
+                  1<span className="unit">st</span>
                 </p>
                 <p className="fact-label">Season — early members are founding members</p>
               </div>

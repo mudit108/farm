@@ -173,7 +173,7 @@
   .mk .plan-name { font-size: 14px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: #7E5A12; margin-bottom: 8px; }
   .mk .plan-sub { font-size: 15px; color: #64645A; margin-bottom: 22px; }
   .mk .plan-price { font-family: var(--font-fraunces), Georgia, serif; font-size: 36px; color: #1C231B; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .mk .plan-price span { font-family: var(--font-karla), system-ui, sans-serif; font-size: 14px; font-weight: 500; color: #64645A; }
+  .mk .plan-price .per { font-family: var(--font-karla), system-ui, sans-serif; font-size: 14px; font-weight: 500; color: #64645A; }
   .mk .plan-save { font-size: 13px; color: #24402C; font-weight: 600; margin: 9px 0 24px; }
   .mk .plan-features { list-style: none; padding: 22px 0 0; margin: 0; border-top: 1px solid rgba(28,35,27,.1); flex-grow: 1; }
   .mk .plan-features li { font-size: 14px; color: #4A4A3E; margin-bottom: 13px; padding-left: 23px; position: relative; line-height: 1.5; }
@@ -430,7 +430,7 @@
   .mk .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
   .mk .fact-card { padding: 30px 26px 28px; }
   .mk .fact-num { font-family: var(--font-fraunces), Georgia, serif; font-size: 44px; color: #1C231B; line-height: 1; letter-spacing: -1px; }
-  .mk .fact-num span { font-size: 22px; color: #7E5A12; margin-left: 2px; }
+  .mk .fact-num .unit { font-size: 22px; color: #7E5A12; margin-left: 2px; }
   .mk .fact-label { font-size: 13.8px; color: #5F5F54; margin-top: 12px; line-height: 1.55; }
 
   .mk .cam-how { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 48px; max-width: 940px; margin: 48px auto 0; }
@@ -726,4 +726,25 @@
 @media (max-width: 600px) {
   .mk .plot { font-size: 8.5px; border-radius: 2px; }
   .mk .map-grid { gap: 5px; }
+}
+
+/* ---------- phone refinements (found in the mobile audit) ---------- */
+@media (max-width: 600px) {
+  .mk .mk-wrap, .mk .nav-inner, .mk .hero-grid { padding-left: 22px; padding-right: 22px; }
+  .mk .page-hero h1 { font-size: 34px; letter-spacing: -0.8px; }
+  .mk .section { padding: 64px 0; }
+  .mk .section-head { margin-bottom: 40px; }
+  .mk .benefits { grid-template-columns: 1fr; }
+  .mk .facts { gap: 12px; }
+  .mk .fact-card { padding: 22px 18px; }
+  .mk .fact-num { font-size: 38px; }
+  /* camera: labels stack instead of wrapping mid-phrase; tabs scroll sideways */
+  .mk .cam-bar, .mk .cam-foot { flex-direction: column; align-items: flex-start; gap: 3px; font-size: 10px; letter-spacing: 1.4px; }
+  .mk .cam-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: -22px; margin-right: -22px; padding: 2px 22px 4px; }
+  .mk .cam-tabs::-webkit-scrollbar { display: none; }
+  .mk .cam-tab { white-space: nowrap; flex-shrink: 0; min-height: 44px; }
+  /* bigger tap area for inline "Learn more →" links without moving the underline */
+  .mk .mk-link { padding-top: 12px; }
+  .mk .plot { font-size: 9px; }
+  .mk .st-row { grid-template-columns: 1fr 1.2fr .9fr; gap: 10px; font-size: 13.5px; }
 }

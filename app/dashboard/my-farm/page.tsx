@@ -355,10 +355,10 @@ export default async function MyFarmPage() {
                 {deliveries.length > 0 && (
                   <div className="mt-4 divide-y divide-[var(--color-ink)]/10">
                     {deliveries.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between py-2 text-sm">
+                      <div key={d.id} className="grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 py-2 text-sm">
                         <span>{new Date(d.delivered_at).toLocaleDateString("en-IN")}</span>
-                        <span className="text-[var(--color-ink-soft)]">{d.notes ?? ""}</span>
-                        <span className="font-mono-data font-medium">{d.kg_delivered} kg</span>
+                        <span className="order-last col-span-3 text-xs text-[var(--color-ink-soft)] empty:hidden sm:order-none sm:col-span-1 sm:text-sm">{d.notes ?? ""}</span>
+                        <span className="whitespace-nowrap text-right font-mono-data font-medium">{d.kg_delivered} kg</span>
                       </div>
                     ))}
                   </div>

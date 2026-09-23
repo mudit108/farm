@@ -26,6 +26,11 @@
   --radius-btn: 3px;
   --radius-pill: 3px;
   --font-body: var(--font-karla);
+  /* globals.css sets --font-display on :root, where the next/font variable
+     isn't defined yet (it lives on <body>), so it resolved to nothing and
+     every .font-display heading fell back to the body face. Re-declared
+     here, below <body>, it resolves to Fraunces as intended. */
+  --font-display: var(--font-fraunces);
 
   font-family: var(--font-karla), system-ui, sans-serif;
   color: var(--color-ink);
@@ -40,6 +45,7 @@
 }
 
 .mk-member .font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
   letter-spacing: -0.02em;
 }
 
@@ -184,3 +190,14 @@
   animation: mkRule 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes mkRule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ---------- phone refinements (found in the mobile audit) ---------- */
+@media (max-width: 767px) {
+  /* Standalone text links ("Add more plots →", downloads) get a thumb-sized hit area. */
+  .mk-member .mk-member-page a:not(:has(button, div)) {
+    display: inline-block;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .mk-member .mk-page-head h1 { font-size: 1.7rem; }
+}

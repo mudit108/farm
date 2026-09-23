@@ -79,7 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           into My Farm, Live Camera/Farm Updates into Farm Activity, and
           Profile/Documents into Account, and Support into Help. Small
           enough now to show every page directly, no "More" overflow needed. */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-[var(--color-ink)]/10 bg-[var(--color-surface)]/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around pb-[env(safe-area-inset-bottom)] border-t border-[var(--color-ink)]/10 bg-[var(--color-surface)]/95 backdrop-blur md:hidden">
         {dashboardNav.map((item) => {
           const active = pathname === item.href;
           return (
@@ -87,7 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-2.5 text-center text-[9px] font-medium leading-tight",
+                "flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-[10.5px] font-semibold leading-tight",
                 active ? "text-[var(--color-green)]" : "text-[var(--color-ink-soft)]"
               )}
             >

@@ -14,7 +14,7 @@ export function SeasonTimeline({ stages, currentStage }: { stages: string[]; cur
 
   return (
     <div className="tl fade d3">
-      <div className="tl-track" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+      <div className="tl-track">
         <div className="tl-line" />
         <div className="tl-fill" style={{ width: `${((sel / last) * (100 - 100 / stages.length)).toFixed(2)}%`, left: `${(50 / stages.length).toFixed(2)}%` }} />
         {stages.map((s, i) => (

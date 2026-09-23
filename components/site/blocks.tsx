@@ -105,7 +105,7 @@ export async function PlanCards({ detailed = false }: { detailed?: boolean }) {
                 <p className="plan-tagline">{taglines[p.id]}</p>
                 <p className="plan-price">
                   <CountUp to={p.priceInr} format="inr" delay={150 + i * 130} />
-                  <span> / season</span>
+                  <span className="per"> / season</span>
                 </p>
                 <p className="per-plot">
                   {p.plots} {p.plots === 1 ? "plot" : "plots"} · {inr(p.perPlotInr)} per plot{p.savings > 0 && ` · save ${inr(p.savings)}`}
@@ -130,7 +130,7 @@ export async function PlanCards({ detailed = false }: { detailed?: boolean }) {
                 </p>
                 <p className="plan-price">
                   <CountUp to={p.priceInr} format="inr" delay={150 + i * 130} />
-                  <span> / season</span>
+                  <span className="per"> / season</span>
                 </p>
                 <p className="plan-save">
                   Up to {p.wheatMaxKg.toLocaleString("en-IN")} kg wheat{p.savings > 0 && ` · save ${inr(p.savings)}`}
