@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { currentCrop, membershipPlans } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
-import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution } from "@/app/actions/admin-content";
+import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution, adminSetRegistrationsPaused } from "@/app/actions/admin-content";
 import { adminCreateDiscountCode, adminToggleDiscountCode } from "@/app/actions/admin-discounts";
 import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
 import { CloseSeasonForm } from "@/components/admin/close-season-form";
@@ -22,6 +22,7 @@ type Season = {
   contact_email: string | null;
   contact_phone: string | null;
   warehouse_capacity_tonnes: number;
+  registrations_paused: boolean;
 };
 type PlanPrice = { plan_id: string; price_inr: number };
 type DiscountCode = {
@@ -303,6 +304,41 @@ export default async function CropsManagementPage() {
             </label>
             <Button type="submit" className="w-full">Save Contact Info</Button>
           </ActionForm>
+        </Card>
+
+        <Card className="mt-6 max-w-lg p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                New Bookings
+              </p>
+              <p className="mt-2 text-sm">
+                {season?.registrations_paused ? (
+                  <span className="font-medium text-[var(--color-live)]">
+                    Paused — nobody can reserve a plot right now.
+                  </span>
+                ) : (
+                  <span className="font-medium text-[var(--color-green-deep)]">
+                    Open — customers can reserve plots normally.
+                  </span>
+                )}
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+                Existing members and their dashboards are never affected — this
+                only blocks new plot reservations.
+              </p>
+            </div>
+            <ActionForm action={adminSetRegistrationsPaused}>
+              <input type="hidden" name="paused" value={season?.registrations_paused ? "false" : "true"} />
+              <Button
+                type="submit"
+                variant={season?.registrations_paused ? "primary" : "outline"}
+                size="sm"
+              >
+                {season?.registrations_paused ? "Resume Bookings" : "Pause Bookings"}
+              </Button>
+            </ActionForm>
+          </div>
         </Card>
 
         <Card className="mt-6 max-w-lg p-6">

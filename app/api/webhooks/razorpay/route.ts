@@ -3,7 +3,7 @@ import { PaymentService } from "@/lib/payments/payment-service";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendPlotConfirmationEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
-import { membershipPlans } from "@/lib/demo-data";
+import { membershipPlans, INSTALLMENT_DUE_DAYS } from "@/lib/demo-data";
 
 /**
  * Configure this URL in the Razorpay Dashboard → Settings → Webhooks,
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   const { data: record } = await admin
     .from("khet_club_payments")
-    .select("id, user_id, plan_id, status, claim_batch_id, start_plot")
+    .select("id, user_id, plan_id, status, claim_batch_id, start_plot, payment_kind, installment_fee_inr, balance_due_inr, amount")
     .eq("razorpay_order_id", orderId)
     .maybeSingle();
 
@@ -96,6 +96,29 @@ export async function POST(request: Request) {
       .from("khet_club_payments")
       .update({ claim_batch_id: batchRow.claim_batch_id })
       .eq("id", record.id);
+  }
+
+  // Mirrors the same step in verifyPaymentAndClaim (app/actions/payment.ts).
+  // This webhook is the safety net for when the browser closes right
+  // after a successful payment — if the client-side handler already ran,
+  // claim_batch_id is set above and this route returns early before
+  // reaching here, so there's no risk of creating this row twice via
+  // both paths for the same deposit.
+  if (record.payment_kind === "deposit" && batchRow?.claim_batch_id) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + INSTALLMENT_DUE_DAYS);
+    const { error: planError } = await admin.from("khet_club_installment_plans").insert({
+      claim_batch_id: batchRow.claim_batch_id,
+      user_id: record.user_id,
+      plan_id: record.plan_id,
+      deposit_paid_inr: record.amount / 100,
+      installment_fee_inr: record.installment_fee_inr,
+      balance_due_inr: record.balance_due_inr,
+      balance_due_date: dueDate.toISOString().slice(0, 10),
+    });
+    if (planError) {
+      console.error("Webhook: failed to create installment plan record:", planError);
+    }
   }
 
   const { data: userRes } = await admin.auth.admin.getUserById(record.user_id);

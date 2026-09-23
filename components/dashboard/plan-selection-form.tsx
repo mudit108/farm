@@ -6,7 +6,7 @@ import { Check, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, Badge } from "@/components/ui/card";
 import { createPlanOrder, verifyPaymentAndClaim, previewDiscountCode, type DiscountPreview } from "@/app/actions/payment";
-import { membershipPlans, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
+import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, installmentFeeInr, INSTALLMENT_DUE_DAYS } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
 declare global {
@@ -35,6 +35,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
   const [scriptReady, setScriptReady] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
   const [mode, setMode] = useState<"auto" | "custom">("auto");
+  const [paymentPlan, setPaymentPlan] = useState<"full" | "installment">("full");
   const [startPlot, setStartPlot] = useState<number | null>(null);
 
   const pricesByPlan = useMemo(() => new Map(prices.map((p) => [p.plan_id, p.price_inr])), [prices]);
@@ -50,6 +51,18 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
   );
 
   const plan = plansWithLivePricing.find((p) => p.id === planId) ?? null;
+
+  // Mirrors the server's math in createPlanOrder exactly (fee charged
+  // ON the deposit, not split) — this is a preview only, the server
+  // recomputes and is authoritative for what's actually charged.
+  const effectivePriceInr = plan ? (discount.status === "valid" ? discount.finalInr : plan.priceInr) : 0;
+  const installmentFee = plan ? installmentFeeInr(plan.id) : 0;
+  const halfInr = Math.round(effectivePriceInr / 2);
+  const depositNowInr = halfInr + installmentFee;
+  const balanceDueInr = effectivePriceInr - halfInr;
+  const balanceDueDate = new Date();
+  balanceDueDate.setDate(balanceDueDate.getDate() + INSTALLMENT_DUE_DAYS);
+  const payNowInr = paymentPlan === "installment" ? depositNowInr : effectivePriceInr;
   const statusByPlot = useMemo(() => new Map(grid.map((p) => [p.plot_number, p.status])), [grid]);
 
   const rangeValid = (start: number, count: number) => {
@@ -74,7 +87,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
 
     setState({ step: "processing" });
 
-    const order = await createPlanOrder(plan.id, mode === "custom" ? startPlot! : undefined, discountCode);
+    const order = await createPlanOrder(plan.id, mode === "custom" ? startPlot! : undefined, discountCode, paymentPlan);
     if (order.status === "error") {
       setState({ step: "error", message: order.message });
       return;
@@ -297,7 +310,38 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
             </div>
           )}
 
-          <div className="mt-5 space-y-1.5 rounded-[var(--radius-sm)] bg-[var(--color-bg-deep)] p-4 text-sm">
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPaymentPlan("full")}
+              className={cn(
+                "rounded-[var(--radius-sm)] border px-3 py-2.5 text-left text-sm transition-colors",
+                paymentPlan === "full"
+                  ? "border-[var(--color-green)] bg-[var(--color-green)]/5"
+                  : "border-[var(--color-ink)]/15 hover:border-[var(--color-ink)]/30"
+              )}
+            >
+              <span className="block font-medium">Pay in full</span>
+              <span className="block text-xs text-[var(--color-ink-soft)]">One payment today</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentPlan("installment")}
+              className={cn(
+                "rounded-[var(--radius-sm)] border px-3 py-2.5 text-left text-sm transition-colors",
+                paymentPlan === "installment"
+                  ? "border-[var(--color-green)] bg-[var(--color-green)]/5"
+                  : "border-[var(--color-ink)]/15 hover:border-[var(--color-ink)]/30"
+              )}
+            >
+              <span className="block font-medium">Pay in 2 parts</span>
+              <span className="block text-xs text-[var(--color-ink-soft)]">
+                50% now, rest in {INSTALLMENT_DUE_DAYS} days
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-1.5 rounded-[var(--radius-sm)] bg-[var(--color-bg-deep)] p-4 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-[var(--color-ink-soft)]">{plan.name} ({plan.label})</span>
               <span className="font-medium">₹{plan.priceInr.toLocaleString("en-IN")}</span>
@@ -312,10 +356,16 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                 <span>−₹{discount.discountInr.toLocaleString("en-IN")}</span>
               </div>
             )}
+            {paymentPlan === "installment" && (
+              <div className="flex items-center justify-between text-xs text-[var(--color-brown)]">
+                <span>Split-payment fee</span>
+                <span>+₹{installmentFee.toLocaleString("en-IN")}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between border-t border-[var(--color-ink)]/10 pt-1.5 font-medium">
-              <span>Total due</span>
+              <span>{paymentPlan === "installment" ? "Pay now" : "Total due"}</span>
               <span>
-                {discount.status === "valid" ? (
+                {discount.status === "valid" && paymentPlan === "full" ? (
                   <>
                     <span className="mr-2 font-normal text-[var(--color-ink-soft)] line-through">
                       ₹{plan.priceInr.toLocaleString("en-IN")}
@@ -323,10 +373,18 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                     ₹{discount.finalInr.toLocaleString("en-IN")}
                   </>
                 ) : (
-                  <>₹{plan.priceInr.toLocaleString("en-IN")}</>
+                  <>₹{payNowInr.toLocaleString("en-IN")}</>
                 )}
               </span>
             </div>
+            {paymentPlan === "installment" && (
+              <div className="flex items-center justify-between text-xs text-[var(--color-ink-soft)]">
+                <span>
+                  Then ₹{balanceDueInr.toLocaleString("en-IN")} by{" "}
+                  {balanceDueDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="mt-3">
@@ -387,7 +445,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                 <Loader2 className="h-4 w-4 animate-spin" /> Processing…
               </>
             ) : (
-              `Pay ₹${(discount.status === "valid" ? discount.finalInr : plan.priceInr).toLocaleString("en-IN")} & Confirm`
+              `Pay ₹${payNowInr.toLocaleString("en-IN")} & Confirm`
             )}
           </Button>
 

@@ -30,6 +30,7 @@ type SeasonPublicInfo = {
   total_plots: number;
   warehouse_capacity_tonnes: number;
   season_label: string;
+  registrations_paused: boolean;
 };
 
 async function getSeasonPublicInfo(): Promise<SeasonPublicInfo | null> {
@@ -56,6 +57,11 @@ export default async function Home() {
   return (
     <main>
       <Nav isLoggedIn={member.isLoggedIn} firstName={member.firstName} />
+      {season?.registrations_paused && (
+        <div className="border-b border-[var(--color-live)]/20 bg-[var(--color-live)]/10 px-5 py-2.5 text-center text-sm text-[var(--color-ink)]">
+          New plot bookings are temporarily paused. Existing members are unaffected — check back shortly.
+        </div>
+      )}
       <Hero filledPlots={plotCounts.filled} totalPlots={plotCounts.total} />
       <OurStory />
       <HowItWorks />

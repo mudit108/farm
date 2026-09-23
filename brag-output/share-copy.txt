@@ -1,0 +1,1 @@
+Introducing Mera Khet: your own wheat plot in Sujangarh, Rajasthan — farmed for you, watched by you all season, and brought home to your table. Built with Next.js and Supabase.

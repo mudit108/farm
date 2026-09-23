@@ -72,12 +72,21 @@ export default async function AdminFinancePage({
 
   const supabase = createServiceClient();
 
-  const [{ data: allPayments }, { data: usersData }, { data: allExpenses }, { data: seasonData }] = await Promise.all([
-    supabase.from("khet_club_payments").select("*").order("created_at", { ascending: false }),
-    supabase.auth.admin.listUsers(),
-    supabase.from("khet_club_expenses").select("*").order("expense_date", { ascending: false }),
-    supabase.rpc("khet_club_get_season"),
-  ]);
+  const [{ data: allPayments }, { data: usersData }, { data: allExpenses }, { data: seasonData }, { data: installmentData }] =
+    await Promise.all([
+      supabase.from("khet_club_payments").select("*").order("created_at", { ascending: false }),
+      supabase.auth.admin.listUsers(),
+      supabase.from("khet_club_expenses").select("*").order("expense_date", { ascending: false }),
+      supabase.rpc("khet_club_get_season"),
+      // Oldest-due first, so the most overdue balance surfaces at the
+      // top rather than getting lost under recent ones — the whole
+      // point of this table is making "follow up manually" findable.
+      supabase
+        .from("khet_club_installment_plans")
+        .select("id, user_id, plan_id, balance_due_inr, balance_due_date")
+        .eq("balance_paid", false)
+        .order("balance_due_date", { ascending: true }),
+    ]);
 
   const payments = (allPayments ?? []) as Payment[];
   const expenses = (allExpenses ?? []) as Expense[];
@@ -87,6 +96,14 @@ export default async function AdminFinancePage({
       )
     : expenses;
   const usersById = new Map((usersData?.users ?? []).map((u) => [u.id, u]));
+  const installmentPlans = (installmentData ?? []) as {
+    id: string;
+    user_id: string;
+    plan_id: string;
+    balance_due_inr: number;
+    balance_due_date: string;
+  }[];
+  const totalBalanceOwed = installmentPlans.reduce((sum, ip) => sum + ip.balance_due_inr, 0);
   const publicFFFTotal = (seasonData as { fff_collected_inr: number }[] | null)?.[0]?.fff_collected_inr ?? 0;
 
   const paid = payments.filter((p) => p.status === "paid");
@@ -316,6 +333,71 @@ export default async function AdminFinancePage({
           </div>
         )}
       </Card>
+
+      {installmentPlans.length > 0 && (
+        <Card className="mt-6 p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+              Balance Due — 50-50 Plans
+            </p>
+            <p className="text-xs text-[var(--color-ink-soft)]">
+              {installmentPlans.length} unpaid · ₹{totalBalanceOwed.toLocaleString("en-IN")} total ·
+              oldest due first
+            </p>
+          </div>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <thead className="border-b border-[var(--color-ink)]/10 text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                <tr>
+                  <th className="px-2 py-2 font-medium">Member</th>
+                  <th className="px-2 py-2 font-medium">Contact</th>
+                  <th className="px-2 py-2 font-medium">Plan</th>
+                  <th className="px-2 py-2 font-medium">Amount owed</th>
+                  <th className="px-2 py-2 font-medium">Due</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-ink)]/10">
+                {installmentPlans.map((ip) => {
+                  const u = usersById.get(ip.user_id);
+                  const name = (u?.user_metadata?.full_name as string) || "—";
+                  const phone = (u?.user_metadata?.phone as string) || "";
+                  const email = u?.email ?? "";
+                  const due = new Date(ip.balance_due_date);
+                  const daysLeft = Math.ceil((due.getTime() - nowMs) / (1000 * 60 * 60 * 24));
+                  const overdue = daysLeft < 0;
+                  return (
+                    <tr key={ip.id}>
+                      <td className="px-2 py-2.5 font-medium">{name}</td>
+                      <td className="px-2 py-2.5 text-xs text-[var(--color-ink-soft)]">
+                        {phone && (
+                          <a
+                            href={`https://wa.me/91${phone}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-[var(--color-green-deep)] hover:underline"
+                          >
+                            {phone}
+                          </a>
+                        )}
+                        {phone && email && " · "}
+                        {email}
+                      </td>
+                      <td className="px-2 py-2.5">{planLabel(ip.plan_id)}</td>
+                      <td className="px-2 py-2.5 font-mono-data">
+                        ₹{ip.balance_due_inr.toLocaleString("en-IN")}
+                      </td>
+                      <td className={`px-2 py-2.5 text-xs ${overdue ? "font-medium text-[var(--color-live)]" : "text-[var(--color-ink-soft)]"}`}>
+                        {due.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        {overdue ? ` — ${Math.abs(daysLeft)}d overdue` : ` — ${daysLeft}d left`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <Card className="mt-6 max-w-lg p-5">
         <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">

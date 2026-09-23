@@ -7,7 +7,7 @@ import { PaymentService } from "@/lib/payments/payment-service";
 import { sendPlotConfirmationEmail, sendReceiptEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { generateReceiptPdf } from "@/lib/receipt";
-import { membershipPlans, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
+import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, installmentFeeInr, INSTALLMENT_DUE_DAYS } from "@/lib/demo-data";
 
 export type CreateOrderResult =
   | { status: "error"; message: string }
@@ -20,7 +20,7 @@ export type CreateOrderResult =
       planId: string;
     };
 
-type Season = { registration_deadline: string | null; total_plots: number };
+type Season = { registration_deadline: string | null; total_plots: number; registrations_paused: boolean };
 
 /**
  * Step 1: create a Razorpay order for the chosen plan. Amount comes from
@@ -38,7 +38,8 @@ type Season = { registration_deadline: string | null; total_plots: number };
 export async function createPlanOrder(
   planId: string,
   startPlot?: number,
-  discountCode?: string
+  discountCode?: string,
+  paymentMode: "full" | "installment" = "full"
 ): Promise<CreateOrderResult> {
   const plan = membershipPlans.find((p) => p.id === planId);
   if (!plan) {
@@ -103,6 +104,19 @@ export async function createPlanOrder(
 
   const { data: seasonData } = await supabase.rpc("khet_club_get_season");
   const season = (seasonData as Season[] | null)?.[0];
+
+  // Checked here too, not just in the claim RPC below — this stops a
+  // Razorpay order from being created at all while paused, rather than
+  // letting someone pay and then fail at the claim step afterward.
+  // Still not the authoritative gate on its own: the RPC re-checks
+  // under lock at claim time, same reasoning as the deadline check.
+  if (season?.registrations_paused) {
+    return {
+      status: "error",
+      message: "New bookings are temporarily paused. Please try again shortly.",
+    };
+  }
+
   if (season?.registration_deadline && new Date() > new Date(`${season.registration_deadline}T23:59:59`)) {
     return {
       status: "error",
@@ -145,12 +159,22 @@ export async function createPlanOrder(
     }
   }
 
+  // Installment math: fee is charged ON the deposit, not split across
+  // both payments — it's a fee for offering the option, paid upfront,
+  // same as a loan processing fee. balanceDueInr is stored directly on
+  // the payment row so the claim step below never has to back-compute
+  // it from a rounded deposit amount.
+  const fee = paymentMode === "installment" ? installmentFeeInr(planId) : 0;
+  const half = Math.round(priceInr / 2);
+  const balanceDueInr = paymentMode === "installment" ? priceInr - half : 0;
+  const chargeNowInr = paymentMode === "installment" ? half + fee : priceInr;
+
   try {
     const order = await PaymentService.createOrder({
-      amount: priceInr * 100,
+      amount: chargeNowInr * 100,
       currency: "INR",
       receipt: `${planId}-${user.id.slice(0, 8)}-${Date.now()}`,
-      notes: { userId: user.id, planId, startPlot: startPlot ? String(startPlot) : "auto" },
+      notes: { userId: user.id, planId, startPlot: startPlot ? String(startPlot) : "auto", paymentMode },
     });
 
     const admin = createServiceClient();
@@ -164,6 +188,9 @@ export async function createPlanOrder(
       start_plot: startPlot ?? null,
       discount_code_id: discountCodeId,
       discount_inr: discountInr,
+      payment_kind: paymentMode === "installment" ? "deposit" : "full",
+      installment_fee_inr: fee,
+      balance_due_inr: balanceDueInr,
     });
     if (error) {
       console.error("Failed to record payment order:", error);
@@ -192,6 +219,9 @@ export type VerifyPaymentResult =
   | { status: "error"; message: string };
 
 function claimErrorMessage(error: { message: string }): string {
+  if (error.message.includes("REGISTRATIONS_PAUSED")) {
+    return "Bookings were paused just as you completed payment — you have been refunded automatically. Please try again shortly.";
+  }
   if (error.message.includes("REGISTRATION_CLOSED")) {
     return "Registration has just closed for this season — you have been refunded automatically.";
   }
@@ -237,7 +267,7 @@ export async function verifyPaymentAndClaim(input: {
 
   const { data: payment } = await admin
     .from("khet_club_payments")
-    .select("id, plan_id, status, user_id, claim_batch_id, start_plot, amount, razorpay_order_id, discount_code_id, discount_inr")
+    .select("id, plan_id, status, user_id, claim_batch_id, start_plot, amount, razorpay_order_id, discount_code_id, discount_inr, payment_kind, installment_fee_inr, balance_due_inr")
     .eq("razorpay_order_id", input.orderId)
     .maybeSingle();
 
@@ -315,6 +345,31 @@ export async function verifyPaymentAndClaim(input: {
       .from("khet_club_payments")
       .update({ claim_batch_id: batchRow.claim_batch_id })
       .eq("id", payment.id);
+  }
+
+  // 50-50 split: the deposit just claimed the plot exactly like a full
+  // payment would (same RPC, same row above). This is the ONE extra
+  // step a deposit needs beyond that — a record of what's still owed
+  // and by when, which is what makes "follow up manually" on an unpaid
+  // balance an actual, findable thing rather than a hope.
+  if (payment.payment_kind === "deposit" && batchRow?.claim_batch_id) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + INSTALLMENT_DUE_DAYS);
+    const { error: planError } = await admin.from("khet_club_installment_plans").insert({
+      claim_batch_id: batchRow.claim_batch_id,
+      user_id: payment.user_id,
+      plan_id: payment.plan_id,
+      deposit_paid_inr: payment.amount / 100,
+      installment_fee_inr: payment.installment_fee_inr,
+      balance_due_inr: payment.balance_due_inr,
+      balance_due_date: dueDate.toISOString().slice(0, 10),
+    });
+    if (planError) {
+      // The plot claim has already succeeded and is not undone for
+      // this — but this must not fail silently, since it's the only
+      // record that a balance is owed at all.
+      console.error("Failed to create installment plan record after deposit:", planError);
+    }
   }
 
   // Receipt generation is immediate — proof of payment, unlike the
@@ -500,4 +555,170 @@ export async function previewDiscountCode(planId: string, code: string): Promise
     finalInr: result.final_inr,
     code: trimmed.toUpperCase(),
   };
+}
+
+export type InstallmentPlan = {
+  id: string;
+  plan_id: string;
+  balance_due_inr: number;
+  balance_due_date: string;
+  balance_paid: boolean;
+};
+
+/**
+ * Reads the current member's own outstanding balance, if any. RLS
+ * already scopes this to the caller (users can read own installment
+ * plan), so this is a thin, safe wrapper for the dashboard to call.
+ */
+export async function getMyInstallmentPlan(): Promise<InstallmentPlan | null> {
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("khet_club_installment_plans")
+    .select("id, plan_id, balance_due_inr, balance_due_date, balance_paid")
+    .eq("balance_paid", false)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return (data as InstallmentPlan | null) ?? null;
+}
+
+/**
+ * Step 1 of paying off a 50-50 balance. installmentPlanId is checked
+ * against the CALLER's own session user — never trusted as-is, the
+ * same discipline as every other id a client can send here. The amount
+ * charged comes from the stored balance_due_inr, not from anything the
+ * client provides.
+ */
+export async function createBalanceOrder(installmentPlanId: string): Promise<CreateOrderResult> {
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { status: "error", message: "Please log in first." };
+  }
+
+  const admin = createServiceClient();
+  const { data: plan } = await admin
+    .from("khet_club_installment_plans")
+    .select("id, user_id, plan_id, claim_batch_id, balance_due_inr, balance_paid")
+    .eq("id", installmentPlanId)
+    .maybeSingle();
+
+  if (!plan || plan.user_id !== user.id) {
+    return { status: "error", message: "Balance record not found." };
+  }
+  if (plan.balance_paid) {
+    return { status: "error", message: "This balance has already been paid." };
+  }
+
+  try {
+    const order = await PaymentService.createOrder({
+      amount: plan.balance_due_inr * 100,
+      currency: "INR",
+      receipt: `balance-${plan.plan_id}-${user.id.slice(0, 8)}-${Date.now()}`,
+      notes: { userId: user.id, installmentPlanId: plan.id, kind: "balance" },
+    });
+
+    const { error } = await admin.from("khet_club_payments").insert({
+      user_id: user.id,
+      plan_id: plan.plan_id,
+      razorpay_order_id: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      status: "created",
+      claim_batch_id: plan.claim_batch_id,
+      payment_kind: "balance",
+    });
+    if (error) {
+      console.error("Failed to record balance payment order:", error);
+      return { status: "error", message: "Something went wrong. Please try again." };
+    }
+
+    return {
+      status: "ready",
+      orderId: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: order.keyId,
+      planId: plan.plan_id,
+    };
+  } catch (err) {
+    console.error("createBalanceOrder failed:", err);
+    return { status: "error", message: "Payments aren't configured yet — please contact us." };
+  }
+}
+
+/**
+ * Step 2: verify the balance payment and mark the installment plan
+ * settled. Unlike verifyPaymentAndClaim, there's no plot-claim step
+ * here and therefore no refund-on-failure path to mirror — the plot
+ * was already claimed at deposit time, so a balance payment only ever
+ * needs to be recorded, never undone.
+ */
+export async function verifyBalancePayment(input: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}): Promise<VerifyPaymentResult> {
+  const valid = await PaymentService.verifyPayment(input);
+  if (!valid) {
+    return { status: "error", message: "Payment verification failed. Please contact support." };
+  }
+
+  const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { status: "error", message: "Please log in first." };
+  }
+
+  const admin = createServiceClient();
+  const { data: payment } = await admin
+    .from("khet_club_payments")
+    .select("id, user_id, status, claim_batch_id, payment_kind")
+    .eq("razorpay_order_id", input.orderId)
+    .maybeSingle();
+
+  if (!payment || payment.user_id !== user.id || payment.payment_kind !== "balance") {
+    return { status: "error", message: "Payment record not found." };
+  }
+
+  if (payment.status !== "paid") {
+    await admin
+      .from("khet_club_payments")
+      .update({ status: "paid", razorpay_payment_id: input.paymentId })
+      .eq("id", payment.id);
+
+    const { error: settleError } = await admin
+      .from("khet_club_installment_plans")
+      .update({
+        balance_paid: true,
+        balance_paid_at: new Date().toISOString(),
+        balance_razorpay_order_id: input.orderId,
+        balance_razorpay_payment_id: input.paymentId,
+      })
+      .eq("claim_batch_id", payment.claim_batch_id)
+      .eq("balance_paid", false);
+
+    if (settleError) {
+      console.error("Failed to mark installment plan settled after paid balance:", settleError);
+    }
+  }
+
+  const { data: plots } = await supabase
+    .from("khet_club_plots")
+    .select("plot_number")
+    .eq("claim_batch_id", payment.claim_batch_id)
+    .order("plot_number");
+  const plotNumbers = ((plots ?? []) as { plot_number: number }[]).map((p) => p.plot_number);
+
+  return { status: "success", plotNumbers };
 }

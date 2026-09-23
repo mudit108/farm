@@ -152,6 +152,18 @@ export const FEEDING_FAMILIES_PER_PLOT = 1000;
 // match khet_club_expenses' CHECK constraint exactly) paired with a
 // human-readable label. Both the admin form and the validation logic
 // import this, so they can never drift out of sync with each other.
+/**
+ * The 50-50 split-payment option: 50% deposit now (locks the plot
+ * exactly like a full payment), 45-day-later balance, with a
+ * convenience fee charged on the deposit for offering the option at
+ * all. Kothi is the entry plan; Annakosh and Mahabhandar are grouped
+ * as the "larger" tier per the stated pricing decision.
+ */
+export const INSTALLMENT_DUE_DAYS = 45;
+export function installmentFeeInr(planId: string): number {
+  return planId === "1-plot" ? 300 : 500;
+}
+
 export const EXPENSE_CATEGORIES = [
   { value: "seed", label: "Seeds" },
   { value: "labor", label: "Labor" },

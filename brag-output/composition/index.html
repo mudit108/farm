@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Mera Khet — Brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #232920;
+        font-family: sans-serif;
+        color: #232920;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #F7F3E9;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .inner {
+        position: absolute;
+        inset: 0;
+      }
+      .font-display {
+        font-family: serif;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+      .font-mono {
+        font-family: monospace;
+      }
+      .bg-cover {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .grad-bottom {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(35,41,32,0) 35%, rgba(35,41,32,0.82) 100%);
+      }
+
+      /* ---------- Scene 1: Hook ---------- */
+      #scene-1 .hero-copy {
+        position: absolute;
+        left: 110px;
+        bottom: 110px;
+        right: 110px;
+        color: #F7F3E9;
+      }
+      #scene-1 .label {
+        font-size: 22px;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        color: #E7C98A;
+        margin: 0 0 18px 0;
+        opacity: 0;
+      }
+      #scene-1 h1 {
+        margin: 0;
+        font-size: 92px;
+        line-height: 1.06;
+        opacity: 0;
+      }
+      #scene-1 h1 span { display: block; }
+
+      /* ---------- Scene 2: Reveal / Member Dashboard ---------- */
+      #scene-2 { background: #ECE4D0; }
+      #scene-2 .card {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 620px;
+        background: #FFFFFF;
+        border-radius: 22px;
+        padding: 44px 48px;
+        box-shadow: 0 30px 80px rgba(35,41,32,0.18);
+        opacity: 0;
+      }
+      #scene-2 .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 18px;
+        border-bottom: 1px solid rgba(35,41,32,0.1);
+      }
+      #scene-2 .card-top .label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: #5B6357;
+      }
+      #scene-2 .card-top .preview {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #5B6357;
+      }
+      #scene-2 .plots {
+        margin: 26px 0 4px 0;
+        font-size: 56px;
+      }
+      #scene-2 .sqft {
+        margin: 0 0 28px 0;
+        font-size: 22px;
+        color: #5B6357;
+      }
+      #scene-2 .details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        padding-top: 22px;
+        border-top: 1px solid rgba(35,41,32,0.1);
+      }
+      #scene-2 .details .cell { opacity: 0; }
+      #scene-2 .details .k {
+        font-size: 15px;
+        color: #5B6357;
+        margin: 0 0 4px 0;
+      }
+      #scene-2 .details .v {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0;
+      }
+      #scene-2 .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 26px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: #E4E9DD;
+        color: #263422;
+        font-size: 17px;
+        font-weight: 600;
+        opacity: 0;
+      }
+      #scene-2 .pill .dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #3E5A3C;
+      }
+
+      /* ---------- Scene 3: Farm Camera ---------- */
+      #scene-3 { background: #171b14; }
+      #scene-3 .frame {
+        position: absolute;
+        left: 180px; right: 180px; top: 130px; bottom: 190px;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: #000;
+      }
+      #scene-3 .topbar {
+        position: absolute;
+        left: 180px; right: 180px; top: 78px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: rgba(255,255,255,0.85);
+      }
+      #scene-3 .topbar .cam-label {
+        font-size: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+      #scene-3 .topbar .live {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #E4693F;
+        font-weight: 700;
+        font-size: 18px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      #scene-3 .live-dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #E4693F;
+      }
+      #scene-3 .cam-img {
+        position: absolute; inset: 0;
+        opacity: 0;
+      }
+      #scene-3 .cam-img img {
+        width: 100%; height: 100%; object-fit: cover;
+      }
+      #scene-3 #cam-main { opacity: 1; }
+      #scene-3 .caption {
+        position: absolute;
+        left: 180px; right: 180px; bottom: 108px;
+        color: #F7F3E9;
+        font-size: 30px;
+        text-align: center;
+        opacity: 0;
+      }
+
+      /* ---------- Scene 4: Impact + Outro ---------- */
+      #scene-4 { background: #F1E4D3; }
+      #scene-4 .panel { position: absolute; inset: 0; }
+      #impact-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      #impact-panel .heart {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: rgba(138,90,52,0.15);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 30px;
+        opacity: 0;
+        margin-bottom: 26px;
+      }
+      #impact-panel h2 {
+        margin: 0 0 44px 0;
+        font-size: 58px;
+        line-height: 1.15;
+        color: #232920;
+        opacity: 0;
+      }
+      #impact-panel .stats {
+        display: flex;
+        gap: 90px;
+      }
+      #impact-panel .stat { opacity: 0; }
+      #impact-panel .stat .n {
+        font-size: 64px;
+        margin: 0;
+        color: #232920;
+      }
+      #impact-panel .stat .l {
+        margin: 6px 0 0 0;
+        font-size: 18px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #5B6357;
+      }
+      #outro-panel {
+        background: #263422;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        opacity: 0;
+      }
+      #outro-panel .wheat {
+        font-size: 46px;
+        margin-bottom: 22px;
+        color: #C79A4B;
+      }
+      #outro-panel h2 {
+        margin: 0;
+        font-size: 68px;
+        color: #F7F3E9;
+      }
+      #outro-panel p {
+        margin: 18px 0 0 0;
+        font-size: 26px;
+        color: rgba(247,243,233,0.75);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="brag"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="20"
+    >
+      <!-- Scene 1: Hook -->
+      <section id="scene-1" class="clip" data-start="0" data-duration="3">
+        <div class="inner" id="s1-bg-wrap">
+          <img class="bg-cover" id="s1-bg" src="assets/farmer-hand-wheat-sunset.jpg" alt="" />
+        </div>
+        <div class="grad-bottom"></div>
+        <div class="hero-copy">
+          <p class="label font-mono" id="s1-label">Sujangarh, Rajasthan</p>
+          <h1 class="font-display" id="s1-headline">
+            <span>Your own wheat,</span>
+            <span>grown for you.</span>
+          </h1>
+        </div>
+      </section>
+
+      <!-- Scene 2: Reveal — Member Dashboard -->
+      <section id="scene-2" class="clip" data-start="3" data-duration="5">
+        <div class="card" id="s2-card">
+          <div class="card-top">
+            <p class="label font-mono">Member Dashboard</p>
+            <p class="preview font-mono">Preview</p>
+          </div>
+          <p class="plots font-display">3 Plots</p>
+          <p class="sqft">21,780 sq ft · ~0.5 acre</p>
+          <div class="details">
+            <div class="cell" id="s2-cell-1">
+              <p class="k font-mono">Crop</p>
+              <p class="v">Gehu (Wheat)</p>
+            </div>
+            <div class="cell" id="s2-cell-2">
+              <p class="k font-mono">Status</p>
+              <p class="v">Upcoming 🌾</p>
+            </div>
+          </div>
+          <div class="pill" id="s2-pill"><span class="dot"></span> Farm Camera</div>
+        </div>
+      </section>
+
+      <!-- Scene 3: Farm Camera -->
+      <section id="scene-3" class="clip" data-start="8" data-duration="6">
+        <div class="topbar">
+          <p class="cam-label font-mono" id="s3-cam-label">Farm Camera — Main Field</p>
+          <p class="live"><span class="live-dot" id="s3-dot"></span> Demo Camera</p>
+        </div>
+        <div class="frame">
+          <div class="cam-img" id="cam-main">
+            <img src="assets/cam-main-field.jpg" alt="" />
+          </div>
+          <div class="cam-img" id="cam-entrance">
+            <img src="assets/cam-farm-entrance.jpg" alt="" />
+          </div>
+        </div>
+        <p class="caption font-display" id="s3-caption">You don&rsquo;t have to take our word for it.</p>
+      </section>
+
+      <!-- Scene 4: Impact + Outro -->
+      <section id="scene-4" class="clip" data-start="14" data-duration="6">
+        <div class="panel" id="impact-panel">
+          <div class="heart" id="s4-heart">❤</div>
+          <h2 class="font-display" id="s4-headline"><span>Your plot feeds</span><br /><span>more than your family.</span></h2>
+          <div class="stats">
+            <div class="stat" id="s4-stat-1">
+              <p class="n font-display" id="s4-amount">₹0</p>
+              <p class="l font-mono">Contributed so far</p>
+            </div>
+            <div class="stat" id="s4-stat-2">
+              <p class="n font-display" id="s4-families">0</p>
+              <p class="l font-mono">Families fed</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel" id="outro-panel">
+          <div class="wheat">🌾</div>
+          <h2 class="font-display">Mera Khet</h2>
+          <p>From our soil to your plate.</p>
+        </div>
+      </section>
+
+      <!-- Audio -->
+      <audio
+        id="music"
+        src="assets/music/happy-beats-business-moves-vol-10-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="20"
+        data-track-index="10"
+        data-volume="0.5"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.6,"v":0.5},{"t":19,"v":0.5},{"t":20,"v":0}]}]}'
+      ></audio>
+
+      <audio id="sfx-cell-1" src="assets/sfx/click_002.ogg" data-start="5.0" data-duration="0.4" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="sfx-cell-2" src="assets/sfx/click_002.ogg" data-start="5.6" data-duration="0.4" data-track-index="12" data-volume="0.5"></audio>
+      <audio id="sfx-cam-switch" src="assets/sfx/switch_004.ogg" data-start="11.0" data-duration="0.5" data-track-index="13" data-volume="0.55"></audio>
+      <audio id="sfx-count" src="assets/sfx/select_008.ogg" data-start="15.1" data-duration="0.4" data-track-index="14" data-volume="0.45"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // ---------- Scene 1 (0-3s) ----------
+      tl.fromTo("#s1-bg-wrap", { scale: 1.0 }, { scale: 1.09, duration: 3, ease: "none" }, 0);
+      tl.fromTo("#s1-label", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, 0.2);
+      tl.fromTo("#s1-headline span:nth-child(1)", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 0.45);
+      tl.set("#s1-headline", { opacity: 1 }, 0.45);
+      tl.fromTo("#s1-headline span:nth-child(2)", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 0.95);
+
+      // ---------- Scene 2 (3-8s) ----------
+      tl.fromTo("#s2-card", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 3.2);
+      // beat-grid: cell 1 at 5.0s, cell 2 at 5.6s (bundled preset beat grid ~0.55s apart)
+      tl.fromTo("#s2-cell-1", { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power2.out" }, 5.0);
+      tl.fromTo("#s2-cell-2", { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power2.out" }, 5.6);
+      tl.fromTo("#s2-pill", { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 6.5);
+      tl.to("#scene-2", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 7.4);
+
+      // ---------- Scene 3 (8-14s) ----------
+      tl.fromTo("#scene-3", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power1.inOut" }, 7.4);
+      tl.fromTo("#s3-dot", { scale: 0.85 }, { scale: 1.15, duration: 0.5, ease: "sine.inOut", repeat: 5, yoyo: true }, 8.2);
+      // beat-locked: camera tab switch at 11.0s (near bundled preset beat grid)
+      tl.to("#s3-cam-label", { duration: 0.01, onComplete: () => { document.getElementById("s3-cam-label").textContent = "Farm Camera — Farm Entrance"; } }, 11.0);
+      tl.to("#cam-main", { opacity: 0, duration: 0.4, ease: "power1.inOut" }, 11.0);
+      tl.to("#cam-entrance", { opacity: 1, duration: 0.4, ease: "power1.inOut" }, 11.0);
+      tl.fromTo("#s3-caption", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 11.6);
+
+      // ---------- Scene 4 (14-20s) ----------
+      tl.fromTo("#s4-heart", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.6)" }, 14.2);
+      tl.fromTo("#s4-headline", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 14.5);
+      tl.fromTo("#s4-stat-1", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 15.1);
+      tl.fromTo("#s4-stat-2", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, 15.1);
+
+      const amountProxy = { v: 0 };
+      tl.to(amountProxy, {
+        v: 184000,
+        duration: 1.3,
+        ease: "power2.out",
+        onUpdate: () => {
+          document.getElementById("s4-amount").textContent =
+            "₹" + Math.round(amountProxy.v).toLocaleString("en-IN");
+        },
+      }, 15.2);
+
+      const familiesProxy = { v: 0 };
+      tl.to(familiesProxy, {
+        v: 368,
+        duration: 1.3,
+        ease: "power2.out",
+        onUpdate: () => {
+          document.getElementById("s4-families").textContent = Math.round(familiesProxy.v).toLocaleString("en-IN");
+        },
+      }, 15.2);
+
+      // beat-locked: outro cross-fade at 18.0s (near bundled preset strong cue at ~17.9-18.0s window)
+      tl.to("#impact-panel", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 18.0);
+      tl.to("#outro-panel", { opacity: 1, duration: 0.6, ease: "power1.inOut" }, 18.0);
+
+      window.__timelines["brag"] = tl;
+    </script>
+  </body>
+</html>

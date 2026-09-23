@@ -6,6 +6,7 @@ import { createSessionClient } from "@/lib/supabase/session";
 import { broadcastWhatsAppToCurrentMembers } from "@/lib/whatsapp/broadcast";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { sendVisitStatusEmail } from "@/lib/email";
+import { ok, fail, type ActionResult } from "@/lib/action-result";
 
 function revalidateCustomerFacing() {
   revalidatePath("/");
@@ -553,4 +554,39 @@ export async function adminUpdateHarvestDistribution(formData: FormData): Promis
   revalidatePath("/admin/crops");
   revalidatePath("/terms");
   revalidatePath("/membership-agreement");
+}
+
+/**
+ * Pauses or resumes new plot bookings — a dedicated toggle rather than
+ * a field on the general season-state form, so it's a single unambiguous
+ * click with its own clear feedback, not one field among several behind
+ * one shared "Save" button.
+ *
+ * Enforced server-side in khet_club_claim_my_plan (the security-definer
+ * RPC a client cannot route around) and pre-checked in createPlanOrder
+ * so a Razorpay order isn't even created while paused. This action only
+ * flips the flag those two already read.
+ */
+export async function adminSetRegistrationsPaused(formData: FormData): Promise<ActionResult> {
+  const paused = String(formData.get("paused") || "") === "true";
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_season")
+    .update({ registrations_paused: paused })
+    .eq("id", 1);
+
+  if (error) {
+    console.error("adminSetRegistrationsPaused failed:", error);
+    return fail("Couldn't update — please try again.");
+  }
+
+  revalidateCustomerFacing();
+  revalidatePath("/dashboard/select-plot");
+  revalidatePath("/admin/crops");
+  return ok(
+    paused
+      ? "New bookings are now paused. Existing members are unaffected."
+      : "Bookings resumed — the site is accepting new plots again."
+  );
 }

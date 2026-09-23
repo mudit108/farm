@@ -5,7 +5,9 @@ import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { HarvestPreference } from "@/components/dashboard/harvest-preference";
+import { BalancePaymentCard } from "@/components/dashboard/balance-payment-card";
 import { createSessionClient } from "@/lib/supabase/session";
+import { getMyInstallmentPlan } from "@/app/actions/payment";
 import { membershipPlans, summarizePlotHoldings, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +50,7 @@ export default async function MyFarmPage() {
   let receiptsByBatch = new Map<string, Receipt>();
   let confirmedTotalKg: number | null = null;
   let deliveries: Delivery[] = [];
+  let installmentPlan: Awaited<ReturnType<typeof getMyInstallmentPlan>> = null;
 
   if (user) {
     const [{ data }, { data: certData }, { data: paymentsData }, { data: receiptsData }, { data: prefData }, { data: deliveriesData }] =
@@ -81,6 +84,9 @@ export default async function MyFarmPage() {
     receiptsByBatch = new Map((receiptsData ?? []).map((r) => [r.claim_batch_id, r as Receipt]));
     confirmedTotalKg = prefData?.confirmed_total_kg ?? null;
     deliveries = (deliveriesData ?? []) as Delivery[];
+    // Own read, RLS-scoped — safe to call directly rather than fold
+    // into the Promise.all above, since it does its own session lookup.
+    installmentPlan = await getMyInstallmentPlan();
   }
 
   const holdings = summarizePlotHoldings(myPlots);
@@ -112,9 +118,22 @@ export default async function MyFarmPage() {
     );
   }
 
+  const now = new Date();
+
   return (
     <div>
       <PageHeader title="My Farm" subtitle="Your plot, plan, and everything that comes with it." />
+
+      {installmentPlan && (
+        <div className="px-6 pt-6 sm:px-10">
+          <BalancePaymentCard
+            plan={installmentPlan}
+            daysLeft={Math.ceil(
+              (new Date(installmentPlan.balance_due_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+            )}
+          />
+        </div>
+      )}
 
       <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-2">
         <Card className="p-6">

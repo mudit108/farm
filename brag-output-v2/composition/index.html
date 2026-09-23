@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Mera Khet — Brag v2</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/bass.json.js"></script>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #171b14; font-family: sans-serif; color: #232920; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #F7F3E9; }
+      .clip { position: absolute; inset: 0; overflow: hidden; }
+      .inner { position: absolute; inset: 0; }
+      .font-display { font-family: serif; font-weight: 500; letter-spacing: -0.01em; }
+      .font-mono { font-family: monospace; }
+      .bg-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .grad-bottom { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(23,27,20,0) 30%, rgba(23,27,20,0.88) 100%); }
+      .grad-dark { position: absolute; inset: 0; background: rgba(23,27,20,0.42); }
+
+      #warmth-overlay {
+        position: absolute; inset: 0; z-index: 50; pointer-events: none;
+        background: radial-gradient(circle at 50% 42%, rgba(199,154,75, var(--warmth, 0.06)) 0%, rgba(199,154,75,0) 62%);
+      }
+
+      /* Scene 1 */
+      #scene-1 .hero-copy { position: absolute; left: 130px; bottom: 130px; right: 130px; color: #F7F3E9; opacity: 0; }
+      #scene-1 h1 { margin: 0; font-size: 100px; line-height: 1.08; }
+
+      /* Scene 2 */
+      #scene-2 { background: #ECE4D0; }
+      #scene-2 .card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 640px; background: #FFFFFF; border-radius: 24px; padding: 48px 52px; box-shadow: 0 34px 90px rgba(23,27,20,0.2); opacity: 0; }
+      #scene-2 .card-top { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid rgba(35,41,32,0.1); font-size: 14px; text-transform: uppercase; letter-spacing: 0.16em; color: #5B6357; }
+      #scene-2 .plots { margin: 28px 0 6px 0; font-size: 60px; }
+      #scene-2 .sqft { margin: 0 0 30px 0; font-size: 23px; color: #5B6357; }
+      #scene-2 .details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 24px; border-top: 1px solid rgba(35,41,32,0.1); }
+      #scene-2 .details .k { font-size: 15px; color: #5B6357; margin: 0 0 4px 0; }
+      #scene-2 .details .v { font-size: 23px; font-weight: 600; margin: 0; }
+
+      /* Scene 3 */
+      #scene-3 { background: #12150f; }
+      #scene-3 .frame { position: absolute; left: 190px; right: 190px; top: 140px; bottom: 200px; border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); background: #000; }
+      #scene-3 .topbar { position: absolute; left: 190px; right: 190px; top: 86px; height: 54px; display: flex; align-items: center; justify-content: space-between; color: rgba(255,255,255,0.85); }
+      #scene-3 .topbar .cam-label { font-size: 21px; text-transform: uppercase; letter-spacing: 0.14em; }
+      #scene-3 .topbar .live { display: flex; align-items: center; gap: 10px; color: #E4693F; font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.1em; }
+      #scene-3 .live-dot { width: 12px; height: 12px; border-radius: 50%; background: #E4693F; }
+      #scene-3 .cam-img { position: absolute; inset: 0; opacity: 0; }
+      #scene-3 .cam-img img { width: 100%; height: 100%; object-fit: cover; }
+      #scene-3 #cam-main { opacity: 1; }
+      #scene-3 .caption { position: absolute; left: 190px; right: 190px; bottom: 116px; color: #F7F3E9; font-size: 32px; text-align: center; opacity: 0; }
+      #scene-3 .scene-wrap { position: absolute; inset: 0; opacity: 0; }
+
+      /* Scene 4 — momentum */
+      #scene-4 .scene-wrap { position: absolute; inset: 0; opacity: 0; }
+      #scene-4 .stat-num { position: absolute; left: 0; right: 0; top: 42%; transform: translateY(-50%); text-align: center; font-size: 220px; color: #F7F3E9; margin: 0; line-height: 1; }
+      #scene-4 .stat-label { position: absolute; left: 0; right: 0; top: 74%; text-align: center; font-size: 26px; letter-spacing: 0.16em; text-transform: uppercase; color: #E7C98A; }
+
+      /* Scene 5 — impact */
+      #scene-5 { background: #F1E4D3; }
+      #scene-5 .scene-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; }
+      #scene-5 .heart { width: 68px; height: 68px; border-radius: 50%; background: rgba(138,90,52,0.15); display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 28px; }
+      #scene-5 h2 { margin: 0 0 46px 0; font-size: 60px; line-height: 1.15; color: #232920; }
+      #scene-5 .stats { display: flex; gap: 96px; }
+      #scene-5 .stat .n { font-size: 66px; margin: 0; color: #232920; }
+      #scene-5 .stat .l { margin: 6px 0 0 0; font-size: 19px; text-transform: uppercase; letter-spacing: 0.14em; color: #5B6357; }
+
+      /* Scene 6 — outro */
+      #scene-6 { background: #263422; }
+      #scene-6 .scene-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; }
+      #scene-6 .wheat { font-size: 48px; margin-bottom: 24px; color: #C79A4B; }
+      #scene-6 h2 { margin: 0; font-size: 72px; color: #F7F3E9; }
+      #scene-6 p { margin: 20px 0 0 0; font-size: 28px; color: rgba(247,243,233,0.75); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="brag2" data-start="0" data-width="1920" data-height="1080" data-duration="21">
+
+      <section id="scene-1" class="clip" data-start="0" data-duration="3.3">
+        <div class="inner" id="s1-bg-wrap"><img class="bg-cover" src="assets/farmer-hand-wheat-sunset.jpg" alt="" /></div>
+        <div class="grad-bottom"></div>
+        <div class="hero-copy" id="s1-copy">
+          <h1 class="font-display">Your own wheat, grown for you.</h1>
+        </div>
+      </section>
+
+      <section id="scene-2" class="clip" data-start="3.3" data-duration="3.2">
+        <div class="card" id="s2-card">
+          <div class="card-top"><span>Member Dashboard</span><span>Preview</span></div>
+          <p class="plots font-display">3 Plots</p>
+          <p class="sqft">21,780 sq ft &middot; ~0.5 acre</p>
+          <div class="details">
+            <div><p class="k font-mono">Crop</p><p class="v">Gehu (Wheat)</p></div>
+            <div><p class="k font-mono">Status</p><p class="v">Upcoming &#127806;</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-3" class="clip" data-start="6.5" data-duration="3.6">
+        <div class="scene-wrap" id="s3-wrap">
+          <div class="topbar">
+            <p class="cam-label font-mono" id="s3-cam-label">Farm Camera &mdash; Main Field</p>
+            <p class="live"><span class="live-dot" id="s3-dot"></span> Demo Camera</p>
+          </div>
+          <div class="frame">
+            <div class="cam-img" id="cam-main"><img src="assets/cam-main-field.jpg" alt="" /></div>
+            <div class="cam-img" id="cam-entrance"><img src="assets/cam-farm-entrance.jpg" alt="" /></div>
+          </div>
+          <p class="caption font-display" id="s3-caption">You don&rsquo;t have to take our word for it.</p>
+        </div>
+      </section>
+
+      <section id="scene-4" class="clip" data-start="10.1" data-duration="2.6">
+        <div class="inner"><img class="bg-cover" src="assets/wheat-field-golden.jpg" alt="" /></div>
+        <div class="grad-dark"></div>
+        <div class="scene-wrap" id="s4-wrap">
+          <p class="stat-num font-display" id="s4-num">0</p>
+          <p class="stat-label font-mono">Plots already reserved this season</p>
+        </div>
+      </section>
+
+      <section id="scene-5" class="clip" data-start="12.7" data-duration="3.3">
+        <div class="scene-wrap" id="s5-wrap">
+          <div class="heart">&#10084;</div>
+          <h2 class="font-display">Your plot feeds<br />more than your family.</h2>
+          <div class="stats">
+            <div class="stat"><p class="n font-display" id="s5-amount">&#8377;0</p><p class="l font-mono">Contributed so far</p></div>
+            <div class="stat"><p class="n font-display" id="s5-families">0</p><p class="l font-mono">Families fed</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-6" class="clip" data-start="16.0" data-duration="5.0">
+        <div class="scene-wrap" id="s6-wrap">
+          <div class="wheat">&#127806;</div>
+          <h2 class="font-display">Mera Khet</h2>
+          <p>From our soil to your plate.</p>
+        </div>
+      </section>
+
+      <div id="warmth-overlay"></div>
+
+      <!-- Music -->
+      <audio id="music" src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3" data-start="0" data-duration="21" data-track-index="10" data-volume="0.32"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[
+          {"t":0,"v":0},{"t":0.4,"v":0.32},
+          {"t":0.3,"v":0.32},{"t":0.5,"v":0.13},{"t":3.1,"v":0.13},{"t":3.4,"v":0.32},
+          {"t":3.5,"v":0.32},{"t":3.7,"v":0.13},{"t":6.3,"v":0.13},{"t":6.6,"v":0.32},
+          {"t":6.7,"v":0.32},{"t":6.9,"v":0.13},{"t":9.4,"v":0.13},{"t":9.7,"v":0.32},
+          {"t":10.3,"v":0.32},{"t":10.5,"v":0.13},{"t":12.3,"v":0.13},{"t":12.6,"v":0.32},
+          {"t":12.9,"v":0.32},{"t":13.1,"v":0.13},{"t":15.5,"v":0.13},{"t":15.9,"v":0.4},
+          {"t":16.2,"v":0.4},{"t":16.4,"v":0.16},{"t":18.3,"v":0.16},{"t":19.0,"v":0.16},
+          {"t":21.0,"v":0}
+        ]}]}'
+      ></audio>
+
+      <audio id="vo-1" src="assets/vo-1.wav" data-start="0.3" data-track-index="20" data-volume="1"></audio>
+      <audio id="vo-2" src="assets/vo-2.wav" data-start="3.5" data-track-index="21" data-volume="1"></audio>
+      <audio id="vo-3" src="assets/vo-3.wav" data-start="6.7" data-track-index="22" data-volume="1"></audio>
+      <audio id="vo-4" src="assets/vo-4.wav" data-start="10.3" data-track-index="23" data-volume="1"></audio>
+      <audio id="vo-5" src="assets/vo-5.wav" data-start="12.9" data-track-index="24" data-volume="1"></audio>
+      <audio id="vo-6" src="assets/vo-6.wav" data-start="16.2" data-track-index="25" data-volume="1"></audio>
+
+      <audio id="sfx-cam-switch" src="assets/sfx/switch_004.ogg" data-start="9.0" data-duration="0.5" data-track-index="30" data-volume="0.5"></audio>
+      <audio id="sfx-count" src="assets/sfx/select_008.ogg" data-start="10.3" data-duration="0.4" data-track-index="31" data-volume="0.4"></audio>
+      <audio id="sfx-chime" src="assets/sfx/bong_001.ogg" data-start="18.4" data-duration="1.0" data-track-index="32" data-volume="0.35"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // ---------- Audio-reactive warmth overlay (bass-driven, deterministic) ----------
+      // beat-locked source: assets/bass.json.js -> window.BASS_DATA { fps, bass: [] }
+      if (window.BASS_DATA && window.BASS_DATA.bass) {
+        const fps = window.BASS_DATA.fps;
+        const bass = window.BASS_DATA.bass;
+        for (let f = 0; f < bass.length; f++) {
+          const v = 0.04 + bass[f] * 0.08; // 0.04-0.12 range, subtle, background only
+          tl.call(
+            ((val) => () => { document.documentElement.style.setProperty("--warmth", val.toFixed(3)); })(v),
+            [],
+            f / fps
+          );
+        }
+      }
+
+      // ---------- Scene 1 (0-3.3s) ----------
+      tl.fromTo("#s1-bg-wrap", { scale: 1.0 }, { scale: 1.1, duration: 3.3, ease: "none" }, 0);
+      tl.fromTo("#s1-copy", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" }, 0.35);
+      tl.to("#scene-1", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 2.7);
+
+      // ---------- Scene 2 (3.3-6.5s) ----------
+      tl.fromTo("#s2-card", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 3.5);
+      tl.to("#scene-2", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 5.9);
+
+      // ---------- Scene 3 (6.5-10.1s) ----------
+      tl.to("#s3-wrap", { opacity: 1, duration: 0.7, ease: "power1.inOut" }, 6.5);
+      tl.fromTo("#s3-dot", { scale: 0.85 }, { scale: 1.15, duration: 0.5, ease: "sine.inOut", repeat: 5, yoyo: true }, 6.7);
+      // beat-locked: camera tab switch at 9.0s (end of VO3, matches sfx-cam-switch)
+      tl.to("#s3-cam-label", { duration: 0.01, onComplete: () => { document.getElementById("s3-cam-label").textContent = "Farm Camera — Farm Entrance"; } }, 9.0);
+      tl.to("#cam-main", { opacity: 0, duration: 0.4, ease: "power1.inOut" }, 9.0);
+      tl.to("#cam-entrance", { opacity: 1, duration: 0.4, ease: "power1.inOut" }, 9.0);
+      tl.fromTo("#s3-caption", { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 9.3);
+      tl.to("#scene-3", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 9.5);
+
+      // ---------- Scene 4 — momentum (10.1-12.7s) ----------
+      tl.to("#s4-wrap", { opacity: 1, duration: 0.5, ease: "power1.inOut" }, 10.1);
+      const plotsProxy = { v: 0 };
+      // beat-locked: count-up starts at 10.3s (with VO4 "fifty plots...")
+      tl.to(plotsProxy, {
+        v: 50, duration: 1.4, ease: "power2.out",
+        onUpdate: () => { document.getElementById("s4-num").textContent = Math.round(plotsProxy.v); },
+      }, 10.3);
+      tl.to("#scene-4", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 12.1);
+
+      // ---------- Scene 5 — impact (12.7-16.0s) ----------
+      tl.to("#s5-wrap", { opacity: 1, duration: 0.6, ease: "power1.inOut" }, 12.7);
+      const amountProxy = { v: 0 };
+      const familiesProxy = { v: 0 };
+      tl.to(amountProxy, {
+        v: 155274, duration: 1.5, ease: "power2.out",
+        onUpdate: () => { document.getElementById("s5-amount").textContent = "₹" + Math.round(amountProxy.v).toLocaleString("en-IN"); },
+      }, 13.1);
+      tl.to(familiesProxy, {
+        v: 311, duration: 1.5, ease: "power2.out",
+        onUpdate: () => { document.getElementById("s5-families").textContent = Math.round(familiesProxy.v).toLocaleString("en-IN"); },
+      }, 13.1);
+      tl.to("#scene-5", { opacity: 0, duration: 0.6, ease: "power1.inOut" }, 15.4);
+
+      // ---------- Scene 6 — outro (16.0-21.0s) ----------
+      // beat-locked: outro reveal at 16.0s (music swell)
+      tl.to("#s6-wrap", { opacity: 1, duration: 0.7, ease: "power1.inOut" }, 16.0);
+
+      window.__timelines["brag2"] = tl;
+    </script>
+  </body>
+</html>
