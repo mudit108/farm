@@ -3,6 +3,7 @@ import { Fraunces, Inter, JetBrains_Mono, Karla } from "next/font/google";
 import { Analytics } from "@/components/analytics";
 import "./globals.css";
 import "./site.css";
+import "./member.css";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",

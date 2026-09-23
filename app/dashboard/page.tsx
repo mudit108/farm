@@ -70,6 +70,7 @@ export default async function DashboardOverview() {
   // "Good morning" was hardcoded regardless of the actual time.
   const hour = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", hour: "2-digit", hour12: false });
   const greeting = Number(hour) < 12 ? "Good morning" : Number(hour) < 17 ? "Good afternoon" : "Good evening";
+  const firstName = ((user?.user_metadata?.full_name as string | undefined) ?? "").trim().split(/\s+/)[0];
 
   const holdings = summarizePlotHoldings(myPlots);
   const plotList = myPlots.map((p) => `#${p.plot_number}`).join(", ");
@@ -77,7 +78,7 @@ export default async function DashboardOverview() {
   return (
     <div>
       <PageHeader
-        title={`${greeting} 👋`}
+        title={firstName ? `${greeting}, ${firstName}` : greeting}
         subtitle={myPlots.length > 0 ? `${holdings.label} · ${plotList}` : "Sujangarh, Rajasthan"}
       />
 

@@ -79,7 +79,7 @@ export function BalancePaymentCard({ plan, daysLeft }: { plan: InstallmentPlan; 
       order_id: order.orderId,
       name: "Mera Khet",
       description: "Remaining balance",
-      theme: { color: "#3E5A3C" },
+      theme: { color: "#24402C" },
       handler: async (response: unknown) => {
         const r = response as {
           razorpay_order_id: string;

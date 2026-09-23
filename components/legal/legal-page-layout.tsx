@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, Sprout } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { WheatMark } from "@/components/site/marks";
 
 export function LegalPageLayout({
   title,
@@ -11,11 +12,11 @@ export function LegalPageLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="mk-member min-h-screen bg-[var(--color-bg)]">
       <header className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg)]/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
           <Link href="/" className="flex items-center gap-2 font-display text-lg font-semibold">
-            <Sprout className="h-5 w-5 text-[var(--color-green)]" />
+            <WheatMark size={22} />
             Mera Khet
           </Link>
           <Link href="/" className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">

@@ -24,12 +24,12 @@ export function Badge({
     green: "bg-[var(--color-green-soft)] text-[var(--color-green-deep)]",
     brown: "bg-[var(--color-brown-soft)] text-[var(--color-brown)]",
     live: "bg-[var(--color-live)]/10 text-[var(--color-live)]",
-    gold: "bg-[var(--color-gold)]/15 text-[#7A5A1E]",
+    gold: "bg-[var(--color-gold)]/15 text-[var(--color-brown)]",
   };
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+        "inline-flex items-center gap-1.5 rounded-[var(--radius-pill,9999px)] px-3 py-1 text-xs font-semibold uppercase tracking-wide",
         tones[tone],
         className
       )}

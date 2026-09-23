@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-bg)] px-5 text-center">
+    <main className="mk-member flex min-h-screen flex-col items-center justify-center bg-[var(--color-bg)] px-5 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-green-soft)]">
         <Sprout className="h-6 w-6 text-[var(--color-green-deep)]" />
       </div>
