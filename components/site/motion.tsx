@@ -53,6 +53,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="mk">
       <div className={cn("mk-page", ready && "is-ready")}>
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
         <div className="progress" aria-hidden="true">
           <div className="progress-bar" />
         </div>

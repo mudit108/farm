@@ -11,7 +11,9 @@ export async function SiteFrame({ children }: { children: ReactNode }) {
   return (
     <SiteShell>
       <SiteNav isLoggedIn={member.isLoggedIn} firstName={member.firstName} registrationsPaused={season?.registrations_paused ?? false} />
-      <main>{children}</main>
+      <main id="main" tabIndex={-1}>
+        {children}
+      </main>
       <SiteFooter contactEmail={season?.contact_email ?? null} contactPhone={season?.contact_phone ?? null} />
     </SiteShell>
   );

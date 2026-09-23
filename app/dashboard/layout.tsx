@@ -19,6 +19,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="mk-member min-h-screen bg-[var(--color-bg)]">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <div className="mx-auto flex max-w-7xl">
         {/* Desktop sidebar */}
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] p-6 md:flex">
@@ -67,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </aside>
 
         {/* Main content */}
-        <main className="min-w-0 flex-1 pb-20 md:pb-0">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 pb-20 outline-none md:pb-0">
           {/* Keyed by path so each page eases in on navigation (member.css). */}
           <div key={pathname} className="mk-member-page">
             {children}

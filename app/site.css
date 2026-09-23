@@ -348,7 +348,7 @@
   .mk .steps-photo { position: sticky; top: 110px; height: 540px; border-radius: 5px; }
   .mk .step-row { display: grid; grid-template-columns: 76px 1fr; gap: 22px; padding: 38px 0; border-top: 1px solid rgba(28,35,27,.12); }
   .mk .step-row:last-child { border-bottom: 1px solid rgba(28,35,27,.12); }
-  .mk .step-big { font-family: var(--font-fraunces), Georgia, serif; font-size: 42px; line-height: 1; color: #B4872E; }
+  .mk .step-big { font-family: var(--font-fraunces), Georgia, serif; font-size: 42px; line-height: 1; color: #9E7526; }
   .mk .step-row h3 { font-size: 25px; margin-bottom: 13px; }
   .mk .step-row .body { font-size: 16px; line-height: 1.74; color: #4A4A3E; }
   .mk .step-detail { margin-top: 18px; display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.6; color: #24402C; background: #FFFDF7; border: 1px solid rgba(28,35,27,.1); border-radius: 4px; padding: 13px 16px; }
@@ -748,3 +748,8 @@
   .mk .plot { font-size: 9px; }
   .mk .st-row { grid-template-columns: 1fr 1.2fr .9fr; gap: 10px; font-size: 13.5px; }
 }
+
+/* Skip link: hidden until a keyboard user tabs to it (found in the customer test). */
+.mk .skip-link, .mk-member .skip-link { position: fixed; top: 12px; left: 12px; z-index: 200; background: #16281B; color: #F7F1E4; padding: 12px 18px; border-radius: 3px; font-size: 14px; font-weight: 600; transform: translateY(-160%); transition: transform .3s cubic-bezier(.16,1,.3,1); }
+.mk .skip-link:focus, .mk-member .skip-link:focus { transform: none; outline: 2px solid #D9B96B; outline-offset: 2px; }
+.mk main:focus { outline: none; }

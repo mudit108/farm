@@ -36,6 +36,33 @@ export function FaqPreview({ items }: { items: Faq[] }) {
   );
 }
 
+/*
+ * Words customers actually type, mapped to the words the answers use.
+ * Found in the customer test: "emi", "installment" and "money back" all
+ * returned nothing because the FAQ says "two parts", "instalments" and "refund".
+ */
+const SEARCH_SYNONYMS: [RegExp, string[]][] = [
+  [/\bemi\b|instal+ment|split|part pay|half/, ["two parts", "split", "balance due", "50%"]],
+  [/money back|refund|cancel/, ["refund", "cancel"]],
+  [/price|cost|fee|charge|how much|\brate\b/, ["₹", "price", "fee"]],
+  [/cctv|camera|video|watch|\blive\b/, ["camera", "stream"]],
+  [/atta|flour|mill/, ["atta", "flour", "mill"]],
+  [/organic|chemical|pesticide|fertili[sz]er|urea/, ["organic", "chemical", "fertili", "soil"]],
+  [/where|location|address|sujangarh|rajasthan/, ["sujangarh", "rajasthan", "visit"]],
+  [/courier|shipping|deliver/, ["deliver"]],
+  [/sell|market|mandi/, ["market", "sell"]],
+  [/yield|how much wheat|quantity|kg/, ["kg", "yield"]],
+];
+
+/** Normalises spelling (installment → instalment) so either form matches. */
+const norm = (t: string) => t.toLowerCase().replace(/installment/g, "instalment");
+
+function matches(text: string, q: string) {
+  const hay = norm(text);
+  if (hay.includes(norm(q))) return true;
+  return SEARCH_SYNONYMS.some(([re, words]) => re.test(q) && words.some((w) => hay.includes(w)));
+}
+
 /** Full FAQ: live search + topic filter, grouped by topic. */
 export function FaqBrowser({ faqs, categories }: { faqs: Faq[]; categories: readonly { id: string; title: string; short: string }[] }) {
   const [query, setQuery] = useState("");
@@ -49,7 +76,7 @@ export function FaqBrowser({ faqs, categories }: { faqs: Faq[]; categories: read
         .filter((c) => cat === "all" || c.id === cat)
         .map((c) => ({
           ...c,
-          items: faqs.filter((f) => f.cat === c.id && (q === "" || `${f.q} ${f.a}`.toLowerCase().includes(q))),
+          items: faqs.filter((f) => f.cat === c.id && (q === "" || matches(`${f.q} ${f.a}`, q))),
         }))
         .filter((g) => g.items.length > 0),
     [categories, faqs, cat, q]

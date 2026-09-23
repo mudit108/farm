@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFrame } from "@/components/site/frame";
 import { SectionHead } from "@/components/site/heads";
@@ -13,6 +14,8 @@ import { getPlanCards, getPlotCounts, getSeason } from "@/lib/public-data";
 import { buildFaqs } from "@/lib/site-content";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 // Old single-page anchors (/#pricing, /#register, /#contact, /#faq, /#story,
 // /#how-it-works, /#live) are kept as section ids so existing links, emails
