@@ -8,7 +8,14 @@ import { HarvestPreference } from "@/components/dashboard/harvest-preference";
 import { BalancePaymentCard } from "@/components/dashboard/balance-payment-card";
 import { createSessionClient } from "@/lib/supabase/session";
 import { getMyInstallmentPlan } from "@/app/actions/payment";
-import { membershipPlans, summarizePlotHoldings, FEEDING_FAMILIES_PER_PLOT } from "@/lib/demo-data";
+import {
+  membershipPlans,
+  summarizePlotHoldings,
+  FEEDING_FAMILIES_PER_PLOT,
+  balanceLateFeeInr,
+  balanceStage,
+  todayInIndia,
+} from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -128,9 +135,8 @@ export default async function MyFarmPage() {
         <div className="px-6 pt-6 sm:px-10">
           <BalancePaymentCard
             plan={installmentPlan}
-            daysLeft={Math.ceil(
-              (new Date(installmentPlan.balance_due_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-            )}
+            status={balanceStage(installmentPlan.balance_due_date, todayInIndia(now))}
+            lateFeeInr={balanceLateFeeInr(installmentPlan.plan_id)}
           />
         </div>
       )}

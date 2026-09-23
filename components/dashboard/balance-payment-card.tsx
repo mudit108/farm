@@ -6,6 +6,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createBalanceOrder, verifyBalancePayment } from "@/app/actions/payment";
+import type { BalanceStage } from "@/lib/demo-data";
 
 declare global {
   interface Window {
@@ -32,12 +33,21 @@ type Step = "idle" | "processing" | "paid" | "error";
  * plan-selection-form.tsx — order, then client-side handler verifies
  * and marks the balance settled.
  *
- * daysLeft is computed by the SERVER component that renders this, not
- * here — calling Date.now() during a client component's render is
- * flagged as an impure render by React's purity rule (same issue
- * already hit once before on the admin income page).
+ * status (due / late / released) is computed by the SERVER component
+ * that renders this, not here — calling Date.now() during a client
+ * component's render is flagged as an impure render by React's purity
+ * rule. The server action applies the same rule again when charging,
+ * so the amount shown here and the amount charged always agree.
  */
-export function BalancePaymentCard({ plan, daysLeft }: { plan: InstallmentPlan; daysLeft: number }) {
+export function BalancePaymentCard({
+  plan,
+  status,
+  lateFeeInr,
+}: {
+  plan: InstallmentPlan;
+  status: BalanceStage;
+  lateFeeInr: number;
+}) {
   const [step, setStep] = useState<Step>("idle");
   const [message, setMessage] = useState("");
   const [scriptReady, setScriptReady] = useState(false);
@@ -52,8 +62,6 @@ export function BalancePaymentCard({ plan, daysLeft }: { plan: InstallmentPlan; 
       </Card>
     );
   }
-
-  const dueDate = new Date(plan.balance_due_date);
 
   async function handlePay() {
     setStep("processing");
@@ -110,17 +118,54 @@ export function BalancePaymentCard({ plan, daysLeft }: { plan: InstallmentPlan; 
     razorpay.open();
   }
 
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  const fmt = (d: string) =>
+    new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  const { stage, daysLeft, releaseDate } = status;
+  const fee = stage === "late" ? lateFeeInr : 0;
+  const total = plan.balance_due_inr + fee;
+
+  if (stage === "released") {
+    return (
+      <Card className="border-[var(--color-live)]/40 p-6">
+        <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-live)]">Balance not paid</p>
+        <p className="mt-2 text-lg font-display">Your plots have been released.</p>
+        <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+          The balance of {inr(plan.balance_due_inr)} was due on {fmt(plan.balance_due_date)} and wasn&apos;t paid by{" "}
+          {fmt(releaseDate)}. Your deposit is handled under our{" "}
+          <a href="/refund-policy" className="underline">
+            Refund &amp; Cancellation policy
+          </a>
+          . Please contact us from Visits &amp; Support if you have any questions.
+        </p>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="border-[var(--color-brown)]/30 bg-[var(--color-gold)]/5 p-6">
+    <Card
+      className={
+        stage === "late" ? "border-[var(--color-live)]/40 bg-[var(--color-live)]/5 p-6" : "border-[var(--color-brown)]/30 bg-[var(--color-gold)]/5 p-6"
+      }
+    >
       <Script src="https://checkout.razorpay.com/v1/checkout.js" onLoad={() => setScriptReady(true)} />
-      <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-brown)]">
-        Balance Due
+      <p
+        className={`font-mono-data text-xs uppercase tracking-wide ${stage === "late" ? "text-[var(--color-live)]" : "text-[var(--color-brown)]"}`}
+      >
+        {stage === "late" ? "Balance overdue" : "Balance Due"}
       </p>
-      <p className="mt-2 text-2xl font-display">₹{plan.balance_due_inr.toLocaleString("en-IN")}</p>
-      <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-        Due {dueDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-        {daysLeft >= 0 ? ` — ${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : " — overdue"}
-      </p>
+      <p className="mt-2 text-2xl font-display">{inr(total)}</p>
+      {stage === "late" ? (
+        <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+          {inr(plan.balance_due_inr)} balance + {inr(fee)} late fee. It was due on {fmt(plan.balance_due_date)}. Please pay by{" "}
+          <strong>{fmt(releaseDate)}</strong>, or your plots will be released.
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+          Due {fmt(plan.balance_due_date)} — {daysLeft === 0 ? "today" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}. After that a {inr(lateFeeInr)} late fee
+          applies, and plots are released if it&apos;s still unpaid 10 days later.
+        </p>
+      )}
 
       {message && <p className="mt-3 text-sm text-[var(--color-live)]">{message}</p>}
 
@@ -130,7 +175,7 @@ export function BalancePaymentCard({ plan, daysLeft }: { plan: InstallmentPlan; 
             <Loader2 className="h-4 w-4 animate-spin" /> Processing…
           </span>
         ) : (
-          `Pay ₹${plan.balance_due_inr.toLocaleString("en-IN")} Now`
+          `Pay ${inr(total)} Now`
         )}
       </Button>
     </Card>

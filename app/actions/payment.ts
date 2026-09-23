@@ -7,7 +7,15 @@ import { PaymentService } from "@/lib/payments/payment-service";
 import { sendPlotConfirmationEmail, sendReceiptEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { generateReceiptPdf } from "@/lib/receipt";
-import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, installmentFeeInr, INSTALLMENT_DUE_DAYS } from "@/lib/demo-data";
+import {
+  membershipPlans,
+  FEEDING_FAMILIES_PER_PLOT,
+  installmentFeeInr,
+  INSTALLMENT_DUE_DAYS,
+  balanceLateFeeInr,
+  balanceStage,
+  todayInIndia,
+} from "@/lib/demo-data";
 
 export type CreateOrderResult =
   | { status: "error"; message: string }
@@ -607,7 +615,7 @@ export async function createBalanceOrder(installmentPlanId: string): Promise<Cre
   const admin = createServiceClient();
   const { data: plan } = await admin
     .from("khet_club_installment_plans")
-    .select("id, user_id, plan_id, claim_batch_id, balance_due_inr, balance_paid")
+    .select("id, user_id, plan_id, claim_batch_id, balance_due_inr, balance_due_date, balance_paid")
     .eq("id", installmentPlanId)
     .maybeSingle();
 
@@ -618,12 +626,25 @@ export async function createBalanceOrder(installmentPlanId: string): Promise<Cre
     return { status: "error", message: "This balance has already been paid." };
   }
 
+  // Late rule (lib/demo-data.ts): fee from day 46, plots released after
+  // day 55. Worked out here on the server from the stored due date, so
+  // the amount can't be influenced by the browser.
+  const { stage } = balanceStage(plan.balance_due_date, todayInIndia());
+  if (stage === "released") {
+    return {
+      status: "error",
+      message:
+        "This balance wasn't paid within 55 days, so these plots have been released. Please contact us about your deposit under the Refund & Cancellation policy.",
+    };
+  }
+  const lateFeeInr = stage === "late" ? balanceLateFeeInr(plan.plan_id) : 0;
+
   try {
     const order = await PaymentService.createOrder({
-      amount: plan.balance_due_inr * 100,
+      amount: (plan.balance_due_inr + lateFeeInr) * 100,
       currency: "INR",
       receipt: `balance-${plan.plan_id}-${user.id.slice(0, 8)}-${Date.now()}`,
-      notes: { userId: user.id, installmentPlanId: plan.id, kind: "balance" },
+      notes: { userId: user.id, installmentPlanId: plan.id, kind: "balance", lateFeeInr: String(lateFeeInr) },
     });
 
     const { error } = await admin.from("khet_club_payments").insert({

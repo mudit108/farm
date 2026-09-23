@@ -6,7 +6,14 @@ import { Check, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, Badge } from "@/components/ui/card";
 import { createPlanOrder, verifyPaymentAndClaim, previewDiscountCode, type DiscountPreview } from "@/app/actions/payment";
-import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, installmentFeeInr, INSTALLMENT_DUE_DAYS } from "@/lib/demo-data";
+import {
+  membershipPlans,
+  FEEDING_FAMILIES_PER_PLOT,
+  installmentFeeInr,
+  INSTALLMENT_DUE_DAYS,
+  balanceLateFeeInr,
+  BALANCE_GRACE_DAYS,
+} from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
 declare global {
@@ -384,6 +391,13 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                   {balanceDueDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                 </span>
               </div>
+            )}
+            {paymentPlan === "installment" && plan && (
+              <p className="mt-2 text-xs leading-relaxed text-[var(--color-ink-soft)]">
+                Paid late? A ₹{balanceLateFeeInr(plan.id).toLocaleString("en-IN")} late fee applies after the due date. If the
+                balance is still unpaid {BALANCE_GRACE_DAYS} days after that, your plots are released and your deposit is
+                handled under the Refund &amp; Cancellation policy.
+              </p>
             )}
           </div>
 

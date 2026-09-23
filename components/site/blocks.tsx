@@ -133,15 +133,15 @@ export async function PlanCards({ detailed = false }: { detailed?: boolean }) {
                   <span className="per"> / season</span>
                 </p>
                 <p className="plan-save">
-                  Up to {p.wheatMaxKg.toLocaleString("en-IN")} kg wheat{p.savings > 0 && ` · save ${inr(p.savings)}`}
+                  {p.wheatMinKg.toLocaleString("en-IN")}–{p.wheatMaxKg.toLocaleString("en-IN")} kg wheat (est.){p.savings > 0 && ` · save ${inr(p.savings)}`}
                 </p>
               </>
             )}
             <ul className="plan-features">
               {!detailed && <li>Dedicated plot allocation</li>}
-              {!detailed && <li>24×7 camera access from sowing</li>}
+              {!detailed && <li>Live 24×7 camera from sowing</li>}
               <li>{inr(p.plots * FEEDING_FAMILIES_PER_PLOT)} to the Feeding Families Fund</li>
-              {detailed ? <li>Everything in the list below</li> : <li>Delivery, milling, or market sale</li>}
+              {detailed ? <li>Everything in the list below</li> : <li>Milling &amp; packing included</li>}
             </ul>
             <Link href={href} className={`btn-plan${featured ? " btn-plan-featured" : ""}`}>
               <span>Reserve {p.name}</span>
@@ -180,7 +180,7 @@ export function Ticker() {
 export function FieldBand({ caption = "The farm · Sujangarh, Rajasthan" }: { caption?: string }) {
   return (
     <div className="photo-slot band filled">
-      <Image src={mainField} alt="Rows planted along drip irrigation lines at the Mera Khet farm" fill sizes="100vw" placeholder="blur" style={{ objectPosition: "center 58%" }} />
+      <Image src={mainField} alt="Drip irrigation lines across the main field at the Mera Khet farm" fill sizes="100vw" placeholder="blur" style={{ objectPosition: "center 58%" }} />
       <span className="band-cap">{caption}</span>
     </div>
   );

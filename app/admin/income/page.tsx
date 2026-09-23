@@ -6,7 +6,14 @@ import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { createServiceClient } from "@/lib/supabase/service";
-import { membershipPlans, FEEDING_FAMILIES_PER_PLOT, EXPENSE_CATEGORIES } from "@/lib/demo-data";
+import {
+  membershipPlans,
+  FEEDING_FAMILIES_PER_PLOT,
+  EXPENSE_CATEGORIES,
+  balanceLateFeeInr,
+  balanceStage,
+  todayInIndia,
+} from "@/lib/demo-data";
 import { adminAddExpense, adminDeleteExpense } from "@/app/actions/admin-expenses";
 import { adminUpdateFFFAmount } from "@/app/actions/admin-content";
 import { cn } from "@/lib/utils";
@@ -389,6 +396,15 @@ export default async function AdminFinancePage({
                       <td className={`px-2 py-2.5 text-xs ${overdue ? "font-medium text-[var(--color-live)]" : "text-[var(--color-ink-soft)]"}`}>
                         {due.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                         {overdue ? ` — ${Math.abs(daysLeft)}d overdue` : ` — ${daysLeft}d left`}
+                        {(() => {
+                          // Same late rule the member sees (lib/demo-data.ts).
+                          const st = balanceStage(ip.balance_due_date, todayInIndia(new Date(nowMs)));
+                          if (st.stage === "late")
+                            return <span className="block">+ ₹{balanceLateFeeInr(ip.plan_id).toLocaleString("en-IN")} late fee now applies</span>;
+                          if (st.stage === "released")
+                            return <span className="block font-semibold">Past 55 days — release these plots & handle deposit per refund policy</span>;
+                          return null;
+                        })()}
                       </td>
                     </tr>
                   );

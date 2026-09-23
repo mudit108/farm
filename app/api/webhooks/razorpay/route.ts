@@ -51,6 +51,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
+  // Balance payments: the plots were already claimed with the deposit, so
+  // there's nothing to claim — just record the payment and settle the
+  // balance. This is the safety net for a browser closed right after
+  // paying, which otherwise would leave the balance looking unpaid (and,
+  // with the late-fee rule, heading towards release).
+  if (record.payment_kind === "balance") {
+    if (record.status !== "paid") {
+      await admin.from("khet_club_payments").update({ status: "paid", razorpay_payment_id: paymentId }).eq("id", record.id);
+    }
+    if (record.claim_batch_id) {
+      const { error: settleError } = await admin
+        .from("khet_club_installment_plans")
+        .update({
+          balance_paid: true,
+          balance_paid_at: new Date().toISOString(),
+          balance_razorpay_order_id: orderId,
+          balance_razorpay_payment_id: paymentId,
+        })
+        .eq("claim_batch_id", record.claim_batch_id)
+        .eq("balance_paid", false);
+      if (settleError) console.error("Webhook: failed to settle balance:", settleError);
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (record.claim_batch_id) {
     return NextResponse.json({ received: true });
   }

@@ -48,8 +48,8 @@ export default async function Home() {
               </span>
             </h1>
             <p className="hero-sub fade d4">
-              A dedicated plot on real farmland in Sujangarh, Rajasthan — farmed by our team for one season, watched over on camera, and delivered
-              home as your harvest.
+              A dedicated plot on real farmland in Sujangarh, Rajasthan — farmed for one season by experienced farmers from our village, watched on a
+              live camera, and your share of the harvest milled, packed and sent home.
             </p>
             <div className="hero-actions fade d5">
               <Link href={reserveHref} className="btn btn-primary">
@@ -75,8 +75,8 @@ export default async function Home() {
         <div className="mk-wrap">
           <div className="stats-grid">
             {[
-              ["24×7 Camera Coverage", "Member camera access to the field from sowing through harvest.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><ellipse cx="15" cy="15" rx="13" ry="8" stroke="#B4872E" strokeWidth="1.6" /><circle cx="15" cy="15" r="3.4" fill="#B4872E" /></svg>],
-              ["Soil-Tested Farming", "Fertiliser applied to the crop's actual need, never by guesswork.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M15 26C15 26 6 21 6 12C6 6 10 3 15 3C20 3 24 6 24 12C24 21 15 26 15 26Z" stroke="#B4872E" strokeWidth="1.6" /><line x1="15" y1="26" x2="15" y2="10" stroke="#B4872E" strokeWidth="1.6" /></svg>],
+              ["24×7 Camera Coverage", "A live view of the field on your dashboard, from sowing through harvest.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><ellipse cx="15" cy="15" rx="13" ry="8" stroke="#B4872E" strokeWidth="1.6" /><circle cx="15" cy="15" r="3.4" fill="#B4872E" /></svg>],
+              ["Tested Every Month", "Farm test results shared with every member, every month.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M15 26C15 26 6 21 6 12C6 6 10 3 15 3C20 3 24 6 24 12C24 21 15 26 15 26Z" stroke="#B4872E" strokeWidth="1.6" /><line x1="15" y1="26" x2="15" y2="10" stroke="#B4872E" strokeWidth="1.6" /></svg>],
               ["RAJ 1482 Seed", "Bred for Rajasthan's conditions, on a ~140-day cycle.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12" stroke="#B4872E" strokeWidth="1.6" strokeDasharray="3 3" /><circle cx="15" cy="15" r="4" fill="#B4872E" /></svg>],
               ["Seasonal Only", "One dedicated season at a time — no long contracts.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><rect x="4" y="6" width="22" height="20" rx="2.5" stroke="#B4872E" strokeWidth="1.6" /><line x1="4" y1="12" x2="26" y2="12" stroke="#B4872E" strokeWidth="1.6" /><line x1="10" y1="3" x2="10" y2="8" stroke="#B4872E" strokeWidth="1.6" strokeLinecap="round" /><line x1="20" y1="3" x2="20" y2="8" stroke="#B4872E" strokeWidth="1.6" strokeLinecap="round" /></svg>],
             ].map(([title, text, icon], i) => (
@@ -96,12 +96,12 @@ export default async function Home() {
             center
             num="01 — The Farm"
             title={["Food should never", "be a mystery."]}
-            lead="We come from a farming family that watched agriculture fade from our own generation. Mera Khet is our way back to those roots — and yours."
+            lead="We come from a farming family that watched agriculture fade from our own generation. Mera Khet is our way back to those roots — farmed by experienced farmers from our own village, and creating work there too."
           />
           <div className="why-grid">
             {[
-              ["Full Transparency", "Watch your exact plot's season through camera access and regular updates — no mystery in your food."],
-              ["Soil-Tested, Not Guessed", "Fertiliser applied to each crop's actual needs, while we work toward certified-organic status by next season."],
+              ["Full Transparency", "A live camera, monthly farm test results and regular updates — no mystery in your food."],
+              ["No Shortcuts for Yield", "No harmful chemicals used just to push the yield. Next wheat season, we plan to farm 100% organically."],
               ["Whole Wheat, Milled Whole", "Bran and germ left intact — real roti and chapati quality, from a variety bred for this soil."],
             ].map(([h, p], i) => (
               <div key={h} className={`card why-card fade d${i * 2 + 1}`}>
@@ -131,8 +131,8 @@ export default async function Home() {
             {[
               ["Choose Your Plots", "1, 3, or 6 plots — the size that fits your family, your year, or your shop."],
               ["Get Your Allocation", "Pick your plot numbers on the live map, or let us assign them."],
-              ["We Farm It", "Our team handles sowing, irrigation, and care through the whole season."],
-              ["Watch It Grow", "Camera access and regular updates, right through to your harvest."],
+              ["We Farm It", "Experienced farmers from our village handle sowing, irrigation and care all season."],
+              ["Watch It Grow", "A live camera, monthly test results and updates, right through to harvest."],
             ].map(([t, x], i) => (
               <div key={t} className={`step fade d${i * 2 + 1}`}>
                 <div className="step-num">{i + 1}</div>
@@ -157,12 +157,12 @@ export default async function Home() {
             center
             num="03 — The Camera"
             title={["Watch it from", "wherever you are."]}
-            lead="Every plot sits under camera coverage. Once sowing begins, your member dashboard opens the view — the same one we use to run the farm."
+            lead="From sowing, your dashboard shows the field live, 24×7 — the same cameras we use to run the farm."
           />
           <CameraViewer />
           <p className="cam-note">
-            Real stills from the farm cameras — not a live stream. Live streaming to member dashboards is being rolled out; until it&apos;s live for
-            your plot, you&apos;ll see recent photos, clearly labelled as photos.
+            These are real stills from the farm cameras, taken before sowing. Members watch live from their dashboard once sowing begins. Live video
+            depends on the weather and the network at the farm — if it drops, you&apos;ll see the latest photo, clearly labelled as a photo.
           </p>
           <div className="more-link fade d6">
             <Link href="/the-farm" className="mk-link">
@@ -180,14 +180,14 @@ export default async function Home() {
             center
             num="04 — Your Harvest"
             title={["Your harvest, your way."]}
-            lead="When the season ends, the wheat from your plots is yours. You decide what happens to it."
+            lead="When the season ends, your share of the harvest is yours. You decide what happens to it."
           />
           <div className="harvest-grid">
             {(
               [
                 ["raw", "Delivered raw", "Your grain, packed in 15, 30 or 50 kg bags and sent home 2–3 weeks after harvest, depending on where you are."],
-                ["flour", "Milled into atta", "Processed before it ships — milled whole, with the bran and germ left in, the way roti is supposed to taste."],
-                ["market", "Sold to market", "Want the value rather than the volume? We sell it on your behalf and send the proceeds straight to you."],
+                ["flour", "Milled into atta", "Milled and packed in-house at the farm, included in your plan — whole, with the bran and germ left in."],
+                ["market", "Sold to market", "Won't use it all? We sell the surplus at the day's market rate and send you what it fetches — well below what the plan costs, so not a return."],
               ] as const
             ).map(([k, h, p], i) => (
               <div key={k} className={`card harvest-card fade d${i * 2 + 1}`}>
@@ -233,7 +233,7 @@ export default async function Home() {
           <SectionHead center num="06 — Membership" title={["Choose your plot."]} lead="One season. Three sizes. The same transparency on every one." />
           <PlanCards />
           <p className="plans-note fade d6">
-            Every plan includes soil-tested farming, on-site storage, and farm visit eligibility. Yield figures are estimates, not guarantees.
+            Every plan includes in-house milling and packing, on-site storage and farm visits. The harvest is shared equally per plot, and yields are estimates, not guarantees.
           </p>
           <div className="more-link fade d7" style={{ marginTop: 30 }}>
             <Link href="/plans" className="mk-link">
@@ -259,13 +259,11 @@ export default async function Home() {
                 <div className="fund-num">
                   <CountUp to={collected} format="inr" />
                 </div>
-                <div className="fund-label">Contributed so far</div>
+                <div className="fund-label">Set aside so far</div>
               </div>
               <div>
-                <div className="fund-num">
-                  <CountUp to={Math.round((collected / 1000) * 2)} />
-                </div>
-                <div className="fund-label">Families fed</div>
+                <div className="fund-num">₹1,000</div>
+                <div className="fund-label">Per plot, given as wheat after harvest</div>
               </div>
             </div>
           </div>

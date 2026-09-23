@@ -7,7 +7,7 @@ import { PlanFinder } from "@/components/site/plan-finder";
 import { IncludesList, PlanCards, PlotMapGrid, PlotMapLegend } from "@/components/site/blocks";
 import { getCurrentMember } from "@/lib/current-member";
 import { getPlanCards, getPlotCounts, getSeason } from "@/lib/public-data";
-import { INSTALLMENT_DUE_DAYS, installmentFeeInr, planIncludes } from "@/lib/demo-data";
+import { INSTALLMENT_DUE_DAYS, BALANCE_RELEASE_AFTER_DAYS, balanceLateFeeInr, installmentFeeInr, planIncludes } from "@/lib/demo-data";
 import { inr } from "@/lib/site-content";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +65,7 @@ export default async function PlansPage() {
         <div className="mk-wrap">
           <SectionHead center num="02 — What's Included" title={[`${planIncludes.length} things,`, "on every plan."]} />
           <IncludesList items={planIncludes} />
-          <p className="incl-note fade d6">*Camera access depends on connectivity at the farm.</p>
+          <p className="incl-note fade d6">*Live video depends on the weather and the network at the farm; if it drops, the latest photo is shown.</p>
         </div>
       </Section>
 
@@ -113,6 +113,11 @@ export default async function PlansPage() {
               })}
             </div>
           </div>
+          <p className="incl-note fade d4">
+            Paying late? After day {INSTALLMENT_DUE_DAYS} a late fee is added — {plans.map((p) => `${inr(balanceLateFeeInr(p.id))} for ${p.name}`).join(", ")}.
+            If the balance is still unpaid on day {BALANCE_RELEASE_AFTER_DAYS}, the plots are released and your deposit is handled under the{" "}
+            <Link href="/refund-policy">refund policy</Link>.
+          </p>
         </div>
       </Section>
 
@@ -145,6 +150,13 @@ export default async function PlansPage() {
               <h3>Estimates, not guarantees</h3>
               <p>The wheat figures for each plan are targets based on typical yields. The actual harvest depends on weather, soil, pests and other natural factors.</p>
             </div>
+            <div className="card fine-card fade d2">
+              <h3>If the crop fails</h3>
+              <p>
+                The harvest is shared equally per plot. If the crop is damaged or fails, every member receives their share of whatever is harvested —
+                membership fees aren&apos;t refunded for a low or failed harvest.
+              </p>
+            </div>
             <div className="card fine-card fade d3">
               <h3>Not land ownership</h3>
               <p>
@@ -161,7 +173,8 @@ export default async function PlansPage() {
             </div>
           </div>
           <p className="incl-note fade d6">
-            The Feeding Families Fund amount is set aside from the price shown, not charged on top. Final pricing is confirmed at checkout.
+            The Feeding Families Fund amount is set aside from the price shown, not charged on top. Milling and packing are included; the only extra
+            charge is delivery, based on distance. Discount codes and the split-payment fee are shown at checkout.
           </p>
         </div>
       </Section>

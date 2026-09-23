@@ -24,11 +24,11 @@ export const metadata: Metadata = {
 const steps = [
   { title: "Choose your plots", body: "Pick the plan that fits how much wheat your household actually uses — 1, 3, or 6 plots. It's a single payment for the season, not a subscription.", detail: "A plot is 7,260 sq ft of real farmland. Six plots is a full acre." },
   { title: "Get your plot allocation", body: "Let us assign the next available plots, or choose your exact plot numbers yourself from the live map.", detail: "Your plot numbers are yours for the whole season and appear on your certificate." },
-  { title: "We farm it", body: "Our team handles everything — field preparation, sowing, irrigation, and care through the season. You don't need any farming knowledge, or to visit at all.", detail: "Fertiliser is applied based on soil testing and what the crop actually needs." },
-  { title: "Watch it grow", body: "Follow the season from your dashboard: crop-stage updates as the field moves through each phase, plus camera access once sowing begins.", detail: "You're welcome to visit in person too — members can request a farm visit." },
+  { title: "We farm it", body: "Experienced farmers from our own village handle everything — field preparation, sowing, irrigation and care through the season. You don't need any farming knowledge, or to visit at all.", detail: "No harmful chemicals used to push yield. Fertiliser follows the soil tests, and you get the farm's test results every month." },
+  { title: "Watch it grow", body: "Follow the season from your dashboard: crop-stage updates as the field moves through each phase, plus a live 24×7 camera once sowing begins.", detail: "You're welcome to visit in person too — members can request a farm visit." },
 ];
 
-const optionTags: Record<string, string> = { "home-delivery": "Raw harvest", processed: "Flour", "sell-to-market": "We handle the sale" };
+const optionTags: Record<string, string> = { "home-delivery": "Raw harvest", processed: "Atta · milled in-house", "sell-to-market": "We handle the sale" };
 
 export default async function HowItWorksPage() {
   const [season, fromPrice, counts, member] = await Promise.all([getSeason(), getLowestPrice(), getPlotCounts(), getCurrentMember()]);
@@ -135,7 +135,8 @@ export default async function HowItWorksPage() {
               <p>
                 At harvest, the whole farm&apos;s wheat is pooled and divided equally across every plot. Your share never depends on whether your
                 particular corner of the field did better or worse than the rest — a patch of poor soil or a heavy downpour on one side is carried by all{" "}
-                {totalPlots} plots together, not by you alone.
+                {totalPlots} plots together, not by you alone. Your plot numbers are where you follow and visit the crop; your harvest is an equal share of
+                the whole farm. If the crop is damaged or fails, everyone receives their share of whatever is harvested.
               </p>
             </div>
             <InView className="fair-viz">

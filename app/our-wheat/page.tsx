@@ -119,21 +119,22 @@ export default async function OurWheatPage() {
           <div className="honest">
             <div className="card honest-card fade d2">
               <span className="honest-tag tag-yes">What we do</span>
-              <h3>Soil-tested, not guessed.</h3>
-              <p>We&apos;ve sent samples from our fields for laboratory soil testing. Fertiliser is applied to each crop&apos;s actual needs — not by routine or habit.</p>
+              <h3>No shortcuts for yield.</h3>
               <p>
-                Until the lab results arrive, the choice of {currentCrop.variety} — bred for Rajasthan&apos;s soil — is itself the well-matched starting
-                point. Once they&apos;re back, they guide every nutrient decision, and we&apos;ll share what we learn with members.
+                We don&apos;t use harmful chemicals or anything else just to push the yield up. Fertiliser follows our soil test results — applied to the
+                crop&apos;s actual need, not by routine or habit.
+              </p>
+              <p>
+                Every member gets the farm&apos;s test results every month on their dashboard, so you can check what&apos;s going into the field yourself.
               </p>
             </div>
             <div className="card honest-card fade d4">
               <span className="honest-tag tag-notyet">Not yet</span>
               <h3>Is it organic?</h3>
               <p>
-                Not yet, and we won&apos;t claim otherwise. This is our first season, and we&apos;re actively working toward certified organic farming,
-                which we&apos;re aiming to reach next season.
+                Not yet, and we won&apos;t claim otherwise. For the next wheat season, we&apos;re planning to farm 100% organically.
               </p>
-              <p>We&apos;ll update this the moment certification is achieved — not a day before.</p>
+              <p>We&apos;ll only call it certified organic once we actually hold the certificate — not a day before.</p>
             </div>
           </div>
         </div>

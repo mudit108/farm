@@ -28,8 +28,8 @@ export const currentCrop = {
       description: "Milled with the bran and germ intact, so it naturally retains more fiber, iron, and B-vitamins than refined flour.",
     },
     {
-      title: "Soil-tested, not guessed",
-      description: "We've sent our soil for laboratory testing so future crop and nutrient decisions are based on what our land actually needs — not assumption.",
+      title: "Tested every month",
+      description: "Soil-tested before sowing, with the farm's test results shared with every member each month — and no harmful chemicals used to push yield.",
     },
   ],
   stages: [
@@ -51,14 +51,14 @@ export const currentCrop = {
 // never know this." Deliberately doesn't name a specific individual
 // farmer, since the founder story is intentionally unsigned for now.
 export const wheatComparisonRows = [
-  { label: "Where it's grown", unknown: "Could be anywhere", known: "Sujangarh, Rajasthan — your exact plot" },
-  { label: "Who grew it", unknown: "You'll never meet them", known: "Our team — and you can visit" },
+  { label: "Where it's grown", unknown: "Could be anywhere", known: "Sujangarh, Rajasthan — plots you can visit" },
+  { label: "Who grew it", unknown: "You'll never meet them", known: "Experienced farmers from our village — come and meet them" },
   { label: "What variety it is", unknown: "Usually unlabeled", known: "RAJ 1482, bred for Rajasthan's soil" },
-  { label: "What's used on it", unknown: "No way to ask", known: "Soil-tested — fertilizer applied to actual crop need" },
+  { label: "What's used on it", unknown: "No way to ask", known: "No harmful chemicals to push yield — test results every month" },
   { label: "How old it is", unknown: "Could be months, or seasons", known: "This season's harvest, delivered in 2–3 weeks" },
-  { label: "How it's milled", unknown: "Often refined", known: "Milled whole — bran and germ intact" },
+  { label: "How it's milled", unknown: "Often refined", known: "Milled whole, in-house — bran and germ intact" },
   { label: "Where it's stored", unknown: "Changes hands, unrecorded", known: "Our own 30-tonne on-site warehouse" },
-  { label: "Can you watch it grow", unknown: "No", known: "Yes — farm updates & camera access" },
+  { label: "Can you watch it grow", unknown: "No", known: "Yes — a live camera from sowing" },
 ];
 
 // Kept as an array so components that expect a crop list keep working —
@@ -131,14 +131,16 @@ export function summarizePlotHoldings(plots: { plan_id: string | null }[]) {
 // Shared by every plan size — every plan includes the same set of benefits.
 export const planIncludes = [
   "Dedicated farm plot allocation",
-  "Wheat cultivation with soil-tested, responsible fertilizer use",
-  "Farm management by our team",
-  "24×7 CCTV access*",
+  "Wheat cultivation with no harmful chemicals used to push yield",
+  "Farm management by experienced farmers from our village",
+  "Live 24×7 CCTV on your dashboard from sowing*",
+  "Farm test results every month",
   "Farm progress updates",
   "Crop cycle tracking",
   "Farm photos & videos",
   "Harvest updates",
   "Choice of harvest delivery, processing, or market sale",
+  "Milling and packing done in-house, included",
   "On-site storage until your harvest is dispatched",
   "Farm visit eligibility",
   "₹1,000 per plot toward the Feeding Families Fund",
@@ -162,6 +164,46 @@ export const FEEDING_FAMILIES_PER_PLOT = 1000;
 export const INSTALLMENT_DUE_DAYS = 45;
 export function installmentFeeInr(planId: string): number {
   return planId === "1-plot" ? 300 : 500;
+}
+
+/**
+ * Late balance rule: the balance is due on day 45. From day 46 a late
+ * fee is added (₹2,000 / ₹5,000 / ₹10,000 by plan). If it's still
+ * unpaid after day 55, the plots are released and the deposit is
+ * handled under the Refund & Cancellation policy.
+ */
+export const BALANCE_RELEASE_AFTER_DAYS = 55;
+export const BALANCE_GRACE_DAYS = BALANCE_RELEASE_AFTER_DAYS - INSTALLMENT_DUE_DAYS;
+export function balanceLateFeeInr(planId: string): number {
+  if (planId === "1-plot") return 2000;
+  if (planId === "3-plots") return 5000;
+  return 10000;
+}
+
+/** Today's date in India as YYYY-MM-DD — due dates are stored as plain dates. */
+export function todayInIndia(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(now);
+}
+
+function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export type BalanceStage = {
+  /** "due": on time · "late": fee applies · "released": plots released, can't pay online */
+  stage: "due" | "late" | "released";
+  /** Days until the due date (negative once past it). */
+  daysLeft: number;
+  /** Last day the balance can still be paid (with the late fee). */
+  releaseDate: string;
+};
+
+export function balanceStage(dueDate: string, today: string): BalanceStage {
+  const daysLeft = Math.round((Date.parse(`${dueDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 864e5);
+  const stage = daysLeft >= 0 ? "due" : -daysLeft <= BALANCE_GRACE_DAYS ? "late" : "released";
+  return { stage, daysLeft, releaseDate: addDays(dueDate, BALANCE_GRACE_DAYS) };
 }
 
 export const EXPENSE_CATEGORIES = [
@@ -214,16 +256,16 @@ export const harvestOptions = [
     title: "Deliver to My Home",
     tagline: "Raw Harvest",
     description:
-      "We deliver your harvest straight to your doorstep, exactly as it came off your plot — all at once, or split into monthly installments if you'd rather receive it gradually. Packed in 15 kg, 30 kg or 50 kg bags.",
+      "We deliver your harvest straight to your doorstep as clean raw grain — all at once, or split into monthly instalments if you'd rather receive it gradually. Packed in 15 kg, 30 kg or 50 kg bags.",
     note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Delivery charges are billed separately based on distance.",
   },
   {
     id: "processed",
     title: "Process & Deliver",
-    tagline: "Flour / Oil",
+    tagline: "Atta",
     description:
-      "We process your harvest into flour or oil — for example, wheat milled into fresh atta — then deliver it to you, either as a single delivery or in monthly installments. Packed in the same 15 kg, 30 kg or 50 kg bags.",
-    note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Processing is done in small batches per crop.",
+      "We mill your share into fresh whole-wheat atta and pack it in-house at the farm — included in your plan — then deliver it to you, either as a single delivery or in monthly instalments. Packed in the same 15 kg, 30 kg or 50 kg bags.",
+    note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Milling and packing are included; only delivery is charged separately.",
   },
   {
     id: "sell-to-market",
@@ -231,7 +273,7 @@ export const harvestOptions = [
     tagline: "We Handle the Sale",
     description:
       "We sell your harvest to the market on your behalf and send the proceeds to you.",
-    note: "Amount depends on prevailing market rates at the time of sale — not guaranteed in advance.",
+    note: "You receive the market rate on the day of sale — not guaranteed in advance, and far below what the membership costs. Best for surplus you won't use.",
   },
 ];
 
@@ -250,11 +292,11 @@ export const demoFaqs = [
   },
   {
     q: "Is the farm organic?",
-    a: "Not yet, and we won't claim otherwise. Fertilizer is applied based on soil testing and each crop's actual needs — not indiscriminate use. This is our first season, and we're actively working toward certified organic farming, which we're aiming to reach next season. We'll update this the moment certification is achieved.",
+    a: "Not yet, and we won't claim otherwise. This season we use no harmful chemicals just to push the yield, and fertilizer follows the soil test results. For the next wheat season, we plan to farm 100% organically — and we'll only call it certified organic once we hold the certificate.",
   },
   {
     q: "What are my options for the harvest?",
-    a: "You can choose to (1) have us deliver the raw harvest to your home (delivery charges not included), (2) have us process it into flour — wheat milled into fresh atta — and deliver that to you, or (3) have us sell it to the market on your behalf and send you the proceeds. For either delivery option, you can also choose to receive it in monthly installments of a custom size (e.g. 40 kg/month) instead of all at once — set this from your dashboard's Harvest Preference.",
+    a: "You can choose to (1) have us deliver the raw harvest to your home (delivery charges not included), (2) have us process it into flour — wheat milled into fresh atta — and deliver that to you, or (3) have us sell it to the market on your behalf and send you the proceeds. For either delivery option, you can also choose to receive it in monthly instalments of a custom size (e.g. 40 kg/month) instead of all at once — set this from your dashboard's Harvest Preference.",
   },
   {
     q: "What do I receive with my membership?",
@@ -294,7 +336,7 @@ export const demoFaqs = [
   },
   {
     q: "Can I watch the farm anytime?",
-    a: "Your dashboard is accessible 24×7, and shows a recent photo from your plot's camera whenever you check it. Full live video streaming is being rolled out — we'll update this as it becomes available for your plot.",
+    a: "Yes. From sowing, your dashboard shows the live camera 24×7, whenever the weather and the farm's network allow. If the stream is down, you'll see the most recent photo instead.",
   },
   {
     q: "Can I visit my farm?",
@@ -326,15 +368,15 @@ export const demoFaqs = [
   },
   {
     q: "How long after harvest will I receive my wheat, and how is it packed?",
-    a: "Typically 2–3 weeks after harvest, depending on your location. It's packed in 15 kg, 30 kg or 50 kg bags — so if you've chosen monthly installments, you can pick a bag size that suits how much you use. Delivery charges depend on distance and are billed separately from your membership.",
+    a: "Typically 2–3 weeks after harvest, depending on your location. It's packed in 15 kg, 30 kg or 50 kg bags — so if you've chosen monthly instalments, you can pick a bag size that suits how much you use. Delivery charges depend on distance and are billed separately from your membership.",
   },
   {
     q: "Where is my wheat kept between harvest and delivery?",
-    a: "In our own {WAREHOUSE_TONNES}-tonne storage warehouse at the farm. It isn't left in the field or handed over to a third-party facility while it waits. This also means you can choose monthly installments without worrying about where the rest of your harvest is sitting — it stays with us, at the farm, until it's dispatched to you.",
+    a: "In our own {WAREHOUSE_TONNES}-tonne storage warehouse at the farm. It isn't left in the field or handed over to a third-party facility while it waits. This also means you can choose monthly instalments without worrying about where the rest of your harvest is sitting — it stays with us, at the farm, until it's dispatched to you.",
   },
   {
     q: "How is my harvest weighed and verified?",
-    a: "Your harvest is weighed at the field once it's brought in, and that confirmed total — not the earlier estimate — becomes the number your delivery progress is tracked against on your dashboard. If you're delivering in monthly installments, each individual delivery is also logged separately with its own date and weight, so the full record stays visible to you throughout, not just a single final number.",
+    a: "Your harvest is weighed at the field once it's brought in, and that confirmed total — not the earlier estimate — becomes the number your delivery progress is tracked against on your dashboard. If you're delivering in monthly instalments, each individual delivery is also logged separately with its own date and weight, so the full record stays visible to you throughout, not just a single final number.",
   },
   {
     q: "Can I renew my membership?",

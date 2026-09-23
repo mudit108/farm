@@ -57,7 +57,8 @@ export default async function TheFarmPage() {
                   farming was left. This farm is the way back.
                 </p>
                 <p className="fade d4">
-                  The business behind it, MK Farms, is named after the founder&apos;s grandparents. Everything you&apos;ll read
+                  The farming is done by experienced farmers from our own village, so every season also means steady work close to home. The business
+                behind it, MK Farms, is named after the founder&apos;s grandparents. Everything you&apos;ll read
                   about — the plots, the cameras, the storage — sits on one piece of land in Sujangarh that you are welcome to visit.
                 </p>
                 <p className="fade d5">
@@ -82,7 +83,7 @@ export default async function TheFarmPage() {
               </div>
               <div className="card fact-card fade d4">
                 <p className="fact-num">24×7</p>
-                <p className="fact-label">Camera coverage across the plots</p>
+                <p className="fact-label">Live camera on the field, on your dashboard from sowing</p>
               </div>
               <div className="card fact-card fade d5">
                 <p className="fact-num">
@@ -99,7 +100,7 @@ export default async function TheFarmPage() {
 
       <Section id="camera" className="section">
         <div className="mk-wrap">
-          <SectionHead center num="02 — The Cameras" title={["Look for yourself."]} lead="Every plot is covered by one or more field cameras. These are real stills from them — switch between views below." />
+          <SectionHead center num="02 — The Cameras" title={["Look for yourself."]} lead="Field cameras watch over the plots, and members see them live on their dashboard from sowing. These are real stills from them, taken before sowing — switch between views below." />
           <CameraViewer />
           <div className="season-strip fade d3">
             <div className="ss-cell">
@@ -126,10 +127,10 @@ export default async function TheFarmPage() {
           </div>
           <div className="cam-how">
             {[
-              "Camera access is a member benefit that begins once sowing starts, scoped to the field your plots are in.",
-              "Live streaming to member dashboards is being rolled out. Until it's live for your plot, you'll see recent photos — labelled as photos, never passed off as live.",
+              "Live camera access is a member benefit from sowing to harvest — 24×7, on your dashboard, for the field your plots are in.",
+              "If weather or the farm's network drops the stream, you'll see the latest photo instead — labelled as a photo, never passed off as live.",
               "The camera system is run by our team. Its credentials are never shared with members.",
-              "Coverage depends on connectivity at the farm, which can drop in bad weather.",
+              "Every member also gets the farm's test results every month, alongside the camera and field updates.",
             ].map((t, i) => (
               <p key={t} className={`cam-how-item fade d${i + 2}`}>
                 <span className="tick-dot" />
@@ -144,7 +145,7 @@ export default async function TheFarmPage() {
 
       <Section id="updates" className="section">
         <div className="mk-wrap">
-          <SectionHead center num="03 — Farm Updates" title={["Following the season, together."]} lead="Our field team posts photos, notes and crop-stage changes as they happen. The latest five appear here." />
+          <SectionHead center num="03 — Farm Updates" title={["Following the season, together."]} lead="Our farmers post photos, notes and crop-stage changes as they happen. The latest five appear here." />
           {updates.length > 0 ? (
             <div className="updates">
               {updates.map((u, i) => (
@@ -178,7 +179,7 @@ export default async function TheFarmPage() {
               <h2>Your farm isn&apos;t just on a screen.</h2>
               <p>
                 Members can visit Mera Khet and stand in their own plot. Requests are raised from your dashboard, which also shows your exact plot numbers —
-                so you&apos;ll know precisely which rows are yours when you arrive.
+                so you can walk straight to them when you arrive.
               </p>
               <ul className="conds">
                 <li>Scheduled in advance</li>

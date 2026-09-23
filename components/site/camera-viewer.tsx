@@ -7,7 +7,7 @@ import cropArea from "@/public/images/cctv/cam-crop-area.jpg";
 import entrance from "@/public/images/cctv/cam-farm-entrance.jpg";
 
 const cams = [
-  { id: "Cam 01", name: "Main Field", status: "Drip lines laid · rows planted", photo: mainField },
+  { id: "Cam 01", name: "Main Field", status: "Drip irrigation lines · before sowing", photo: mainField },
   { id: "Cam 02", name: "Crop Area", status: "Irrigation tank · drip running", photo: cropArea },
   { id: "Cam 03", name: "Farm Entrance", status: "Gate camera · solar powered", photo: entrance },
 ];

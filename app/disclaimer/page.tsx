@@ -29,14 +29,14 @@ export default function DisclaimerPage() {
       <h2>Organic Claims and Certification Status</h2>
       <p>
         Fertilizer is applied based on soil testing and each
-        crop&apos;s actual needs, rather than indiscriminate use. This
-        is Mera Khet&apos;s first season, and we do not currently hold
-        formal third-party organic certification. We are actively
-        working toward it, aiming to reach certified organic status by
-        next season, and will name the certifying body here once
-        obtained. Until then, please treat any mention of &quot;organic&quot;
-        on this site as a stated goal, not a current or certified
-        status.
+        crop&apos;s actual needs, and no harmful chemicals are used for the
+        purpose of increasing yield. This is Mera Khet&apos;s first
+        season, and we do not currently hold formal third-party organic
+        certification. We plan to farm the next wheat season 100%
+        organically, and will name the certifying body here only once a
+        certificate is actually obtained. Until then, please treat any
+        mention of &quot;organic&quot; on this site as a stated plan, not
+        a current or certified status.
       </p>
 
       <h2>Health and nutrition information</h2>
@@ -54,8 +54,10 @@ export default function DisclaimerPage() {
 
       <h2>Live camera and photos</h2>
       <p>
-        Where a plot&apos;s live camera stream isn&apos;t yet connected,
-        we show a recent photo instead — clearly labeled as such, not
+        From sowing, members can view the farm cameras live on their
+        dashboard, 24×7. Live video depends on the weather and on network
+        connectivity at the farm; when the stream is unavailable, we show
+        the most recent photo instead — clearly labeled as such, not
         presented as a live feed. Photos on the public website are real
         photos from Mera Khet&apos;s farm and operations, used to
         illustrate the farm generally rather than any one member&apos;s

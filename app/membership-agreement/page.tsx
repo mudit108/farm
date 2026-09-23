@@ -51,11 +51,13 @@ export default async function MembershipAgreementPage() {
 
       <h2>3. What&apos;s included</h2>
       <ul>
-        <li>Cultivation of your allocated plots with fertilizer applied based on soil testing and crop need — see our <Link href="/disclaimer" className="text-[var(--color-green)] underline">Disclaimer</Link> for our current organic certification status</li>
-        <li>Camera access to your plot(s) via your dashboard, to the extent camera infrastructure is live for that plot</li>
+        <li>Cultivation of your allocated plots by experienced local farmers, with fertilizer applied based on soil testing and crop need, and no harmful chemicals used for the purpose of increasing yield — see our <Link href="/disclaimer" className="text-[var(--color-green)] underline">Disclaimer</Link> for our current organic certification status</li>
+        <li>Live camera access to the field your plots are in, via your dashboard, 24×7 from sowing to harvest, subject to weather and network connectivity at the farm (when the live stream is unavailable, the most recent photo is shown instead)</li>
+        <li>The farm&apos;s test results, shared with members every month</li>
         <li>Periodic farm updates (photos, notes, crop-stage changes)</li>
         <li>Eligibility to request a farm visit, subject to scheduling and operational availability</li>
         <li>Your choice of harvest fulfillment: home delivery, processing into flour, or sale to market on your behalf (Section 7)</li>
+        <li>Milling and packing of your harvest, done in-house at the farm, at no extra charge</li>
       </ul>
 
       <h2>4. How the harvest is divided</h2>
@@ -104,7 +106,7 @@ export default async function MembershipAgreementPage() {
       <p>
         The wheat ranges shown for each plan (e.g. 250–300 kg for a single
         plot) are <strong>typical-yield estimates</strong> based on
-        historical performance, not commitments. Actual harvest depends
+        expected yields for this variety and region, not commitments. Actual harvest depends
         on weather, soil conditions, pests, water availability,
         and other factors outside our control. If actual yield is lower
         than the estimated range, no refund or make-up delivery is owed
@@ -114,11 +116,25 @@ export default async function MembershipAgreementPage() {
 
       <h2>6. Payment</h2>
       <p>
-        Membership fees are payable in full at the time of plot selection,
-        via our payment processor (Razorpay). Plots are only assigned to
-        you once payment is verified. Prices are per season and may change
-        between seasons; the price you paid for your current season&apos;s
-        membership does not change after purchase.
+        Membership fees are paid at the time of plot selection, via our
+        payment processor (Razorpay), either in full or in two parts. Plots
+        are only assigned to you once payment is verified. Prices are per
+        season and may change between seasons; the price you paid for your
+        current season&apos;s membership does not change after purchase.
+      </p>
+      <p>
+        <strong>Paying in two parts.</strong> You may pay 50% of the price
+        (plus a convenience fee of ₹300 for Kothi or ₹500 for Annakosh and
+        Mahabhandar) to reserve, and your plots are assigned immediately.
+        The remaining 50% is due <strong>45 days</strong> after the deposit.
+        If it is not paid by the due date, a late fee is added:{" "}
+        <strong>₹2,000</strong> for Kothi, <strong>₹5,000</strong> for
+        Annakosh and <strong>₹10,000</strong> for Mahabhandar. If the
+        balance and late fee are still unpaid <strong>55 days</strong> after
+        the deposit, your plots are released and may be allocated to
+        someone else, and your deposit is treated as a cancellation on that
+        date under our Refund &amp; Cancellation Policy. The convenience fee
+        and any late fee are not refundable.
       </p>
       <p>
         <strong>₹1,000 per plot</strong> of your membership price is
@@ -132,12 +148,12 @@ export default async function MembershipAgreementPage() {
       <p>You choose one of the following, from your dashboard, after the crop is harvested and weighed:</p>
       <ul>
         <li><strong>Home delivery</strong> of the raw harvest (delivery charges billed separately)</li>
-        <li><strong>Processing</strong> into flour (atta) or another product listed for the current crop, then delivered to you</li>
+        <li><strong>Processing</strong> into flour (atta), milled and packed in-house at the farm at no extra charge, then delivered to you (delivery charges billed separately)</li>
         <li><strong>Sale to the market</strong> on your behalf, with proceeds sent to you at prevailing market rates at the time of sale (not guaranteed in advance)</li>
       </ul>
       <p>
         For either delivery option, you may choose to receive your harvest
-        as a single delivery or split into monthly installments of a size
+        as a single delivery or split into monthly instalments of a size
         you specify.
       </p>
 
@@ -155,10 +171,16 @@ export default async function MembershipAgreementPage() {
         conditions, pests, water availability, and other natural factors
         beyond our control. We follow standard agronomic practices to
         manage this risk, but we do not guarantee against partial or total
-        crop loss. <strong>[This is separate from the cancellation refund
-        policy in Section 10 — MK Farms&apos; specific policy for
-        significant crop failure itself, e.g. any partial credit toward a
-        future season, is still to be decided and documented here.]</strong>
+        crop loss.
+      </p>
+      <p>
+        If the crop is partly or wholly lost, each member receives their
+        share of whatever is actually harvested, divided as described in
+        Section 4. Membership fees are not refunded, credited or reduced
+        because of a low or failed harvest, since the cultivation, care,
+        monitoring and fulfilment services covered by this Agreement are
+        still provided. Throughout the season we will keep members informed
+        through the dashboard, camera access and monthly test results.
       </p>
 
       <h2>10. Cancellation and refunds</h2>
