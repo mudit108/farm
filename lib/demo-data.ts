@@ -75,7 +75,7 @@ export const membershipPlans = [
     approxAcre: "~0.167 acre",
     wheatMinKg: 250,
     wheatMaxKg: 300,
-    priceInr: 20000,
+    priceInr: 25000,
     tagline: "Feed Your Family",
   },
   {
@@ -87,7 +87,7 @@ export const membershipPlans = [
     approxAcre: "~0.50 acre",
     wheatMinKg: 750,
     wheatMaxKg: 900,
-    priceInr: 50000,
+    priceInr: 65000,
     tagline: "Stock Up for the Year",
   },
   {
@@ -99,7 +99,7 @@ export const membershipPlans = [
     approxAcre: "1 acre",
     wheatMinKg: 1500,
     wheatMaxKg: 1800,
-    priceInr: 100000,
+    priceInr: 125000,
     tagline: "Farm a Full Acre",
   },
 ];
@@ -262,11 +262,11 @@ export const demoFaqs = [
   },
   {
     q: "What plan sizes are available?",
-    a: "Three seasonal plans, each made up of 7,260 sq ft plots: Kothi — 1 Plot (~0.167 acre, 250–300 kg wheat, ₹20,000/season — Feed Your Family), Annakosh — 3 Plots (~0.5 acre, 750–900 kg wheat, ₹50,000/season — Stock Up for the Year), and Mahabhandar — 6 Plots (exactly 1 acre, 1,500–1,800 kg wheat, ₹100,000/season — Farm a Full Acre). All plans include the same set of benefits.",
+    a: "Three seasonal plans, each made up of 7,260 sq ft plots: Kothi — 1 Plot (~0.167 acre, 250–300 kg wheat, ₹25,000/season — Feed Your Family), Annakosh — 3 Plots (~0.5 acre, 750–900 kg wheat, ₹65,000/season — Stock Up for the Year), and Mahabhandar — 6 Plots (exactly 1 acre, 1,500–1,800 kg wheat, ₹1,25,000/season — Farm a Full Acre). All plans include the same set of benefits.",
   },
   {
     q: "How much does a membership cost?",
-    a: "₹20,000 per season for Kothi (1 Plot), ₹50,000 for Annakosh (3 Plots), or ₹1,00,000 for Mahabhandar (6 Plots / 1 acre). These are current season prices and may be adjusted by Mera Khet over time.",
+    a: "₹25,000 per season for Kothi (1 Plot), ₹65,000 for Annakosh (3 Plots), or ₹1,25,000 for Mahabhandar (6 Plots / 1 acre). These are current season prices and may be adjusted by Mera Khet over time.",
   },
   {
     q: "Are annual memberships available?",

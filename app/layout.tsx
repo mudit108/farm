@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Karla } from "next/font/google";
 import { Analytics } from "@/components/analytics";
 import "./globals.css";
+import "./site.css";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -12,6 +13,14 @@ const fraunces = Fraunces({
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+// Body face for the public site (app/site.css). The dashboard and admin
+// keep Inter via --font-inter, so this only changes the marketing pages.
+const karla = Karla({
+  variable: "--font-karla",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -54,9 +63,9 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body
-        className={`${fraunces.variable} ${inter.variable} ${jbmono.variable} antialiased`}
+        className={`${fraunces.variable} ${inter.variable} ${karla.variable} ${jbmono.variable} antialiased`}
       >
         {children}
         <Analytics />

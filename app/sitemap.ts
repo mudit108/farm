@@ -11,6 +11,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Updates weekly during the season — the camera and farm-update
     // content here is the freshest thing on the site.
     { url: `${base}/the-farm`, changeFrequency: "weekly", priority: 0.8 },
+    // Added in the 2026 multi-page redesign.
+    { url: `${base}/plans`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${base}/our-wheat`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/faq`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/auth/login`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/auth/signup`, changeFrequency: "yearly", priority: 0.5 },
     // Legal pages were missing entirely — they're public, linked from
