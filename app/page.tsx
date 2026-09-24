@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { SiteFrame } from "@/components/site/frame";
 import { SectionHead } from "@/components/site/heads";
@@ -8,8 +9,11 @@ import { CameraViewer } from "@/components/site/camera-viewer";
 import { FaqPreview } from "@/components/site/faq";
 import { ContactForm } from "@/components/site/contact-form";
 import { whatsappHref } from "@/components/site/footer";
-import { FieldBand, HarvestIcon, PlanCards, PlotMapGrid, PlotMapLegend, Ticker } from "@/components/site/blocks";
+import { FieldBand, PlanCards, PlotMapGrid, PlotMapLegend, Ticker } from "@/components/site/blocks";
 import farmerTeamPhoto from "@/public/images/farmer-team-field.jpg";
+import harvestRawPhoto from "@/public/images/harvest-delivered-raw.jpg";
+import harvestFlourPhoto from "@/public/images/harvest-milled-atta.jpg";
+import harvestMarketPhoto from "@/public/images/harvest-sold-market.jpg";
 import { getCurrentMember } from "@/lib/current-member";
 import { getPlanCards, getPlotCounts, getSeason } from "@/lib/public-data";
 import { buildFaqs } from "@/lib/site-content";
@@ -191,15 +195,15 @@ export default async function Home() {
             lead="When the season ends, your share of the harvest is yours. You decide what happens to it."
           />
           <div className="harvest-grid">
-            {(
-              [
-                ["raw", "Delivered raw", "Your grain, packed in 15, 30 or 50 kg bags and sent home 2–3 weeks after harvest, depending on where you are."],
-                ["flour", "Milled into atta", "Milled and packed in-house at the farm, included in your plan — whole, with the bran and germ left in."],
-                ["market", "Sold to market", "Won't use it all? We sell the surplus at the day's market rate and send you what it fetches — well below what the plan costs, so not a return."],
-              ] as const
-            ).map(([k, h, p], i) => (
+            {[
+              { k: "raw", h: "Delivered raw", p: "Your grain, packed in 15, 30 or 50 kg bags and sent home 2–3 weeks after harvest, depending on where you are.", photo: harvestRawPhoto, alt: "Sacks of raw wheat grain, ready to be packed for home delivery" },
+              { k: "flour", h: "Milled into atta", p: "Milled and packed in-house at the farm, included in your plan — whole, with the bran and germ left in.", photo: harvestFlourPhoto, alt: "Packets of whole wheat atta, milled and packed, ready to ship" },
+              { k: "market", h: "Sold to market", p: "Won't use it all? We sell the surplus at the day's market rate and send you what it fetches — well below what the plan costs, so not a return.", photo: harvestMarketPhoto, alt: "Wheat grain being weighed on a traditional scale at a grain market" },
+            ].map(({ k, h, p, photo, alt }, i) => (
               <div key={k} className={`card harvest-card fade d${i * 2 + 1}`}>
-                <HarvestIcon kind={k} />
+                <div className="photo-slot filled harvest-photo">
+                  <Image src={photo} alt={alt} fill sizes="(min-width: 960px) 33vw, 100vw" placeholder="blur" />
+                </div>
                 <div className="harvest-body">
                   <h3>{h}</h3>
                   <p>{p}</p>
