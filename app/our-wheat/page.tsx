@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { SiteFrame } from "@/components/site/frame";
 import { PageHero, SectionHead } from "@/components/site/heads";
@@ -7,6 +8,10 @@ import { KernelToggle } from "@/components/site/kernel-toggle";
 import { getLowestPrice, getSeason } from "@/lib/public-data";
 import { currentCrop, membershipPlans, wheatComparisonRows } from "@/lib/demo-data";
 import { inr } from "@/lib/site-content";
+import wheatEarMacro from "@/public/images/wheat-ear-macro.jpg";
+import warehousePhoto from "@/public/images/warehouse-storage.jpg";
+import grainPourPhoto from "@/public/images/grain-pour-sack.jpg";
+import flourBowlPhoto from "@/public/images/flour-bowl.jpg";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +37,24 @@ export default async function OurWheatPage() {
         jumps={[
           { href: "#variety", label: "The variety" },
           { href: "#compare", label: "Compared honestly" },
+          { href: "#storage", label: "Storage & milling" },
           { href: "#milled", label: "Milled whole" },
           { href: "#honest", label: "Soil & organic" },
         ]}
-      />
+      >
+        <div className="photo-slot filled hero-photo fade d7" style={{ marginTop: 64 }}>
+          <Image
+            src={wheatEarMacro}
+            alt={`A ripe ear of ${currentCrop.variety} wheat, close up, ready for harvest`}
+            fill
+            priority
+            sizes="(min-width: 1180px) 1100px, 100vw"
+            placeholder="blur"
+            style={{ objectPosition: "center 55%" }}
+          />
+          <span className="band-cap">{currentCrop.variety} · this season&apos;s ear</span>
+        </div>
+      </PageHero>
 
       <Section id="variety" className="section" style={{ paddingTop: 30 }}>
         <div className="mk-wrap">
@@ -105,6 +124,48 @@ export default async function OurWheatPage() {
 
       <Rule />
 
+      <Section id="storage" className="section">
+        <div className="mk-wrap">
+          <SectionHead
+            center
+            num="03 — Storage & Milling"
+            title={["From our warehouse,", "not a contract mill."]}
+            lead={`After harvest, your share is stored in our own ${tonnes}-tonne warehouse and milled and packaged in-house — never sent out to a third party.`}
+          />
+          <div className="harvest-grid">
+            <div className="card harvest-card fade d2">
+              <div className="photo-slot filled harvest-photo">
+                <Image src={warehousePhoto} alt="Sacks of harvested wheat stacked inside the Mera Khet warehouse" fill sizes="(min-width: 960px) 33vw, 100vw" placeholder="blur" />
+              </div>
+              <div className="harvest-body">
+                <h3>Stored under our roof</h3>
+                <p>Your share waits in our own {tonnes}-tonne warehouse until it&apos;s time to mill it — not sold off and bought back later.</p>
+              </div>
+            </div>
+            <div className="card harvest-card fade d3">
+              <div className="photo-slot filled harvest-photo">
+                <Image src={grainPourPhoto} alt="Wheat grain being poured from a burlap sack before milling" fill sizes="(min-width: 960px) 33vw, 100vw" placeholder="blur" />
+              </div>
+              <div className="harvest-body">
+                <h3>Milled and packed in-house</h3>
+                <p>Both milling and packaging happen on our own farm, on our own equipment — no contract miller in between.</p>
+              </div>
+            </div>
+            <div className="card harvest-card fade d4">
+              <div className="photo-slot filled harvest-photo">
+                <Image src={flourBowlPhoto} alt="Freshly milled whole wheat atta in a bowl, with whole grains beside it" fill sizes="(min-width: 960px) 33vw, 100vw" placeholder="blur" />
+              </div>
+              <div className="harvest-body">
+                <h3>Whole atta, freshly milled</h3>
+                <p>Milled close to your delivery date, bran and germ still in it — see exactly what that means below.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Rule />
+
       <Section id="milled" className="section">
         <div className="mk-wrap">
           <KernelToggle />
@@ -115,7 +176,7 @@ export default async function OurWheatPage() {
 
       <Section id="honest" className="section">
         <div className="mk-wrap">
-          <SectionHead center num="04 — Soil & Organic" title={["What we do — and", "what we won't claim."]} />
+          <SectionHead center num="05 — Soil & Organic" title={["What we do — and", "what we won't claim."]} />
           <div className="honest">
             <div className="card honest-card fade d2">
               <span className="honest-tag tag-yes">What we do</span>

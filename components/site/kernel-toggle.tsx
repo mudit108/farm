@@ -29,7 +29,7 @@ export function KernelToggle() {
         </p>
       </div>
       <div>
-        <SectionHead num="03 — Milled Whole" title={["The whole grain,", "not two-thirds of it."]} style={{ marginBottom: 10 }} />
+        <SectionHead num="04 — Milled Whole" title={["The whole grain,", "not two-thirds of it."]} style={{ marginBottom: 10 }} />
         <p className="fade d4" style={{ fontSize: 16.5, lineHeight: 1.78, color: "#4A4A3E", marginTop: 18 }}>
           Every wheat kernel has three parts. Refined flour keeps only the starchy centre. Our atta is milled with all three left in — switch the
           toggle to see what refining takes away.

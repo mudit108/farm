@@ -7,6 +7,7 @@ import { getPlanCards, getPlotStatuses } from "@/lib/public-data";
 import { FEEDING_FAMILIES_PER_PLOT, membershipPlans } from "@/lib/demo-data";
 import { inr } from "@/lib/site-content";
 import mainField from "@/public/images/cctv/cam-main-field.jpg";
+import type { StaticImageData } from "next/image";
 
 /* ------------------------------------------------------------------ */
 /* Live plot map — straight from khet_club_all_plot_statuses           */
@@ -177,10 +178,20 @@ export function Ticker() {
   );
 }
 
-export function FieldBand({ caption = "The farm · Sujangarh, Rajasthan" }: { caption?: string }) {
+export function FieldBand({
+  caption = "The farm · Sujangarh, Rajasthan",
+  photo = mainField,
+  alt = "Drip irrigation lines across the main field at the Mera Khet farm",
+  objectPosition = "center 58%",
+}: {
+  caption?: string;
+  photo?: StaticImageData;
+  alt?: string;
+  objectPosition?: string;
+}) {
   return (
     <div className="photo-slot band filled">
-      <Image src={mainField} alt="Drip irrigation lines across the main field at the Mera Khet farm" fill sizes="100vw" placeholder="blur" style={{ objectPosition: "center 58%" }} />
+      <Image src={photo} alt={alt} fill sizes="100vw" placeholder="blur" style={{ objectPosition }} />
       <span className="band-cap">{caption}</span>
     </div>
   );

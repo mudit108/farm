@@ -9,6 +9,7 @@ import { FaqPreview } from "@/components/site/faq";
 import { ContactForm } from "@/components/site/contact-form";
 import { whatsappHref } from "@/components/site/footer";
 import { FieldBand, HarvestIcon, PlanCards, PlotMapGrid, PlotMapLegend, Ticker } from "@/components/site/blocks";
+import farmerTeamPhoto from "@/public/images/farmer-team-field.jpg";
 import { getCurrentMember } from "@/lib/current-member";
 import { getPlanCards, getPlotCounts, getSeason } from "@/lib/public-data";
 import { buildFaqs } from "@/lib/site-content";
@@ -148,6 +149,13 @@ export default async function Home() {
           </div>
         </div>
       </Section>
+
+      <FieldBand
+        photo={farmerTeamPhoto}
+        alt="Two of our farmers, from Sujangarh village, walking through the wheat field"
+        objectPosition="center 30%"
+        caption="Farmed by our own village's farmers — not outsourced labour"
+      />
 
       <Rule />
 
