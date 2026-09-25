@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { membershipPlans } from "@/lib/demo-data";
+import { membershipPlans, todayInIndia } from "@/lib/demo-data";
 
 /**
  * Shared fetchers for public homepage data, wrapped in React's cache().
@@ -41,6 +41,28 @@ export const getPlanPrices = cache(async (): Promise<Map<string, number>> => {
   const { data } = await supabase.from("khet_club_plan_prices").select("plan_id, price_inr");
   const rows = (data ?? []) as { plan_id: string; price_inr: number }[];
   return new Map(rows.map((r) => [r.plan_id, r.price_inr]));
+});
+
+export type PlanOfferRow = {
+  plan_id: string;
+  price_inr: number;
+  strike_price_inr: number | null;
+  offer_ends_at: string | null;
+};
+
+/**
+ * Live limited-time "was ₹X, now ₹Y" marketing offer per plan, admin-editable
+ * from /admin/crops. `offer_ends_at` is a plain YYYY-MM-DD date (IST, same
+ * convention as todayInIndia()) — the offer is active through the end of
+ * that day and simply stops appearing after, no cleanup job needed.
+ */
+export const getPlanOffers = cache(async (): Promise<Map<string, PlanOfferRow>> => {
+  const supabase = createAnonClient();
+  const { data } = await supabase
+    .from("khet_club_plan_prices")
+    .select("plan_id, price_inr, strike_price_inr, offer_ends_at");
+  const rows = (data ?? []) as PlanOfferRow[];
+  return new Map(rows.map((r) => [r.plan_id, r]));
 });
 
 export async function getLowestPrice(): Promise<number> {
@@ -90,19 +112,32 @@ export type PlanCard = (typeof membershipPlans)[number] & {
   /** Saving versus buying the same number of single plots. */
   savings: number;
   perPlotInr: number;
+  /** "Was ₹X" marketing price, only set while the offer is live. Admin-editable from /admin/crops. */
+  strikePriceInr: number | null;
+  /** YYYY-MM-DD (IST) the offer runs through, only set while the offer is live. */
+  offerEndsAt: string | null;
 };
 
 /** The three plans with live prices — the single source for every price shown on the public site. */
 export const getPlanCards = cache(async (): Promise<PlanCard[]> => {
-  const prices = await getPlanPrices();
+  const [prices, offers] = await Promise.all([getPlanPrices(), getPlanOffers()]);
   const base = (prices.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
+  const today = todayInIndia();
   return membershipPlans.map((plan) => {
     const priceInr = prices.get(plan.id) ?? plan.priceInr;
+    const offer = offers.get(plan.id);
+    const offerActive =
+      !!offer?.strike_price_inr &&
+      offer.strike_price_inr > priceInr &&
+      !!offer.offer_ends_at &&
+      offer.offer_ends_at >= today;
     return {
       ...plan,
       priceInr,
       savings: Math.max(Math.round(base * plan.plots - priceInr), 0),
       perPlotInr: Math.round(priceInr / plan.plots),
+      strikePriceInr: offerActive ? offer!.strike_price_inr : null,
+      offerEndsAt: offerActive ? offer!.offer_ends_at : null,
     };
   });
 });

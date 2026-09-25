@@ -17,7 +17,12 @@ type MyPlot = {
 };
 type GridPlot = { plot_number: number; status: "available" | "filled" };
 type Season = { registration_deadline: string | null; season_label: string };
-type PlanPrice = { plan_id: string; price_inr: number };
+type PlanPrice = {
+  plan_id: string;
+  price_inr: number;
+  strike_price_inr: number | null;
+  offer_ends_at: string | null;
+};
 
 export default async function SelectPlotPage() {
   const supabase = await createSessionClient();
@@ -35,7 +40,7 @@ export default async function SelectPlotPage() {
           .order("plot_number")
       : Promise.resolve({ data: [] as MyPlot[] }),
     supabase.rpc("khet_club_all_plot_statuses"),
-    supabase.from("khet_club_plan_prices").select("plan_id, price_inr"),
+    supabase.from("khet_club_plan_prices").select("plan_id, price_inr, strike_price_inr, offer_ends_at"),
   ]);
 
   const myPlots = (plotsResult.data ?? []) as MyPlot[];

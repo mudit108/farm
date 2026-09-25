@@ -364,17 +364,41 @@ export async function adminUpdateContactInfo(formData: FormData): Promise<void> 
  * Updates one or more plan prices from the admin panel. This is what
  * createPlanOrder actually charges — not a display-only setting — so a
  * change here takes effect on the very next checkout.
+ *
+ * Each plan also carries an optional "was ₹X" marketing strike price and an
+ * offer-end date (strike_${planId} / offerEnds_${planId}) — purely a display
+ * layer on top of the real price above, shown on the public plan cards (and
+ * the checkout preview) only while offerEnds_${planId} hasn't passed yet.
+ * Leaving the strike-price field blank clears the offer for that plan.
  */
 export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
   const supabase = createServiceClient();
 
-  const updates: { plan_id: string; price_inr: number }[] = [];
+  const updates: {
+    plan_id: string;
+    price_inr: number;
+    strike_price_inr: number | null;
+    offer_ends_at: string | null;
+  }[] = [];
   for (const planId of ["1-plot", "3-plots", "6-plots"]) {
     const raw = formData.get(`price_${planId}`);
     if (raw === null) continue;
     const price = Number(raw);
     if (!Number.isFinite(price) || price <= 0) continue;
-    updates.push({ plan_id: planId, price_inr: Math.round(price) });
+
+    const strikeRaw = String(formData.get(`strike_${planId}`) || "").trim();
+    const offerEndsRaw = String(formData.get(`offerEnds_${planId}`) || "").trim();
+    const strikePrice = strikeRaw ? Number(strikeRaw) : null;
+    const validStrike = strikePrice !== null && Number.isFinite(strikePrice) && strikePrice > price;
+
+    updates.push({
+      plan_id: planId,
+      price_inr: Math.round(price),
+      // Only keep the strike price/date pair when the strike price is a real
+      // number greater than the actual price — otherwise the offer is cleared.
+      strike_price_inr: validStrike ? Math.round(strikePrice!) : null,
+      offer_ends_at: validStrike && offerEndsRaw ? offerEndsRaw : null,
+    });
   }
   if (updates.length === 0) return;
 
@@ -385,6 +409,8 @@ export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/");
+  revalidatePath("/plans");
+  revalidatePath("/our-wheat");
   revalidatePath("/admin/crops");
   revalidatePath("/dashboard/select-plot");
 }

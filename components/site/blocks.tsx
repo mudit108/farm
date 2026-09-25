@@ -90,6 +90,13 @@ export async function PlotMapLegend() {
 
 const taglines: Record<string, string> = { "1-plot": "Feed your family", "3-plots": "Stock up for the year", "6-plots": "Farm a full acre" };
 
+/** "26 Oct" from a plain YYYY-MM-DD — formatted without a timezone-dependent Date parse. */
+function formatOfferDate(isoDate: string): string {
+  const [, month, day] = isoDate.split("-").map(Number);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${day} ${months[month - 1]}`;
+}
+
 export async function PlanCards({ detailed = false }: { detailed?: boolean }) {
   const [plans, member] = await Promise.all([getPlanCards(), getCurrentMember()]);
   const href = member.isLoggedIn ? "/dashboard/select-plot" : "/auth/signup";
@@ -104,6 +111,12 @@ export async function PlanCards({ detailed = false }: { detailed?: boolean }) {
             {detailed ? (
               <>
                 <p className="plan-tagline">{taglines[p.id]}</p>
+                {p.strikePriceInr && (
+                  <p className="plan-strike">
+                    <span className="was">₹{p.strikePriceInr.toLocaleString("en-IN")}</span>
+                    <span className="tag">Offer ends {formatOfferDate(p.offerEndsAt!)}</span>
+                  </p>
+                )}
                 <p className="plan-price">
                   <CountUp to={p.priceInr} format="inr" delay={150 + i * 130} />
                   <span className="per"> / season</span>
@@ -129,6 +142,12 @@ export async function PlanCards({ detailed = false }: { detailed?: boolean }) {
                 <p className="plan-sub">
                   {p.label} · {p.areaSqFt.toLocaleString("en-IN")} sq ft{p.id === "6-plots" ? " (1 acre)" : p.id === "3-plots" ? " (½ acre)" : ""}
                 </p>
+                {p.strikePriceInr && (
+                  <p className="plan-strike">
+                    <span className="was">₹{p.strikePriceInr.toLocaleString("en-IN")}</span>
+                    <span className="tag">Offer ends {formatOfferDate(p.offerEndsAt!)}</span>
+                  </p>
+                )}
                 <p className="plan-price">
                   <CountUp to={p.priceInr} format="inr" delay={150 + i * 130} />
                   <span className="per"> / season</span>

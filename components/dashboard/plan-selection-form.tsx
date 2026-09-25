@@ -13,6 +13,7 @@ import {
   INSTALLMENT_DUE_DAYS,
   balanceLateFeeInr,
   BALANCE_GRACE_DAYS,
+  todayInIndia,
 } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,19 @@ declare global {
 }
 
 type GridPlot = { plot_number: number; status: "available" | "filled" };
-type PlanPrice = { plan_id: string; price_inr: number };
+type PlanPrice = {
+  plan_id: string;
+  price_inr: number;
+  strike_price_inr: number | null;
+  offer_ends_at: string | null;
+};
+
+/** "26 Oct" from a plain YYYY-MM-DD — formatted without a timezone-dependent Date parse. */
+function formatOfferDate(isoDate: string): string {
+  const [, month, day] = isoDate.split("-").map(Number);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${day} ${months[month - 1]}`;
+}
 
 type FlowState =
   | { step: "idle" }
@@ -46,16 +59,25 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
   const [startPlot, setStartPlot] = useState<number | null>(null);
 
   const pricesByPlan = useMemo(() => new Map(prices.map((p) => [p.plan_id, p.price_inr])), [prices]);
+  const offersByPlan = useMemo(() => new Map(prices.map((p) => [p.plan_id, p])), [prices]);
   const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
-  const plansWithLivePricing = useMemo(
-    () =>
-      membershipPlans.map((p) => {
-        const priceInr = pricesByPlan.get(p.id) ?? p.priceInr;
-        const savings = Math.max(Math.round(basePricePerPlot * p.plots - priceInr), 0);
-        return { ...p, priceInr, savings };
-      }),
-    [pricesByPlan, basePricePerPlot]
-  );
+  const plansWithLivePricing = useMemo(() => {
+    const today = todayInIndia();
+    return membershipPlans.map((p) => {
+      const priceInr = pricesByPlan.get(p.id) ?? p.priceInr;
+      const savings = Math.max(Math.round(basePricePerPlot * p.plots - priceInr), 0);
+      const offer = offersByPlan.get(p.id);
+      const offerActive =
+        !!offer?.strike_price_inr && offer.strike_price_inr > priceInr && !!offer.offer_ends_at && offer.offer_ends_at >= today;
+      return {
+        ...p,
+        priceInr,
+        savings,
+        strikePriceInr: offerActive ? offer!.strike_price_inr : null,
+        offerEndsAt: offerActive ? offer!.offer_ends_at : null,
+      };
+    });
+  }, [pricesByPlan, offersByPlan, basePricePerPlot]);
 
   const plan = plansWithLivePricing.find((p) => p.id === planId) ?? null;
 
@@ -201,7 +223,19 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                 </li>
               </ul>
 
-              <p className="mt-4 font-display text-lg">₹{p.priceInr.toLocaleString("en-IN")}</p>
+              {p.strikePriceInr && (
+                <p className="mt-4 flex items-center gap-2">
+                  <span className="text-sm text-[var(--color-ink-soft)] line-through">
+                    ₹{p.strikePriceInr.toLocaleString("en-IN")}
+                  </span>
+                  <span className="rounded bg-[var(--color-gold)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--color-brown)]">
+                    Ends {formatOfferDate(p.offerEndsAt!)}
+                  </span>
+                </p>
+              )}
+              <p className={cn("font-display text-lg", p.strikePriceInr ? "mt-0.5" : "mt-4")}>
+                ₹{p.priceInr.toLocaleString("en-IN")}
+              </p>
               <p className="text-xs text-[var(--color-ink-soft)]">per season</p>
               {p.savings > 0 && (
                 <p className="mt-0.5 text-xs font-medium text-[var(--color-green-deep)]">

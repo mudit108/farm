@@ -24,7 +24,12 @@ type Season = {
   warehouse_capacity_tonnes: number;
   registrations_paused: boolean;
 };
-type PlanPrice = { plan_id: string; price_inr: number };
+type PlanPrice = {
+  plan_id: string;
+  price_inr: number;
+  strike_price_inr: number | null;
+  offer_ends_at: string | null;
+};
 type DiscountCode = {
   id: string;
   code: string;
@@ -53,7 +58,7 @@ export default async function CropsManagementPage() {
     await Promise.all([
       supabase.rpc("khet_club_get_season"),
       supabase.from("khet_club_plots").select("plot_number", { count: "exact", head: true }).eq("status", "filled"),
-      supabase.from("khet_club_plan_prices").select("plan_id, price_inr"),
+      supabase.from("khet_club_plan_prices").select("plan_id, price_inr, strike_price_inr, offer_ends_at"),
       // season_label isn't part of khet_club_get_season()'s return shape,
       // so it's read directly here rather than widening the public RPC.
       supabase.from("khet_club_season").select("season_label, harvest_distribution_model, harvest_deduction_percent").eq("id", 1).maybeSingle(),
@@ -72,7 +77,8 @@ export default async function CropsManagementPage() {
   const deductionPercent = Number(labelRow?.harvest_deduction_percent ?? 0);
   const pastSeasons = (archiveData ?? []) as ArchivedSeason[];
   const discountCodes = (codesData ?? []) as DiscountCode[];
-  const pricesByPlan = new Map(((pricesData ?? []) as PlanPrice[]).map((p) => [p.plan_id, p.price_inr]));
+  const planPriceRows = new Map(((pricesData ?? []) as PlanPrice[]).map((p) => [p.plan_id, p]));
+  const pricesByPlan = new Map(Array.from(planPriceRows, ([id, p]) => [id, p.price_inr] as const));
   const basePricePerPlot = (pricesByPlan.get("1-plot") ?? membershipPlans[0].priceInr) / membershipPlans[0].plots;
 
   return (
@@ -111,33 +117,70 @@ export default async function CropsManagementPage() {
             display number. Changes apply to the very next purchase,
             everywhere prices are shown.
           </p>
-          <ActionForm action={adminUpdatePlanPrices} className="mt-4 space-y-4">
+          <ActionForm action={adminUpdatePlanPrices} className="mt-4 space-y-5">
             {membershipPlans.map((plan) => {
               const currentPrice = pricesByPlan.get(plan.id) ?? plan.priceInr;
               const linearPrice = basePricePerPlot * plan.plots;
               const savings = Math.max(Math.round(linearPrice - currentPrice), 0);
+              const offerRow = planPriceRows.get(plan.id);
               return (
-                <label key={plan.id} className="block">
-                  <span className="mb-1.5 flex items-center justify-between text-sm font-medium">
-                    <span>{plan.name} ({plan.label})</span>
-                    {plan.id !== "1-plot" && savings > 0 && (
-                      <span className="text-xs font-normal text-[var(--color-green-deep)]">
-                        Saves ₹{savings.toLocaleString("en-IN")} vs. per-plot rate
+                <div key={plan.id} className="border-b border-[var(--color-ink)]/10 pb-4 last:border-0 last:pb-0">
+                  <label className="block">
+                    <span className="mb-1.5 flex items-center justify-between text-sm font-medium">
+                      <span>{plan.name} ({plan.label})</span>
+                      {plan.id !== "1-plot" && savings > 0 && (
+                        <span className="text-xs font-normal text-[var(--color-green-deep)]">
+                          Saves ₹{savings.toLocaleString("en-IN")} vs. per-plot rate
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-[var(--color-ink-soft)]">₹</span>
+                      <input
+                        name={`price_${plan.id}`}
+                        type="number"
+                        min={1}
+                        step={1}
+                        defaultValue={currentPrice}
+                        className="input"
+                      />
+                    </div>
+                  </label>
+
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-[var(--color-ink-soft)]">
+                        Was-price (strike-through, optional)
                       </span>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-[var(--color-ink-soft)]">₹</span>
-                    <input
-                      name={`price_${plan.id}`}
-                      type="number"
-                      min={1}
-                      step={1}
-                      defaultValue={currentPrice}
-                      className="input"
-                    />
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm text-[var(--color-ink-soft)]">₹</span>
+                        <input
+                          name={`strike_${plan.id}`}
+                          type="number"
+                          min={1}
+                          step={1}
+                          placeholder="e.g. 30000"
+                          defaultValue={offerRow?.strike_price_inr ?? ""}
+                          className="input"
+                        />
+                      </div>
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-[var(--color-ink-soft)]">Offer valid till</span>
+                      <input
+                        name={`offerEnds_${plan.id}`}
+                        type="date"
+                        defaultValue={offerRow?.offer_ends_at ?? ""}
+                        className="input"
+                      />
+                    </label>
                   </div>
-                </label>
+                  <p className="mt-1 text-[11px] text-[var(--color-ink-soft)]">
+                    Leave the was-price blank to remove the offer. It only shows on the
+                    site while today is on or before the date above — no need to come
+                    back and clear it.
+                  </p>
+                </div>
               );
             })}
             <Button type="submit" className="w-full">Save Prices</Button>
