@@ -17,6 +17,19 @@ type Visit = {
   created_at: string;
 };
 
+type SupportMsg = {
+  id: string;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
+  admin_reply: string | null;
+  replied_at: string | null;
+};
+
+const fmtDateTime = (iso: string) =>
+  new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+
 export default async function HelpPage() {
   const supabase = await createSessionClient();
   const {
@@ -25,6 +38,7 @@ export default async function HelpPage() {
 
   const season = await getSeason();
   let visits: Visit[] = [];
+  let supportMessages: SupportMsg[] = [];
   if (user) {
     const { data } = await supabase
       .from("khet_club_farm_visits")
@@ -32,6 +46,13 @@ export default async function HelpPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     visits = (data ?? []) as Visit[];
+    const { data: supportData } = await supabase
+      .from("khet_club_support_messages")
+      .select("id, subject, message, status, created_at, admin_reply, replied_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    supportMessages = (supportData ?? []) as SupportMsg[];
   }
 
   return (
@@ -83,6 +104,34 @@ export default async function HelpPage() {
             Reach our team about your farm or membership.
           </p>
           <SupportForm whatsappUrl={whatsappHref(season?.contact_phone ?? null, "Hi, I'm a Mera Khet member and have a question.")} />
+
+          {supportMessages.length > 0 && (
+            <div className="mt-6 border-t border-[var(--color-ink)]/10 pt-5">
+              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Your Messages</p>
+              <div className="mt-3 space-y-3">
+                {supportMessages.map((m) => (
+                  <div key={m.id} className="rounded-[var(--radius-sm)] border border-[var(--color-ink)]/10 p-3 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{m.subject}</p>
+                        <p className="text-xs text-[var(--color-ink-soft)]">{fmtDateTime(m.created_at)}</p>
+                      </div>
+                      <Badge tone={m.admin_reply ? "green" : "gold"}>{m.admin_reply ? "Replied" : "Waiting for reply"}</Badge>
+                    </div>
+                    <p className="mt-2 whitespace-pre-line text-[var(--color-ink-soft)]">{m.message}</p>
+                    {m.admin_reply && (
+                      <div className="mt-2 rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-2.5">
+                        <p className="text-xs font-medium text-[var(--color-green-deep)]">
+                          Mera Khet team{m.replied_at ? ` · ${fmtDateTime(m.replied_at)}` : ""}
+                        </p>
+                        <p className="mt-1 whitespace-pre-line">{m.admin_reply}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </div>

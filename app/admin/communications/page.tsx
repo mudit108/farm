@@ -5,7 +5,7 @@ import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { createServiceClient } from "@/lib/supabase/service";
-import { adminPublishUpdate, adminDeleteUpdate, adminMarkContactMessage, adminResolveSupportMessage } from "@/app/actions/admin-content";
+import { adminPublishUpdate, adminDeleteUpdate, adminMarkContactMessage, adminResolveSupportMessage, adminReplySupportMessage } from "@/app/actions/admin-content";
 import { isValidIndianMobile } from "@/lib/phone";
 import { adminSendWhatsAppIndividual, adminBroadcastWhatsApp } from "@/app/actions/admin-whatsapp";
 
@@ -38,9 +38,12 @@ type SupportMessage = {
   message: string;
   status: "open" | "resolved";
   created_at: string;
+  admin_reply: string | null;
+  replied_at: string | null;
 };
 
-export default async function CommunicationsPage() {
+export default async function CommunicationsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
   const supabase = createServiceClient();
 
   const [{ data: updatesData }, { data: usersData }, { data: plots }, { data: logData }, { data: contactData }, { data: supportData }] = await Promise.all([
@@ -58,7 +61,7 @@ export default async function CommunicationsPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("khet_club_support_messages")
-      .select("id, user_id, subject, message, status, created_at")
+      .select("id, user_id, subject, message, status, created_at, admin_reply, replied_at")
       .order("created_at", { ascending: false }),
   ]);
 
@@ -118,6 +121,20 @@ export default async function CommunicationsPage() {
               <Badge tone={m.status === "open" ? "gold" : "green"}>{m.status}</Badge>
             </div>
             <p className="mt-3 whitespace-pre-wrap text-sm">{m.message}</p>
+            {m.admin_reply ? (
+              <div className="mt-3 rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-3 text-sm">
+                <p className="text-xs font-medium text-[var(--color-green-deep)]">
+                  Your reply{m.replied_at ? ` · ${new Date(m.replied_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}` : ""}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">{m.admin_reply}</p>
+              </div>
+            ) : (
+              <ActionForm action={adminReplySupportMessage} resetOnSuccess className="mt-3 space-y-2">
+                <input type="hidden" name="id" value={m.id} />
+                <textarea name="reply" rows={3} required placeholder="Write a reply — sent by email and WhatsApp, and shown in their dashboard" className="input" />
+                <Button type="submit" size="sm">Send Reply</Button>
+              </ActionForm>
+            )}
             <div className="mt-3 flex gap-3 border-t border-[var(--color-ink)]/10 pt-3">
               {member?.email && (
                 <a href={`mailto:${member.email}?subject=Re: ${encodeURIComponent(m.subject)}`} className="text-xs font-medium text-[var(--color-green)] hover:underline">
@@ -174,7 +191,7 @@ export default async function CommunicationsPage() {
   const updatesContent = (
     <div className="p-6 sm:px-10">
       <Card className="max-w-lg p-6">
-        <ActionForm action={adminPublishUpdate} className="space-y-4">
+        <ActionForm action={adminPublishUpdate} className="space-y-4" resetOnSuccess confirmMessage="Publish this update? It will also be sent to every current member on WhatsApp.">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium">Title</span>
             <input name="title" required className="input" placeholder="Groundnut entering flowering stage" />
@@ -183,7 +200,12 @@ export default async function CommunicationsPage() {
             <span className="mb-1.5 block text-sm font-medium">Description</span>
             <textarea name="description" rows={3} className="input" />
           </label>
-          <Button type="submit" className="w-full">Publish Update</Button>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium">Photo link (optional)</span>
+            <input name="photoUrl" type="url" className="input" placeholder="https://… (a photo from the farm)" />
+            <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Shown with the update in every member&apos;s dashboard.</span>
+          </label>
+          <Button type="submit" className="w-full">Publish Update to All Members</Button>
         </ActionForm>
       </Card>
       <p className="mt-3 max-w-lg text-xs text-[var(--color-ink-soft)]">
@@ -200,7 +222,7 @@ export default async function CommunicationsPage() {
               <p className="mt-1 font-medium">{u.title}</p>
               {u.description && <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{u.description}</p>}
             </div>
-            <ActionForm action={adminDeleteUpdate}>
+            <ActionForm action={adminDeleteUpdate} confirmMessage="Delete this update? Members will no longer see it.">
               <input type="hidden" name="id" value={u.id} />
               <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
             </ActionForm>
@@ -228,7 +250,7 @@ export default async function CommunicationsPage() {
           <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
             Sends to all {memberCount} current-season member{memberCount === 1 ? "" : "s"} (anyone with a filled plot).
           </p>
-          <ActionForm action={adminBroadcastWhatsApp} className="mt-4 space-y-3">
+          <ActionForm action={adminBroadcastWhatsApp} className="mt-4 space-y-3" resetOnSuccess confirmMessage="Send this WhatsApp message to every current member now?">
             <textarea
               name="message"
               required
@@ -333,6 +355,7 @@ export default async function CommunicationsPage() {
     <div>
       <PageHeader title="Communications" subtitle="Farm updates, WhatsApp messaging, and inbound contact messages." />
       <Tabs
+        defaultTab={tab}
         tabs={[
           { id: "support", label: `Member Support${openSupportCount > 0 ? ` (${openSupportCount})` : ""}`, content: supportContent },
           { id: "contact", label: `Contact Messages${newContactCount > 0 ? ` (${newContactCount})` : ""}`, content: contactContent },

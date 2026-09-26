@@ -17,6 +17,7 @@ export default async function AdminOverview() {
     { count: pendingVisits },
     { data: pendingVisitRows },
     { data: paidPayments },
+    { data: seasonRows },
   ] = await Promise.all([
     supabase.from("khet_club_plots").select("status, user_id"),
     listAllUsers(supabase),
@@ -31,6 +32,7 @@ export default async function AdminOverview() {
     // A 50/50 balance payment is the same purchase as its deposit, so it must
     // not be counted again toward the Feeding Families Fund.
     supabase.from("khet_club_payments").select("plan_id").eq("status", "paid").neq("payment_kind", "balance").is("archived_season_id", null),
+    supabase.rpc("khet_club_get_season"),
   ]);
 
   const totalPlots = plots?.length ?? 0;
@@ -45,14 +47,20 @@ export default async function AdminOverview() {
     return sum + plotsInPlan * FEEDING_FAMILIES_PER_PLOT;
   }, 0);
 
+  const season = (seasonRows as { season_label: string; sowing_date: string | null }[] | null)?.[0] ?? null;
   const stats = [
     { label: "Total Customers", value: String(usersData?.users?.length ?? 0) },
     { label: "Active Memberships", value: String(activeMemberships) },
     { label: "Allocated Plots", value: `${filledPlots} / ${totalPlots}` },
     { label: "Available Plots", value: String(totalPlots - filledPlots) },
-    { label: "Active Crops", value: "1 (Wheat)" },
+    { label: "Season", value: season?.season_label ?? "—" },
     { label: "Cameras Online", value: String(camerasOnline ?? 0) },
-    { label: "Season Starts", value: "Near Diwali" },
+    {
+      label: "Sowing Date",
+      value: season?.sowing_date
+        ? new Date(`${season.sowing_date}T00:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })
+        : "Not set",
+    },
     { label: "Pending Visit Requests", value: String(pendingVisits ?? 0) },
     { label: "Feeding Families Fund", value: `₹${feedingFamiliesFund.toLocaleString("en-IN")}` },
   ];

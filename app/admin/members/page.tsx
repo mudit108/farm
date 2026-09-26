@@ -14,6 +14,7 @@ import {
   adminFreeBatch,
   adminUpdateMemberContact,
 } from "@/app/actions/admin-plots";
+import { adminRecordOfflinePurchase } from "@/app/actions/admin-payments";
 import { adminApproveBatch, adminResendCertificate } from "@/app/actions/admin-certificate";
 import { adminAddDocument, adminDeleteDocument } from "@/app/actions/admin-content";
 import {
@@ -45,6 +46,7 @@ type PlotRow = {
 };
 type PaymentRow = {
   user_id: string;
+  claim_batch_id: string | null;
   amount: number;
   status: string;
   payment_kind: string;
@@ -89,9 +91,9 @@ function paymentSummaryText(
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; tab?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, tab } = await searchParams;
   const query = (q ?? "").trim().toLowerCase();
 
   const supabase = createServiceClient();
@@ -106,6 +108,7 @@ export default async function MembersPage({
     { data: docsData },
     { data: paymentsData },
     { data: installmentData },
+    { data: clearLogData },
   ] = await Promise.all([
     listAllUsers(supabase),
     supabase
@@ -123,11 +126,27 @@ export default async function MembersPage({
     supabase.from("khet_club_documents").select("id, name, file_url, user_id").order("created_at", { ascending: false }),
     supabase
       .from("khet_club_payments")
-      .select("user_id, amount, status, payment_kind, created_at")
+      .select("user_id, claim_batch_id, amount, status, payment_kind, created_at")
       .eq("status", "paid")
       .order("created_at", { ascending: false }),
     supabase.from("khet_club_installment_plans").select("user_id, balance_due_inr, balance_due_date, balance_paid"),
+    supabase
+      .from("khet_club_plot_clear_log")
+      .select("id, plot_number, previous_full_name, previous_phone, previous_email, previous_plan_id, was_member_held, cleared_at")
+      .order("cleared_at", { ascending: false })
+      .limit(30),
   ]);
+  type ClearLog = {
+    id: string;
+    plot_number: number;
+    previous_full_name: string | null;
+    previous_phone: string | null;
+    previous_email: string | null;
+    previous_plan_id: string | null;
+    was_member_held: boolean;
+    cleared_at: string;
+  };
+  const clearLog = (clearLogData ?? []) as ClearLog[];
 
   const users = usersData?.users ?? [];
   const usersById = new Map(users.map((u) => [u.id, u]));
@@ -139,6 +158,7 @@ export default async function MembersPage({
   const changeRequests = (requestsData ?? []) as ChangeRequest[];
   const docs = (docsData ?? []) as Doc[];
   const payments = (paymentsData ?? []) as PaymentRow[];
+  const paidBatches = new Set(payments.map((p) => p.claim_batch_id).filter(Boolean));
   const installmentPlans = (installmentData ?? []) as InstallmentPlan[];
 
   // One payment summary per member — total actually paid so far, plus any
@@ -244,7 +264,8 @@ export default async function MembersPage({
       <Card className="mt-6 p-5">
         <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Manually Assign a Plan</p>
         <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
-          For offline reservations — phone/walk-in signups you want reflected here.
+          For offline reservations — phone/walk-in signups you want reflected here. If the email matches a member&apos;s
+          account, the plots are linked to it so they see them in their dashboard.
           Currently {available} plot{available === 1 ? "" : "s"} available.
         </p>
         <ActionForm action={adminAssignPlan} className="mt-4 grid gap-3 sm:grid-cols-6">
@@ -338,6 +359,28 @@ export default async function MembersPage({
                       Harvest: {prefOption.title}
                       {pref!.schedule === "monthly" ? ` (~${pref!.installment_kg} kg/mo)` : ""}
                     </p>
+                  )}
+
+                  {first.user_id && !paidBatches.has(batchId) && (
+                    <details className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
+                      <summary className="cursor-pointer text-xs font-medium text-[var(--color-brown)] hover:text-[var(--color-green-deep)]">
+                        No payment recorded — record an offline payment
+                      </summary>
+                      <ActionForm action={adminRecordOfflinePurchase} className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <input type="hidden" name="claimBatchId" value={batchId} />
+                        <input name="amountInr" type="number" min={1} required placeholder="Amount received (₹)" className="input" />
+                        <select name="method" required defaultValue="" className="input">
+                          <option value="" disabled>Paid by…</option>
+                          <option value="cash">Cash</option>
+                          <option value="upi">UPI</option>
+                          <option value="bank_transfer">Bank transfer</option>
+                          <option value="cheque">Cheque</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <input name="reference" placeholder="UPI/UTR reference (optional)" className="input sm:col-span-2" />
+                        <Button type="submit" size="sm" variant="outline">Record Payment & Send Receipt</Button>
+                      </ActionForm>
+                    </details>
                   )}
 
                   <details className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
@@ -520,7 +563,7 @@ export default async function MembersPage({
                     <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="underline">{d.file_url}</a>
                   </p>
                 </div>
-                <ActionForm action={adminDeleteDocument}>
+                <ActionForm action={adminDeleteDocument} confirmMessage="Remove this document?">
                   <input type="hidden" name="id" value={d.id} />
                   <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Remove</button>
                 </ActionForm>
@@ -600,6 +643,35 @@ export default async function MembersPage({
           </table>
         </div>
       </Card>
+      {clearLog.length > 0 && (
+        <Card className="mt-6 p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Recently freed plots
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Who held each plot before it was freed — the record to check if a member says their plot went missing.
+          </p>
+          <div className="mt-3 divide-y divide-[var(--color-ink)]/10 text-sm">
+            {clearLog.map((c) => (
+              <div key={c.id} className="flex flex-wrap justify-between gap-2 py-2">
+                <span>
+                  <span className="font-mono-data">#{c.plot_number}</span>{" "}
+                  <span className="font-medium">{c.previous_full_name ?? "—"}</span>
+                  <span className="text-xs text-[var(--color-ink-soft)]">
+                    {" "}
+                    · {[c.previous_phone, c.previous_email].filter(Boolean).join(" · ") || "no contact"} ·{" "}
+                    {planLabel(c.previous_plan_id) ?? "no plan"}
+                    {c.was_member_held ? " · member account" : " · offline"}
+                  </span>
+                </span>
+                <span className="text-xs text-[var(--color-ink-soft)]">
+                  {new Date(c.cleared_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 
@@ -768,6 +840,7 @@ export default async function MembersPage({
     <div>
       <PageHeader title="Members" subtitle={`${filled} filled · ${available} available · ${plots.length} total plots`} />
       <Tabs
+        defaultTab={tab}
         tabs={[
           { id: "members", label: "Members", content: membersContent },
           { id: "accounts", label: "All Accounts", content: accountsContent },

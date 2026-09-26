@@ -16,6 +16,7 @@ import {
   todayInIndia,
 } from "@/lib/demo-data";
 import { adminAddExpense, adminDeleteExpense } from "@/app/actions/admin-expenses";
+import { adminMarkBalancePaidOffline, adminMarkPaymentRefunded } from "@/app/actions/admin-payments";
 import { adminUpdateFFFAmount } from "@/app/actions/admin-content";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ type Payment = {
   created_at: string;
   discount_inr: number;
   payment_kind: "full" | "deposit" | "balance";
+  claim_batch_id: string | null;
 };
 type Expense = {
   id: string;
@@ -71,9 +73,9 @@ function statusTone(status: string): "green" | "gold" | "brown" {
 export default async function AdminFinancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; tab?: string }>;
 }) {
-  const { status: statusParam, q } = await searchParams;
+  const { status: statusParam, q, tab } = await searchParams;
   const query = (q ?? "").trim().toLowerCase();
   const activeFilter = STATUS_FILTERS.includes(statusParam as (typeof STATUS_FILTERS)[number])
     ? (statusParam as (typeof STATUS_FILTERS)[number])
@@ -81,7 +83,14 @@ export default async function AdminFinancePage({
 
   const supabase = createServiceClient();
 
-  const [{ data: allPayments }, { data: usersData }, { data: allExpenses }, { data: seasonData }, { data: installmentData }] =
+  const [
+    { data: allPayments },
+    { data: usersData },
+    { data: allExpenses },
+    { data: seasonData },
+    { data: installmentData },
+    { data: receiptsData },
+  ] =
     await Promise.all([
       // Current season only — closing a season stamps its payments/expenses
       // with archived_season_id, so totals here never mix seasons.
@@ -97,9 +106,16 @@ export default async function AdminFinancePage({
         .select("id, user_id, plan_id, balance_due_inr, balance_due_date")
         .eq("balance_paid", false)
         .order("balance_due_date", { ascending: true }),
+      supabase.from("khet_club_receipts").select("payment_id, receipt_number"),
     ]);
 
   const payments = (allPayments ?? []) as Payment[];
+  const receiptByPayment = new Map(
+    ((receiptsData ?? []) as { payment_id: string; receipt_number: string }[]).map((r) => [r.payment_id, r.receipt_number])
+  );
+  // Paid for a plan but no plots attached — the automatic refund after a
+  // failed claim didn't go through. Needs a manual look.
+  const needsReview = payments.filter((p) => p.status === "paid" && p.payment_kind !== "balance" && !p.claim_batch_id);
   const expenses = (allExpenses ?? []) as Expense[];
   const filteredExpenses = query
     ? expenses.filter((e) =>
@@ -348,6 +364,32 @@ export default async function AdminFinancePage({
         )}
       </Card>
 
+      {needsReview.length > 0 && (
+        <Card className="mt-6 border-[var(--color-live)]/40 bg-[var(--color-live)]/5 p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-live)]">
+            Needs review — paid but no plots ({needsReview.length})
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            These customers paid, but their plots couldn&apos;t be assigned and the automatic refund also failed. Refund them
+            from Razorpay (then mark refunded below), or assign plots by hand in Members.
+          </p>
+          <div className="mt-3 space-y-2 text-sm">
+            {needsReview.map((p) => {
+              const u = usersById.get(p.user_id);
+              return (
+                <div key={p.id} className="flex flex-wrap justify-between gap-2">
+                  <span>
+                    <span className="font-medium">{(u?.user_metadata?.full_name as string) || u?.email || "Unknown"}</span>{" "}
+                    <span className="text-[var(--color-ink-soft)]">· {u?.email ?? "—"} · {planLabel(p.plan_id)}</span>
+                  </span>
+                  <span className="font-mono-data">₹{(p.amount / 100).toLocaleString("en-IN")} · {p.razorpay_payment_id ?? p.razorpay_order_id}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {installmentPlans.length > 0 && (
         <Card className="mt-6 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -368,6 +410,7 @@ export default async function AdminFinancePage({
                   <th className="px-2 py-2 font-medium">Plan</th>
                   <th className="px-2 py-2 font-medium">Amount owed</th>
                   <th className="px-2 py-2 font-medium">Due</th>
+                  <th className="px-2 py-2 font-medium">Paid offline?</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-ink)]/10">
@@ -412,6 +455,24 @@ export default async function AdminFinancePage({
                             return <span className="block font-semibold">Past 55 days — release these plots & handle deposit per refund policy</span>;
                           return null;
                         })()}
+                      </td>
+                      <td className="px-2 py-2.5">
+                        <details>
+                          <summary className="cursor-pointer text-xs font-medium text-[var(--color-green)] hover:underline">Mark paid</summary>
+                          <ActionForm action={adminMarkBalancePaidOffline} className="mt-2 flex flex-col gap-1.5">
+                            <input type="hidden" name="installmentPlanId" value={ip.id} />
+                            <select name="method" required defaultValue="" className="input py-1 text-xs">
+                              <option value="" disabled>Paid by…</option>
+                              <option value="cash">Cash</option>
+                              <option value="upi">UPI</option>
+                              <option value="bank_transfer">Bank transfer</option>
+                              <option value="cheque">Cheque</option>
+                              <option value="other">Other</option>
+                            </select>
+                            <input name="reference" placeholder="Reference (optional)" className="input py-1 text-xs" />
+                            <Button type="submit" size="sm" variant="outline">Confirm</Button>
+                          </ActionForm>
+                        </details>
                       </td>
                     </tr>
                   );
@@ -490,7 +551,7 @@ export default async function AdminFinancePage({
         </div>
 
         <div className="max-h-[560px] overflow-x-auto overflow-y-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="sticky top-0 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Date</th>
@@ -500,6 +561,7 @@ export default async function AdminFinancePage({
                 <th className="px-4 py-3 font-medium">Feeding Families</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Order ID</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-ink)]/10">
@@ -521,12 +583,34 @@ export default async function AdminFinancePage({
                       {p.status === "paid" && p.payment_kind !== "balance" ? `₹${(planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}` : "—"}
                     </td>
                     <td className="px-4 py-2.5"><Badge tone={statusTone(p.status)}>{p.status}</Badge></td>
-                    <td className="px-4 py-2.5 font-mono-data text-xs text-[var(--color-ink-soft)]">{p.razorpay_order_id}</td>
+                    <td className="px-4 py-2.5 font-mono-data text-xs text-[var(--color-ink-soft)]">
+                      {p.razorpay_order_id}
+                      {receiptByPayment.has(p.id) && (
+                        <a href={`/api/receipt/download?payment=${p.id}`} className="mt-0.5 block font-sans font-medium text-[var(--color-green)] hover:underline">
+                          Receipt {receiptByPayment.get(p.id)}
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      {p.status === "paid" && (
+                        <details className="inline-block text-left">
+                          <summary className="cursor-pointer text-xs text-[var(--color-ink-soft)] hover:underline">Refunded?</summary>
+                          <ActionForm action={adminMarkPaymentRefunded} className="mt-2 flex w-48 flex-col gap-1.5">
+                            <input type="hidden" name="paymentId" value={p.id} />
+                            <p className="text-[11px] text-[var(--color-ink-soft)]">
+                              Only records it. Do the actual refund in your Razorpay dashboard.
+                            </p>
+                            <input name="confirm" placeholder="Type REFUNDED" autoComplete="off" className="input py-1 text-xs" />
+                            <Button type="submit" size="sm" variant="outline">Mark refunded</Button>
+                          </ActionForm>
+                        </details>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-[var(--color-ink-soft)]">No transactions in this filter.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-[var(--color-ink-soft)]">No transactions in this filter.</td></tr>
               )}
             </tbody>
           </table>
@@ -588,6 +672,7 @@ export default async function AdminFinancePage({
       )}
 
       <form method="GET" className="mt-6 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="tab" value="expenses" />
         <input
           name="q"
           defaultValue={q ?? ""}
@@ -596,7 +681,7 @@ export default async function AdminFinancePage({
         />
         <Button type="submit" variant="outline">Search</Button>
         {query && (
-          <Link href="/admin/income" className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">
+          <Link href="/admin/income?tab=expenses" className="text-xs font-medium text-[var(--color-ink-soft)] hover:underline">
             Clear
           </Link>
         )}
@@ -636,7 +721,7 @@ export default async function AdminFinancePage({
                   <td className="px-4 py-2.5">{e.description}</td>
                   <td className="px-4 py-2.5 font-mono-data font-medium">₹{e.amount_inr.toLocaleString("en-IN")}</td>
                   <td className="px-4 py-2.5 text-right">
-                    <ActionForm action={adminDeleteExpense}>
+                    <ActionForm action={adminDeleteExpense} confirmMessage="Delete this expense?">
                       <input type="hidden" name="id" value={e.id} />
                       <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
                     </ActionForm>
@@ -659,6 +744,7 @@ export default async function AdminFinancePage({
     <div>
       <PageHeader title="Finance" subtitle="Real income and expenses — not projections." />
       <Tabs
+        defaultTab={tab}
         tabs={[
           { id: "income", label: "Income", content: incomeContent },
           { id: "expenses", label: "Expenses", content: expensesContent },

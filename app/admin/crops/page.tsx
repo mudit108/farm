@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { currentCrop, membershipPlans, todayInIndia } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution, adminSetRegistrationsPaused } from "@/app/actions/admin-content";
 import { adminCreateDiscountCode, adminToggleDiscountCode } from "@/app/actions/admin-discounts";
 import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
@@ -54,7 +55,16 @@ type ArchivedSeason = {
 
 export default async function CropsManagementPage() {
   const supabase = createServiceClient();
-  const [{ data }, { count: filledCount }, { data: pricesData }, { data: labelRow }, { data: codesData }, { data: archiveData }] =
+  const [
+    { data },
+    { count: filledCount },
+    { data: pricesData },
+    { data: labelRow },
+    { data: codesData },
+    { data: archiveData },
+    { data: redemptionsData },
+    usersRes,
+  ] =
     await Promise.all([
       supabase.rpc("khet_club_get_season"),
       supabase.from("khet_club_plots").select("plot_number", { count: "exact", head: true }).eq("status", "filled"),
@@ -70,7 +80,20 @@ export default async function CropsManagementPage() {
         .from("khet_club_season_archive")
         .select("id, season_label, crop_name, plots_filled, members_count, revenue_inr, fff_collected_inr, closed_at")
         .order("closed_at", { ascending: false }),
+      supabase
+        .from("khet_club_discount_redemptions")
+        .select("id, code_id, user_id, plan_id, discount_inr, final_inr, redeemed_at")
+        .order("redeemed_at", { ascending: false }),
+      listAllUsers(supabase),
     ]);
+  const usersById = new Map(usersRes.data.users.map((u) => [u.id, u]));
+  type Redemption = { id: string; code_id: string; user_id: string; plan_id: string; discount_inr: number; final_inr: number; redeemed_at: string };
+  const redemptionsByCode = new Map<string, Redemption[]>();
+  for (const r of (redemptionsData ?? []) as Redemption[]) {
+    const list = redemptionsByCode.get(r.code_id) ?? [];
+    list.push(r);
+    redemptionsByCode.set(r.code_id, list);
+  }
   const season = (data as Season[] | null)?.[0] ?? null;
   const currentSeasonLabel = labelRow?.season_label ?? "Current Season";
   const distributionModel = labelRow?.harvest_distribution_model ?? "pooled";
@@ -266,6 +289,26 @@ export default async function CropsManagementPage() {
                       {c.is_active ? "Deactivate" : "Reactivate"}
                     </button>
                   </ActionForm>
+                  {(redemptionsByCode.get(c.id)?.length ?? 0) > 0 && (
+                    <details className="w-full">
+                      <summary className="cursor-pointer text-xs text-[var(--color-ink-soft)] hover:underline">
+                        Who used it ({redemptionsByCode.get(c.id)!.length})
+                      </summary>
+                      <ul className="mt-1.5 space-y-1 text-xs text-[var(--color-ink-soft)]">
+                        {redemptionsByCode.get(c.id)!.map((r) => {
+                          const u = usersById.get(r.user_id);
+                          return (
+                            <li key={r.id}>
+                              {(u?.user_metadata?.full_name as string) || u?.email || "Unknown"} ·{" "}
+                              {membershipPlans.find((p) => p.id === r.plan_id)?.name ?? r.plan_id} · saved ₹
+                              {r.discount_inr.toLocaleString("en-IN")} · paid ₹{r.final_inr.toLocaleString("en-IN")} ·{" "}
+                              {new Date(r.redeemed_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </details>
+                  )}
                 </div>
               ))}
             </div>

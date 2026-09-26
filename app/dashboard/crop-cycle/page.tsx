@@ -19,7 +19,7 @@ type Season = {
   estimated_harvest: string | null;
 };
 type CameraStatus = { camera_name: string; status: string };
-type Update = { id: string; title: string; description: string; created_at: string };
+type Update = { id: string; title: string; description: string; created_at: string; photo_url: string | null };
 
 function WeatherIcon({ code, className }: { code: number; className?: string }) {
   if (code === 0 || code === 1) return <Sun className={className} />;
@@ -30,7 +30,8 @@ function WeatherIcon({ code, className }: { code: number; className?: string }) 
   return <Cloud className={className} />;
 }
 
-export default async function FarmActivityPage() {
+export default async function FarmActivityPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
   const supabase = await createSessionClient();
 
   const [{ data: seasonData }, { data: userData }, weather, { data: cameraData }, { data: updatesData }] =
@@ -39,7 +40,7 @@ export default async function FarmActivityPage() {
       supabase.auth.getUser(),
       getFarmWeather(),
       supabase.rpc("khet_club_my_camera"),
-      supabase.from("khet_club_updates").select("id, title, description, created_at").order("created_at", { ascending: false }),
+      supabase.from("khet_club_updates").select("id, title, description, created_at, photo_url").order("created_at", { ascending: false }),
     ]);
   const season = (seasonData as Season[] | null)?.[0] ?? null;
   const camera = (cameraData as CameraStatus[] | null)?.[0] ?? null;
@@ -254,6 +255,10 @@ export default async function FarmActivityPage() {
           </p>
           <p className="mt-1 font-display text-lg">{u.title}</p>
           <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">{u.description}</p>
+          {u.photo_url && (
+            // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL from any host
+            <img src={u.photo_url} alt="" loading="lazy" className="mt-3 max-h-80 w-full rounded-[var(--radius-sm)] object-cover" />
+          )}
         </Card>
       ))}
     </div>
@@ -267,6 +272,7 @@ export default async function FarmActivityPage() {
       />
 
       <Tabs
+        defaultTab={tab}
         tabs={[
           { id: "crop-cycle", label: "Crop Cycle", content: cropCycleContent },
           { id: "live-camera", label: "Live Camera", content: liveCameraContent },

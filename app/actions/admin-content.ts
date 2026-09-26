@@ -5,7 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { createSessionClient } from "@/lib/supabase/session";
 import { broadcastWhatsAppToCurrentMembers } from "@/lib/whatsapp/broadcast";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
-import { sendVisitStatusEmail } from "@/lib/email";
+import { sendVisitStatusEmail, sendSupportReplyEmail } from "@/lib/email";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
 import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { membershipPlans, todayInIndia } from "@/lib/demo-data";
@@ -24,12 +24,15 @@ function revalidateCustomerFacing() {
 export async function adminPublishUpdate(formData: FormData): Promise<ActionResult> {
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
+  const photoUrl = String(formData.get("photoUrl") || "").trim();
   if (!title) return fail("Add a title first.");
+  if (photoUrl && !/^https:\/\//i.test(photoUrl)) return fail("Photo link must start with https://");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_updates").insert({
     title,
     description,
+    photo_url: photoUrl || null,
   });
 
   if (error) {
@@ -485,6 +488,63 @@ export async function adminResolveSupportMessage(formData: FormData): Promise<Ac
 
   revalidatePath("/admin/communications");
   return ok("Marked as resolved.");
+}
+
+/**
+ * Replies to a member's support message: saves the reply (the member sees
+ * it in their dashboard), marks the message resolved, and sends it by
+ * email and WhatsApp. The reply is saved even if both sends fail.
+ */
+export async function adminReplySupportMessage(formData: FormData): Promise<ActionResult> {
+  const id = String(formData.get("id") || "");
+  const reply = String(formData.get("reply") || "").trim();
+  if (!id) return fail("Missing message reference.");
+  if (!reply) return fail("Type a reply first.");
+
+  const supabase = createServiceClient();
+  const { data: msg } = await supabase
+    .from("khet_club_support_messages")
+    .select("id, user_id, subject")
+    .eq("id", id)
+    .maybeSingle();
+  if (!msg) return fail("Message not found.");
+
+  const { error } = await supabase
+    .from("khet_club_support_messages")
+    .update({ admin_reply: reply, replied_at: new Date().toISOString(), status: "resolved" })
+    .eq("id", id);
+  if (error) {
+    console.error("adminReplySupportMessage failed:", error);
+    return fail("Couldn't save the reply. Please try again.");
+  }
+
+  const { data: userRes } = await supabase.auth.admin.getUserById(msg.user_id);
+  const member = userRes?.user;
+  const fullName = (member?.user_metadata?.full_name as string) || "there";
+  let emailSent = false;
+  let whatsappSent = false;
+  if (member?.email) {
+    emailSent = (await sendSupportReplyEmail({ to: member.email, fullName, subject: msg.subject, reply })).sent;
+  }
+  const phone = member?.user_metadata?.phone as string | undefined;
+  if (phone) {
+    const text = `Namaste ${fullName}, reply from Mera Khet about "${msg.subject}":\n\n${reply}`;
+    const result = await sendWhatsAppMessage(phone, text);
+    whatsappSent = result.success;
+    await supabase.from("khet_club_whatsapp_messages").insert({
+      user_id: msg.user_id,
+      phone,
+      message: `Support reply: ${msg.subject}`,
+      kind: "automated",
+      status: result.success ? "sent" : "failed",
+      error_message: result.success ? null : result.error,
+    });
+  }
+
+  revalidatePath("/admin/communications");
+  revalidatePath("/dashboard/farm-visit");
+  const via = [emailSent && "email", whatsappSent && "WhatsApp"].filter(Boolean).join(" and ");
+  return ok(via ? `Reply sent via ${via} and shown in their dashboard.` : "Reply saved to their dashboard (email/WhatsApp couldn't be sent).");
 }
 
 export type CloseSeasonResult =

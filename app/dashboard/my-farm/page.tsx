@@ -65,6 +65,7 @@ export default async function MyFarmPage() {
   let receiptsByPayment = new Map<string, Receipt>();
   let confirmedTotalKg: number | null = null;
   let deliveries: Delivery[] = [];
+  let farmGrid: { plot_number: number; status: "available" | "filled" }[] = [];
   let installmentPlans: Awaited<ReturnType<typeof getMyInstallmentPlans>> = [];
 
   if (user) {
@@ -105,11 +106,14 @@ export default async function MyFarmPage() {
     // Own read, RLS-scoped — safe to call directly rather than fold
     // into the Promise.all above, since it does its own session lookup.
     installmentPlans = await getMyInstallmentPlans();
+    const { data: gridData } = await supabase.rpc("khet_club_all_plot_statuses");
+    farmGrid = (gridData ?? []) as typeof farmGrid;
   }
 
   const holdings = summarizePlotHoldings(myPlots);
   const batchIds = Array.from(new Set(myPlots.map((p) => p.claim_batch_id).filter(Boolean))) as string[];
   const plotList = myPlots.map((p) => `#${p.plot_number}`).join(", ");
+  const myPlotNumbers = new Set(myPlots.map((p) => p.plot_number));
   const totalPaidPaise = payments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
   const totalDelivered = deliveries.reduce((sum, d) => sum + d.kg_delivered, 0);
   const deliveryProgressPct = confirmedTotalKg ? Math.min((totalDelivered / confirmedTotalKg) * 100, 100) : 0;
@@ -205,6 +209,38 @@ export default async function MyFarmPage() {
               </dd>
             </div>
           </dl>
+
+          {farmGrid.length > 0 && (
+            <div className="mt-5">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">Where your plots are</p>
+              <div className="grid grid-cols-10 gap-1" role="img" aria-label={`Farm map — your plots: ${plotList}`}>
+                {farmGrid.map((p) => {
+                  const mine = myPlotNumbers.has(p.plot_number);
+                  return (
+                    <div
+                      key={p.plot_number}
+                      title={`Plot #${p.plot_number}${mine ? " — yours" : ""}`}
+                      className={
+                        "flex aspect-square items-center justify-center rounded-[3px] text-[9px] font-medium " +
+                        (mine
+                          ? "bg-[var(--color-gold)] text-[var(--color-ink)] ring-1 ring-[var(--color-brown)]"
+                          : p.status === "filled"
+                          ? "bg-[var(--color-green)]/25 text-[var(--color-ink-soft)]"
+                          : "bg-[var(--color-ink)]/5 text-[var(--color-ink-soft)]")
+                      }
+                    >
+                      {p.plot_number}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--color-ink-soft)]">
+                <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-gold)]" />Yours</span>
+                <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-green)]/25" />Other members</span>
+                <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-ink)]/10" />Available</span>
+              </p>
+            </div>
+          )}
 
           <div className="mt-5 rounded-[var(--radius-sm)] border border-[var(--color-green)]/20 bg-[var(--color-green-soft)]/40 p-4">
             <div className="flex items-center gap-2">

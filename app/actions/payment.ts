@@ -9,7 +9,6 @@ import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { issueReceiptForPayment } from "@/lib/payments/receipts";
 import {
   membershipPlans,
-  FEEDING_FAMILIES_PER_PLOT,
   installmentFeeInr,
   INSTALLMENT_DUE_DAYS,
   balanceLateFeeInr,

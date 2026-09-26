@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { createSessionClient } from "@/lib/supabase/session";
 import { membershipPlans } from "@/lib/demo-data";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 
 /**
  * These actions are only reachable through pages under /admin, which
@@ -230,6 +231,15 @@ export async function adminAssignPlan(formData: FormData): Promise<ActionResult>
 
   const supabase = createServiceClient();
 
+  // If the email belongs to someone who already has an account (e.g. they
+  // signed up but paid you by cash/UPI), link the plots to that account so
+  // it shows in their dashboard and they can get a certificate + receipt.
+  let userId: string | null = null;
+  if (email) {
+    const { data: all } = await listAllUsers(supabase);
+    userId = all.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
+  }
+
   const { data: available, error: fetchError } = await supabase
     .from("khet_club_plots")
     .select("plot_number")
@@ -254,6 +264,7 @@ export async function adminAssignPlan(formData: FormData): Promise<ActionResult>
     .from("khet_club_plots")
     .update({
       status: "filled",
+      user_id: userId,
       full_name: fullName,
       phone,
       email,
@@ -284,7 +295,10 @@ export async function adminAssignPlan(formData: FormData): Promise<ActionResult>
   }
 
   revalidateAll();
-  return ok(`${plan.name} assigned to ${fullName} — plots ${plotNumbers.map((n) => `#${n}`).join(", ")}.`);
+  return ok(
+    `${plan.name} assigned to ${fullName} — plots ${plotNumbers.map((n) => `#${n}`).join(", ")}.` +
+      (userId ? " Linked to their account — record their payment on the member card." : "")
+  );
 }
 
 /**

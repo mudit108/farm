@@ -17,7 +17,7 @@ type MyPlot = {
   approved_at: string | null;
 };
 type Season = { current_stage: string; progress: number; sowing_date: string | null; estimated_harvest: string | null };
-type Update = { id: string; title: string; description: string; created_at: string };
+type Update = { id: string; title: string; description: string; created_at: string; photo_url: string | null };
 
 export default async function DashboardOverview() {
   const supabase = await createSessionClient();
@@ -27,7 +27,7 @@ export default async function DashboardOverview() {
 
   const [{ data: seasonData }, { data: updatesData }] = await Promise.all([
     supabase.rpc("khet_club_get_season"),
-    supabase.from("khet_club_updates").select("id, title, description, created_at").order("created_at", { ascending: false }).limit(1),
+    supabase.from("khet_club_updates").select("id, title, description, created_at, photo_url").order("created_at", { ascending: false }).limit(1),
   ]);
   const season = (seasonData as Season[] | null)?.[0] ?? null;
   const latestUpdate = (updatesData as Update[] | null)?.[0] ?? null;
@@ -278,6 +278,10 @@ export default async function DashboardOverview() {
             </p>
             <p className="mt-1 font-medium">{latestUpdate.title}</p>
             <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">{latestUpdate.description}</p>
+          {latestUpdate.photo_url && (
+            // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL from any host
+            <img src={latestUpdate.photo_url} alt="" loading="lazy" className="mt-3 max-h-80 w-full rounded-[var(--radius-sm)] object-cover" />
+          )}
           </Card>
         ) : (
           <Card className="mt-3 p-5">

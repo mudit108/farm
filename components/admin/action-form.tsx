@@ -16,6 +16,8 @@ type Props = {
   children: React.ReactNode;
   /** Clears the form's inputs after a successful submit. */
   resetOnSuccess?: boolean;
+  /** Ask "are you sure?" first — for broadcasts and deletes that can't be undone. */
+  confirmMessage?: string;
 };
 
 /**
@@ -30,6 +32,7 @@ export function ActionForm({
   className,
   children,
   resetOnSuccess = false,
+  confirmMessage,
 }: Props) {
   const [pending, startTransition] = useTransition();
   const { show } = useToast();
@@ -39,6 +42,7 @@ export function ActionForm({
       className={className}
       onSubmit={(e) => {
         e.preventDefault();
+        if (confirmMessage && !window.confirm(confirmMessage)) return;
         const form = e.currentTarget;
         const formData = new FormData(form);
 

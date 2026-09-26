@@ -386,6 +386,45 @@ export async function sendVisitStatusEmail(input: {
   }
 }
 
+/** The team's reply to a member's support message. */
+export async function sendSupportReplyEmail(input: {
+  to: string;
+  fullName: string;
+  subject: string;
+  reply: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("RESEND_API_KEY is not set — skipping support reply email.");
+    return { sent: false, reason: "not_configured" as const };
+  }
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: input.to,
+      subject: `Re: ${input.subject}`,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — Support</p>
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Hello ${escapeHtml(input.fullName)},</h1>
+        <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px; white-space: pre-wrap;">${escapeHtml(input.reply)}</p>
+        <p style="font-size: 13px; color: #5B6357;">You can also see this reply in your dashboard under Visits &amp; Support.</p>
+        <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sujangarh, Rajasthan</p>
+      </div>`,
+    });
+    if (error) {
+      console.error("Resend support reply send failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend support reply send threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}
+
 /**
  * Daily summary emailed to every address in ADMIN_EMAILS — new
  * signups, new paid orders, and anything currently waiting on you

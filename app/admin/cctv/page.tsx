@@ -83,7 +83,7 @@ export default async function CctvManagementPage() {
                   </Button>
                 </div>
               </ActionForm>
-              <ActionForm action={adminDeleteCamera} className="mt-2">
+              <ActionForm action={adminDeleteCamera} className="mt-2" confirmMessage="Remove this camera?">
                 <input type="hidden" name="id" value={cam.id} />
                 <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Delete</button>
               </ActionForm>
