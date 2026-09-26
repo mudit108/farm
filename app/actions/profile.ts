@@ -17,6 +17,8 @@ export async function updateProfile(
   const fullName = String(formData.get("fullName") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
   const city = String(formData.get("city") || "").trim();
+  const address = String(formData.get("address") || "").trim();
+  const pincode = String(formData.get("pincode") || "").trim();
 
   if (!fullName) {
     return { status: "error", message: "Please enter your name." };
@@ -31,13 +33,17 @@ export async function updateProfile(
     return { status: "error", message: "Please enter your delivery city." };
   }
 
+  if (pincode && !/^\d{6}$/.test(pincode)) {
+    return { status: "error", message: "Pincode should be 6 digits." };
+  }
+
   const supabase = await createSessionClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { error } = await supabase.auth.updateUser({
-    data: { full_name: fullName, phone: normalizedPhone, city },
+    data: { full_name: fullName, phone: normalizedPhone, city, address: address || null, pincode: pincode || null },
   });
 
   if (error) {
@@ -45,9 +51,10 @@ export async function updateProfile(
     return { status: "error", message: "Something went wrong. Please try again." };
   }
 
-  // Members who joined before city was collected already have plot rows
-  // with city = null. Metadata alone wouldn't reach those, so sync the
-  // member's own plots here — this is what delivery planning reads.
+  // Plot rows hold a copy of the member's contact details (taken at claim
+  // time) — that's what the admin screens, delivery planning and the
+  // "Registered to" line read. Sync every field here, or edits made on
+  // this page would never reach them.
   //
   // Uses the service client deliberately: `authenticated` is granted
   // UPDATE on `custom_name` only (verified against column_privileges),
@@ -57,14 +64,17 @@ export async function updateProfile(
     const admin = createServiceClient();
     const { error: plotError } = await admin
       .from("khet_club_plots")
-      .update({ city })
+      .update({ full_name: fullName, phone: normalizedPhone, city, address: address || null, pincode: pincode || null })
       .eq("user_id", user.id);
     if (plotError) {
-      console.error("updateProfile plot city sync failed:", plotError);
+      console.error("updateProfile plot sync failed:", plotError);
     }
   }
 
   revalidatePath("/dashboard/account");
+  revalidatePath("/dashboard/my-farm");
+  revalidatePath("/dashboard");
+  revalidatePath("/admin/members");
 
   return { status: "success" };
 }

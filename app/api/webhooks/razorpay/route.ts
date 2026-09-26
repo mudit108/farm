@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { issueReceiptForPayment } from "@/lib/payments/receipts";
 import { PaymentService } from "@/lib/payments/payment-service";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendPlotConfirmationEmail } from "@/lib/email";
@@ -73,6 +74,12 @@ export async function POST(request: Request) {
         .eq("balance_paid", false);
       if (settleError) console.error("Webhook: failed to settle balance:", settleError);
     }
+    const { data: balUser } = await admin.auth.admin.getUserById(record.user_id);
+    await issueReceiptForPayment(admin, {
+      paymentId: record.id,
+      email: balUser?.user?.email ?? null,
+      fullName: (balUser?.user?.user_metadata?.full_name as string) || "Mera Khet Member",
+    });
     return NextResponse.json({ received: true });
   }
 
@@ -148,6 +155,15 @@ export async function POST(request: Request) {
 
   const { data: userRes } = await admin.auth.admin.getUserById(record.user_id);
   const user = userRes?.user;
+
+  // The browser path issues the receipt; when the browser closed early
+  // this webhook is the only path that runs, so it must issue it too.
+  // Idempotent per payment (unique index on receipts.payment_id).
+  await issueReceiptForPayment(admin, {
+    paymentId: record.id,
+    email: user?.email ?? null,
+    fullName: (user?.user_metadata?.full_name as string) || "Mera Khet Member",
+  });
   if (user?.email) {
     const plan = membershipPlans.find((p) => p.id === record.plan_id);
     await sendPlotConfirmationEmail({

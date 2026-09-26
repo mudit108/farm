@@ -6,7 +6,7 @@ import { submitFarmVisit, type FarmVisitState } from "@/app/actions/farm-visit";
 
 const initialState: FarmVisitState = { status: "idle" };
 
-export function FarmVisitForm() {
+export function FarmVisitForm({ minDate, defaultPhone }: { minDate: string; defaultPhone: string }) {
   const [state, formAction, isPending] = useActionState(submitFarmVisit, initialState);
 
   if (state.status === "success") {
@@ -22,15 +22,15 @@ export function FarmVisitForm() {
     <form action={formAction} className="space-y-4">
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Preferred date</span>
-        <input name="preferredDate" required type="date" className="input" />
+        <input name="preferredDate" required type="date" min={minDate} className="input" />
       </label>
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Number of visitors</span>
-        <input name="visitors" required type="number" min={1} defaultValue={1} className="input" />
+        <input name="visitors" required type="number" min={1} max={20} defaultValue={1} className="input" />
       </label>
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Phone</span>
-        <input name="phone" required type="tel" className="input" />
+        <input name="phone" required type="tel" inputMode="numeric" placeholder="9876543210" defaultValue={defaultPhone} className="input" />
       </label>
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Notes</span>

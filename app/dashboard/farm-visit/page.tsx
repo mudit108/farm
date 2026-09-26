@@ -3,6 +3,9 @@ import { Card, Badge } from "@/components/ui/card";
 import { FarmVisitForm } from "@/components/dashboard/farm-visit-form";
 import { SupportForm } from "@/components/dashboard/support-form";
 import { createSessionClient } from "@/lib/supabase/session";
+import { getSeason } from "@/lib/public-data";
+import { addDays, todayInIndia } from "@/lib/demo-data";
+import { whatsappHref } from "@/components/site/footer";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +23,7 @@ export default async function HelpPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const season = await getSeason();
   let visits: Visit[] = [];
   if (user) {
     const { data } = await supabase
@@ -42,7 +46,10 @@ export default async function HelpPage() {
           <p className="mt-1 mb-4 text-sm text-[var(--color-ink-soft)]">
             Subject to scheduling and farm conditions.
           </p>
-          <FarmVisitForm />
+          <FarmVisitForm
+            minDate={addDays(todayInIndia(), 1)}
+            defaultPhone={(user?.user_metadata?.phone as string) ?? ""}
+          />
 
           {visits.length > 0 && (
             <div className="mt-6 border-t border-[var(--color-ink)]/10 pt-5">
@@ -75,7 +82,7 @@ export default async function HelpPage() {
           <p className="mt-1 mb-4 text-sm text-[var(--color-ink-soft)]">
             Reach our team about your farm or membership.
           </p>
-          <SupportForm />
+          <SupportForm whatsappUrl={whatsappHref(season?.contact_phone ?? null, "Hi, I'm a Mera Khet member and have a question.")} />
         </Card>
       </div>
     </div>

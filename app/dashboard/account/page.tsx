@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FileText, Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,8 @@ export default async function AccountPage() {
               fullName={(user?.user_metadata?.full_name as string) ?? ""}
               phone={(user?.user_metadata?.phone as string) ?? ""}
               city={(user?.user_metadata?.city as string) ?? ""}
+              address={(user?.user_metadata?.address as string) ?? ""}
+              pincode={(user?.user_metadata?.pincode as string) ?? ""}
             />
           </div>
         </Card>
@@ -51,7 +54,8 @@ export default async function AccountPage() {
         <Card className="p-6">
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Documents</p>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-            Your membership agreement, allocation document, and receipts.
+            Documents our team shares with you. Your payment receipts and plot certificate are on{" "}
+            <Link href="/dashboard/my-farm" className="font-medium text-[var(--color-green)] hover:underline">My Farm</Link>.
           </p>
           <div className="mt-4 space-y-3">
             {documents.map((doc) => (

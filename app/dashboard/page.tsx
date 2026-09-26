@@ -1,3 +1,4 @@
+import { getMyInstallmentPlans } from "@/app/actions/payment";
 import Link from "next/link";
 import { Wifi, ClipboardCheck, Heart, Package, Sprout, CalendarDays } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -13,6 +14,7 @@ type MyPlot = {
   status: "available" | "filled";
   plan_id: string | null;
   assigned_at: string | null;
+  approved_at: string | null;
 };
 type Season = { current_stage: string; progress: number; sowing_date: string | null; estimated_harvest: string | null };
 type Update = { id: string; title: string; description: string; created_at: string };
@@ -35,12 +37,14 @@ export default async function DashboardOverview() {
   let confirmedTotalKg: number | null = null;
   let deliveredKg = 0;
   let hasCertificate = false;
+  let balances: Awaited<ReturnType<typeof getMyInstallmentPlans>> = [];
   if (user) {
+    balances = await getMyInstallmentPlans();
     const [{ data }, { data: cameraData }, { data: prefData }, { data: deliveryData }, { count: certCount }] =
       await Promise.all([
         supabase
           .from("khet_club_plots")
-          .select("plot_number, status, plan_id, assigned_at")
+          .select("plot_number, status, plan_id, assigned_at, approved_at")
           .eq("user_id", user.id)
           .order("plot_number"),
         supabase.rpc("khet_club_my_camera"),
@@ -82,6 +86,33 @@ export default async function DashboardOverview() {
         subtitle={myPlots.length > 0 ? `${holdings.label} · ${plotList}` : "Sujangarh, Rajasthan"}
       />
 
+      {balances.filter((b) => b.plots_still_held).length > 0 && (
+        <div className="px-6 pt-6 sm:px-10">
+          <Link
+            href="/dashboard/my-farm"
+            className="block rounded-[var(--radius-card)] border border-[var(--color-brown)]/30 bg-[var(--color-gold)]/10 p-4 text-sm hover:border-[var(--color-brown)]/60"
+          >
+            <span className="font-medium">
+              Balance due: ₹
+              {balances
+                .filter((b) => b.plots_still_held)
+                .reduce((s, b) => s + b.balance_due_inr, 0)
+                .toLocaleString("en-IN")}
+            </span>
+            <span className="text-[var(--color-ink-soft)]">
+              {" "}
+              — due{" "}
+              {new Date(`${balances[0].balance_due_date}T00:00:00+05:30`).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "long",
+                timeZone: "Asia/Kolkata",
+              })}
+              . Pay from My Farm →
+            </span>
+          </Link>
+        </div>
+      )}
+
       <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -100,7 +131,7 @@ export default async function DashboardOverview() {
               <div className="mt-6 grid grid-cols-2 gap-6 sm:grid-cols-4">
                 <Stat label="Plan" value={holdings.label ?? "—"} />
                 <Stat label="Plots" value={plotList} />
-                <Stat label="Status" value={myPlots[0].status} />
+                <Stat label="Status" value={myPlots.every((p) => p.approved_at) ? "Confirmed" : "Awaiting approval"} />
                 <Stat
                   label="Assigned"
                   value={myPlots[0].assigned_at ? new Date(myPlots[0].assigned_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
@@ -246,7 +277,7 @@ export default async function DashboardOverview() {
               {new Date(latestUpdate.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
             </p>
             <p className="mt-1 font-medium">{latestUpdate.title}</p>
-            <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{latestUpdate.description}</p>
+            <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">{latestUpdate.description}</p>
           </Card>
         ) : (
           <Card className="mt-3 p-5">

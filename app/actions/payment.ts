@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
 import { PaymentService } from "@/lib/payments/payment-service";
-import { sendPlotConfirmationEmail, sendReceiptEmail } from "@/lib/email";
+import { sendPlotConfirmationEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
-import { generateReceiptPdf } from "@/lib/receipt";
+import { issueReceiptForPayment } from "@/lib/payments/receipts";
 import {
   membershipPlans,
   FEEDING_FAMILIES_PER_PLOT,
@@ -125,7 +125,9 @@ export async function createPlanOrder(
     };
   }
 
-  if (season?.registration_deadline && new Date() > new Date(`${season.registration_deadline}T23:59:59`)) {
+  // Compared as India-time calendar dates — the server clock is UTC, so a
+  // "T23:59:59" local-time check kept registration open until 5:29am IST.
+  if (season?.registration_deadline && todayInIndia() > season.registration_deadline) {
     return {
       status: "error",
       message: `Registration closed on ${new Date(season.registration_deadline).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}.`,
@@ -382,64 +384,13 @@ export async function verifyPaymentAndClaim(input: {
 
   // Receipt generation is immediate — proof of payment, unlike the
   // certificate, which stays gated behind admin approval. A failed
-  // receipt (email or otherwise) never blocks the plot claim itself,
-  // which has already succeeded by this point.
+  // receipt never blocks the plot claim itself (the helper never throws).
   if (batchRow?.claim_batch_id) {
-    try {
-      const plan = membershipPlans.find((p) => p.id === payment.plan_id);
-      const { data: receiptNumber, error: numberError } = await admin.rpc("khet_club_next_receipt_number");
-      if (numberError || !receiptNumber) {
-        console.error("Receipt numbering failed:", numberError);
-      } else {
-        const fullName = (user.user_metadata?.full_name as string) || "Mera Khet Member";
-        const feedingFamiliesInr = plotNumbers.length * FEEDING_FAMILIES_PER_PLOT;
-        const amountInr = payment.amount / 100;
-
-        const { error: receiptInsertError } = await admin.from("khet_club_receipts").insert({
-          receipt_number: receiptNumber,
-          user_id: user.id,
-          payment_id: payment.id,
-          claim_batch_id: batchRow.claim_batch_id,
-          plan_id: payment.plan_id,
-          plot_numbers: plotNumbers,
-          full_name: fullName,
-          amount_paise: payment.amount,
-          feeding_families_inr: feedingFamiliesInr,
-        });
-
-        if (receiptInsertError) {
-          console.error("Receipt insert failed:", receiptInsertError);
-        } else if (plan && user.email) {
-          const pdfBuffer = await generateReceiptPdf({
-            receiptNumber,
-            fullName,
-            email: user.email,
-            planName: plan.name,
-            planLabel: plan.label,
-            plotNumbers,
-            amountInr,
-            feedingFamiliesInr,
-            razorpayOrderId: payment.razorpay_order_id,
-            razorpayPaymentId: input.paymentId,
-            issuedDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }),
-          });
-
-          const emailResult = await sendReceiptEmail({
-            to: user.email,
-            fullName,
-            receiptNumber,
-            pdfBuffer,
-          });
-
-          await admin
-            .from("khet_club_receipts")
-            .update({ email_sent: emailResult.sent })
-            .eq("receipt_number", receiptNumber);
-        }
-      }
-    } catch (receiptErr) {
-      console.error("Receipt generation threw (plot claim already succeeded, unaffected):", receiptErr);
-    }
+    await issueReceiptForPayment(admin, {
+      paymentId: payment.id,
+      email: user.email ?? null,
+      fullName: (user.user_metadata?.full_name as string) || "Mera Khet Member",
+    });
   }
 
   if (user.email) {
@@ -568,32 +519,40 @@ export async function previewDiscountCode(planId: string, code: string): Promise
 export type InstallmentPlan = {
   id: string;
   plan_id: string;
+  claim_batch_id: string;
   balance_due_inr: number;
   balance_due_date: string;
   balance_paid: boolean;
+  /** False once an admin has actually freed the plots for non-payment. */
+  plots_still_held: boolean;
 };
 
 /**
- * Reads the current member's own outstanding balance, if any. RLS
- * already scopes this to the caller (users can read own installment
- * plan), so this is a thin, safe wrapper for the dashboard to call.
+ * Every unpaid 50-50 balance for the signed-in member (a member who made
+ * two split-payment purchases has two), oldest due first. Returns [] when
+ * nothing is owed.
  */
-export async function getMyInstallmentPlan(): Promise<InstallmentPlan | null> {
+export async function getMyInstallmentPlans(): Promise<InstallmentPlan[]> {
   const supabase = await createSessionClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return [];
 
-  const { data } = await supabase
-    .from("khet_club_installment_plans")
-    .select("id, plan_id, balance_due_inr, balance_due_date, balance_paid")
-    .eq("balance_paid", false)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data }, { data: myPlots }] = await Promise.all([
+    supabase
+      .from("khet_club_installment_plans")
+      .select("id, plan_id, claim_batch_id, balance_due_inr, balance_due_date, balance_paid")
+      .eq("balance_paid", false)
+      .order("balance_due_date", { ascending: true }),
+    supabase.from("khet_club_plots").select("claim_batch_id").eq("user_id", user.id),
+  ]);
 
-  return (data as InstallmentPlan | null) ?? null;
+  const heldBatches = new Set(((myPlots ?? []) as { claim_batch_id: string | null }[]).map((p) => p.claim_batch_id));
+  return ((data ?? []) as Omit<InstallmentPlan, "plots_still_held">[]).map((p) => ({
+    ...p,
+    plots_still_held: heldBatches.has(p.claim_batch_id),
+  }));
 }
 
 /**
@@ -629,15 +588,26 @@ export async function createBalanceOrder(installmentPlanId: string): Promise<Cre
   // Late rule (lib/demo-data.ts): fee from day 46, plots released after
   // day 55. Worked out here on the server from the stored due date, so
   // the amount can't be influenced by the browser.
+  // Past the grace period the plots are due to be released — but that's
+  // done by the team, not automatically. While the member still holds
+  // them, they can still pay (with the late fee). Once an admin has
+  // actually freed them, paying no longer makes sense.
   const { stage } = balanceStage(plan.balance_due_date, todayInIndia());
   if (stage === "released") {
-    return {
-      status: "error",
-      message:
-        "This balance wasn't paid within 55 days, so these plots have been released. Please contact us about your deposit under the Refund & Cancellation policy.",
-    };
+    const { count } = await admin
+      .from("khet_club_plots")
+      .select("plot_number", { count: "exact", head: true })
+      .eq("claim_batch_id", plan.claim_batch_id)
+      .eq("user_id", user.id);
+    if (!count) {
+      return {
+        status: "error",
+        message:
+          "These plots were released because the balance wasn't paid in time. Please contact us about your deposit under the Refund & Cancellation policy.",
+      };
+    }
   }
-  const lateFeeInr = stage === "late" ? balanceLateFeeInr(plan.plan_id) : 0;
+  const lateFeeInr = stage === "due" ? 0 : balanceLateFeeInr(plan.plan_id);
 
   try {
     const order = await PaymentService.createOrder({
@@ -733,6 +703,16 @@ export async function verifyBalancePayment(input: {
       console.error("Failed to mark installment plan settled after paid balance:", settleError);
     }
   }
+
+  await issueReceiptForPayment(admin, {
+    paymentId: payment.id,
+    email: user.email ?? null,
+    fullName: (user.user_metadata?.full_name as string) || "Mera Khet Member",
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-farm");
+  revalidatePath("/admin/income");
 
   const { data: plots } = await supabase
     .from("khet_club_plots")

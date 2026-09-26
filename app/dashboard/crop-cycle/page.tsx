@@ -253,7 +253,7 @@ export default async function FarmActivityPage() {
             {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
           </p>
           <p className="mt-1 font-display text-lg">{u.title}</p>
-          <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{u.description}</p>
+          <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">{u.description}</p>
         </Card>
       ))}
     </div>

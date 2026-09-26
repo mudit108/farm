@@ -12,11 +12,15 @@ export function ProfileForm({
   fullName,
   phone,
   city,
+  address,
+  pincode,
 }: {
   email: string;
   fullName: string;
   phone: string;
   city: string;
+  address: string;
+  pincode: string;
 }) {
   const [state, formAction, isPending] = useActionState(updateProfile, initialState);
 
@@ -39,6 +43,14 @@ export function ProfileForm({
         <span className="mb-1.5 block text-sm font-medium">Delivery city</span>
         <input name="city" required type="text" placeholder="e.g. Jaipur" className="input" defaultValue={city} />
         <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Where your harvest should be delivered.</span>
+      </label>
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Delivery address</span>
+        <textarea name="address" rows={2} placeholder="House / street / area / landmark" className="input" defaultValue={address} />
+      </label>
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Pincode</span>
+        <input name="pincode" type="text" inputMode="numeric" maxLength={6} pattern="\d{6}" placeholder="e.g. 302001" className="input max-w-[10rem]" defaultValue={pincode} />
       </label>
 
       {state.status === "error" && (

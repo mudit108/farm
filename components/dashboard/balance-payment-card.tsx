@@ -22,6 +22,7 @@ type InstallmentPlan = {
   plan_id: string;
   balance_due_inr: number;
   balance_due_date: string;
+  plots_still_held: boolean;
 };
 
 type Step = "idle" | "processing" | "paid" | "error";
@@ -122,10 +123,14 @@ export function BalancePaymentCard({
   const fmt = (d: string) =>
     new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
   const { stage, daysLeft, releaseDate } = status;
-  const fee = stage === "late" ? lateFeeInr : 0;
+  const fee = stage === "due" ? 0 : lateFeeInr;
   const total = plan.balance_due_inr + fee;
+  // "released" by the calendar only means the grace period is over — the
+  // team releases plots by hand. Until they actually do, the member can
+  // still pay and keep them.
+  const finalNotice = stage === "released" && plan.plots_still_held;
 
-  if (stage === "released") {
+  if (stage === "released" && !plan.plots_still_held) {
     return (
       <Card className="border-[var(--color-live)]/40 p-6">
         <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-live)]">Balance not paid</p>
@@ -145,17 +150,23 @@ export function BalancePaymentCard({
   return (
     <Card
       className={
-        stage === "late" ? "border-[var(--color-live)]/40 bg-[var(--color-live)]/5 p-6" : "border-[var(--color-brown)]/30 bg-[var(--color-gold)]/5 p-6"
+        stage !== "due" ? "border-[var(--color-live)]/40 bg-[var(--color-live)]/5 p-6" : "border-[var(--color-brown)]/30 bg-[var(--color-gold)]/5 p-6"
       }
     >
       <Script src="https://checkout.razorpay.com/v1/checkout.js" onLoad={() => setScriptReady(true)} />
       <p
-        className={`font-mono-data text-xs uppercase tracking-wide ${stage === "late" ? "text-[var(--color-live)]" : "text-[var(--color-brown)]"}`}
+        className={`font-mono-data text-xs uppercase tracking-wide ${stage !== "due" ? "text-[var(--color-live)]" : "text-[var(--color-brown)]"}`}
       >
-        {stage === "late" ? "Balance overdue" : "Balance Due"}
+        {finalNotice ? "Final notice — balance overdue" : stage === "late" ? "Balance overdue" : "Balance Due"}
       </p>
       <p className="mt-2 text-2xl font-display">{inr(total)}</p>
-      {stage === "late" ? (
+      {finalNotice ? (
+        <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+          {inr(plan.balance_due_inr)} balance + {inr(fee)} late fee. It was due on {fmt(plan.balance_due_date)} and the grace
+          period ended on {fmt(releaseDate)}. Your plots can be released at any time now — pay today to keep them, or contact
+          us from Visits &amp; Support.
+        </p>
+      ) : stage === "late" ? (
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
           {inr(plan.balance_due_inr)} balance + {inr(fee)} late fee. It was due on {fmt(plan.balance_due_date)}. Please pay by{" "}
           <strong>{fmt(releaseDate)}</strong>, or your plots will be released.

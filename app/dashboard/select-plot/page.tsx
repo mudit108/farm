@@ -4,7 +4,7 @@ import { Card, Badge } from "@/components/ui/card";
 import { PlanSelectionForm } from "@/components/dashboard/plan-selection-form";
 import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { createSessionClient } from "@/lib/supabase/session";
-import { summarizePlotHoldings } from "@/lib/demo-data";
+import { summarizePlotHoldings, todayInIndia } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ type MyPlot = {
   custom_name: string | null;
 };
 type GridPlot = { plot_number: number; status: "available" | "filled" };
-type Season = { registration_deadline: string | null; season_label: string };
+type Season = { registration_deadline: string | null; season_label: string; registrations_paused: boolean };
 type PlanPrice = {
   plan_id: string;
   price_inr: number;
@@ -48,7 +48,9 @@ export default async function SelectPlotPage() {
   const prices = (pricesData ?? []) as PlanPrice[];
   const season = (seasonData as Season[] | null)?.[0] ?? null;
   const deadline = season?.registration_deadline ? new Date(season.registration_deadline) : null;
-  const isOpen = !deadline || new Date() <= new Date(`${season!.registration_deadline}T23:59:59`);
+  const paused = Boolean(season?.registrations_paused);
+  const deadlinePassed = Boolean(season?.registration_deadline && todayInIndia() > season.registration_deadline);
+  const isOpen = !paused && !deadlinePassed;
   const holdings = summarizePlotHoldings(myPlots);
 
   return (
@@ -67,7 +69,7 @@ export default async function SelectPlotPage() {
               {myPlots.map((p) => `#${p.plot_number}`).join(", ")}
             </p>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
-              <Badge tone="green">{myPlots[0].status}</Badge>
+              <Badge tone="green">{myPlots[0].status === "filled" ? "Reserved" : myPlots[0].status}</Badge>
               {holdings.label && <Badge tone="brown">{holdings.label}</Badge>}
               {holdings.isMixedPlans && <Badge tone="gold">Multiple Purchases</Badge>}
             </div>
@@ -99,11 +101,17 @@ export default async function SelectPlotPage() {
           </>
         ) : (
           <Card className="max-w-lg p-6 text-center">
-            <p className="font-display text-lg">Registration closed</p>
+            <p className="font-display text-lg">{paused ? "Bookings are paused" : "Registration closed"}</p>
             <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-              Registration for this season closed on{" "}
-              {deadline?.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}.
-              Contact us if you have questions.
+              {paused ? (
+                <>New bookings are paused for a short while. Please check back soon, or contact us if you have questions.</>
+              ) : (
+                <>
+                  Registration for this season closed on{" "}
+                  {deadline?.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}.
+                  Contact us if you have questions.
+                </>
+              )}
             </p>
           </Card>
         )}

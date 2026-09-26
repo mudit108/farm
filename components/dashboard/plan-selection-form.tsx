@@ -184,8 +184,14 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
             {state.plotNumbers.length > 1 ? "Plots " : "Plot "}
             {state.plotNumbers.map((n) => `#${n}`).join(", ")}
           </span>
-          . A confirmation email is on its way to you.
+          . A confirmation email and receipt are on their way to you.
         </p>
+        {paymentPlan === "installment" && (
+          <p className="mt-3 text-sm text-[var(--color-ink)]">
+            Your remaining balance of <strong>₹{balanceDueInr.toLocaleString("en-IN")}</strong> is due within{" "}
+            {INSTALLMENT_DUE_DAYS} days — you can pay it anytime from <a href="/dashboard/my-farm" className="underline">My Farm</a>.
+          </p>
+        )}
       </div>
     );
   }
@@ -510,8 +516,9 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
       )}
 
       <p className="mt-4 text-center text-xs text-[var(--color-ink-soft)]">
-        Secure checkout via Razorpay. Plot numbers are assigned automatically
-        the moment payment is confirmed.
+        Secure checkout via Razorpay. {mode === "custom" && startPlot
+          ? "Your chosen plots are reserved the moment payment is confirmed."
+          : "Plot numbers are assigned automatically the moment payment is confirmed."}
       </p>
     </div>
   );

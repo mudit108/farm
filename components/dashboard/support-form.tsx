@@ -7,7 +7,7 @@ import { submitSupportMessage, type SupportState } from "@/app/actions/support";
 
 const initialState: SupportState = { status: "idle" };
 
-export function SupportForm() {
+export function SupportForm({ whatsappUrl }: { whatsappUrl: string | null }) {
   const [state, formAction, isPending] = useActionState(submitSupportMessage, initialState);
 
   if (state.status === "success") {
@@ -35,9 +35,16 @@ export function SupportForm() {
         <Button type="submit" disabled={isPending}>
           {isPending ? "Sending…" : "Send Message"}
         </Button>
-        <Button type="button" variant="outline" className="gap-2">
-          <MessageCircle className="h-4 w-4" /> WhatsApp Us
-        </Button>
+        {whatsappUrl && (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-ink)]/15 px-4 py-2 text-sm font-medium hover:border-[var(--color-green)] hover:text-[var(--color-green-deep)]"
+          >
+            <MessageCircle className="h-4 w-4" /> WhatsApp Us
+          </a>
+        )}
       </div>
     </form>
   );

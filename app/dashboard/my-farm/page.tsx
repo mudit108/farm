@@ -7,7 +7,7 @@ import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { HarvestPreference } from "@/components/dashboard/harvest-preference";
 import { BalancePaymentCard } from "@/components/dashboard/balance-payment-card";
 import { createSessionClient } from "@/lib/supabase/session";
-import { getMyInstallmentPlan } from "@/app/actions/payment";
+import { getMyInstallmentPlans } from "@/app/actions/payment";
 import {
   membershipPlans,
   summarizePlotHoldings,
@@ -30,8 +30,16 @@ type MyPlot = {
   approved_at: string | null;
 };
 type Cert = { claim_batch_id: string; certificate_number: string };
-type Payment = { id: string; plan_id: string; amount: number; status: string; created_at: string; claim_batch_id: string | null };
-type Receipt = { claim_batch_id: string; receipt_number: string };
+type Payment = {
+  id: string;
+  plan_id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  claim_batch_id: string | null;
+  payment_kind: "full" | "deposit" | "balance";
+};
+type Receipt = { payment_id: string; receipt_number: string };
 type Delivery = { id: string; kg_delivered: number; delivered_at: string; notes: string | null };
 
 export default async function MyFarmPage() {
@@ -54,10 +62,10 @@ export default async function MyFarmPage() {
   let myPlots: MyPlot[] = [];
   let certsByBatch = new Map<string, Cert>();
   let payments: Payment[] = [];
-  let receiptsByBatch = new Map<string, Receipt>();
+  let receiptsByPayment = new Map<string, Receipt>();
   let confirmedTotalKg: number | null = null;
   let deliveries: Delivery[] = [];
-  let installmentPlan: Awaited<ReturnType<typeof getMyInstallmentPlan>> = null;
+  let installmentPlans: Awaited<ReturnType<typeof getMyInstallmentPlans>> = [];
 
   if (user) {
     const [{ data }, { data: certData }, { data: paymentsData }, { data: receiptsData }, { data: prefData }, { data: deliveriesData }] =
@@ -70,9 +78,12 @@ export default async function MyFarmPage() {
         supabase.from("khet_club_certificates").select("claim_batch_id, certificate_number").eq("user_id", user.id),
         supabase
           .from("khet_club_payments")
-          .select("id, plan_id, amount, status, created_at, claim_batch_id")
+          .select("id, plan_id, amount, status, created_at, claim_batch_id, payment_kind")
+          // Only completed money movements — a checkout window closed
+          // without paying leaves a "created" row that isn't a payment.
+          .in("status", ["paid", "refunded"])
           .order("created_at", { ascending: false }),
-        supabase.from("khet_club_receipts").select("claim_batch_id, receipt_number").eq("user_id", user.id),
+        supabase.from("khet_club_receipts").select("payment_id, receipt_number").eq("user_id", user.id),
         supabase
           .from("khet_club_harvest_preferences")
           .select("confirmed_total_kg")
@@ -88,12 +99,12 @@ export default async function MyFarmPage() {
     myPlots = (data ?? []) as MyPlot[];
     certsByBatch = new Map((certData ?? []).map((c) => [c.claim_batch_id, c as Cert]));
     payments = (paymentsData ?? []) as Payment[];
-    receiptsByBatch = new Map((receiptsData ?? []).map((r) => [r.claim_batch_id, r as Receipt]));
+    receiptsByPayment = new Map((receiptsData ?? []).map((r) => [r.payment_id, r as Receipt]));
     confirmedTotalKg = prefData?.confirmed_total_kg ?? null;
     deliveries = (deliveriesData ?? []) as Delivery[];
     // Own read, RLS-scoped — safe to call directly rather than fold
     // into the Promise.all above, since it does its own session lookup.
-    installmentPlan = await getMyInstallmentPlan();
+    installmentPlans = await getMyInstallmentPlans();
   }
 
   const holdings = summarizePlotHoldings(myPlots);
@@ -131,13 +142,16 @@ export default async function MyFarmPage() {
     <div>
       <PageHeader title="My Farm" subtitle="Your plot, plan, and everything that comes with it." />
 
-      {installmentPlan && (
-        <div className="px-6 pt-6 sm:px-10">
-          <BalancePaymentCard
-            plan={installmentPlan}
-            status={balanceStage(installmentPlan.balance_due_date, todayInIndia(now))}
-            lateFeeInr={balanceLateFeeInr(installmentPlan.plan_id)}
-          />
+      {installmentPlans.length > 0 && (
+        <div className="space-y-4 px-6 pt-6 sm:px-10">
+          {installmentPlans.map((ip) => (
+            <BalancePaymentCard
+              key={ip.id}
+              plan={ip}
+              status={balanceStage(ip.balance_due_date, todayInIndia(now))}
+              lateFeeInr={balanceLateFeeInr(ip.plan_id)}
+            />
+          ))}
         </div>
       )}
 
@@ -154,7 +168,9 @@ export default async function MyFarmPage() {
                 {holdings.isMixedPlans ? " (multiple purchases)" : ""} — {seasonLabel}
               </p>
             </div>
-            <Badge tone="green">{myPlots[0].status}</Badge>
+            <Badge tone={myPlots.every((p) => p.approved_at) ? "green" : "gold"}>
+              {myPlots.every((p) => p.approved_at) ? "Confirmed" : "Awaiting approval"}
+            </Badge>
           </div>
 
           <dl className="mt-6 space-y-3 text-sm">
@@ -308,18 +324,22 @@ export default async function MyFarmPage() {
               {payments.length > 0 ? (
                 payments.map((pmt) => {
                   const pmtPlan = membershipPlans.find((p) => p.id === pmt.plan_id);
-                  const receipt = pmt.claim_batch_id ? receiptsByBatch.get(pmt.claim_batch_id) : undefined;
+                  const receipt = receiptsByPayment.get(pmt.id);
                   return (
                     <div key={pmt.id} className="flex items-center justify-between py-3 text-sm">
                       <div>
-                        <p className="font-medium">{pmtPlan ? `${pmtPlan.name} (${pmtPlan.label})` : pmt.plan_id}</p>
+                        <p className="font-medium">
+                          {pmtPlan ? `${pmtPlan.name} (${pmtPlan.label})` : pmt.plan_id}
+                          {pmt.payment_kind === "deposit" && <span className="font-normal text-[var(--color-ink-soft)]"> · 50% deposit</span>}
+                          {pmt.payment_kind === "balance" && <span className="font-normal text-[var(--color-ink-soft)]"> · balance</span>}
+                        </p>
                         <p className="text-xs text-[var(--color-ink-soft)]">
                           {new Date(pmt.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })} · ₹
                           {(pmt.amount / 100).toLocaleString("en-IN")}
                         </p>
                         {receipt && (
                           <a
-                            href={`/api/receipt/download?batch=${pmt.claim_batch_id}`}
+                            href={`/api/receipt/download?payment=${pmt.id}`}
                             className="mt-0.5 inline-block text-xs font-medium text-[var(--color-green)] hover:underline"
                           >
                             Download Receipt ({receipt.receipt_number})

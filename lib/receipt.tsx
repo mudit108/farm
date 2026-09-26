@@ -141,11 +141,20 @@ export type ReceiptData = {
   razorpayOrderId: string;
   razorpayPaymentId: string | null;
   issuedDate: string;
+  /** full (default), 50% deposit, or the later balance payment. */
+  paymentKind?: "full" | "deposit" | "balance";
+  /** Convenience fee charged on a deposit, shown as its own line. */
+  installmentFeeInr?: number;
+  /** Plain-language note printed under the total (e.g. balance still due). */
+  paymentNote?: string;
 };
 
 function ReceiptDocument({ data }: { data: ReceiptData }) {
   const plotList = data.plotNumbers.map((n) => `#${n}`).join(", ");
-  const baseAmount = data.amountInr - data.feedingFamiliesInr;
+  const feeInr = data.installmentFeeInr ?? 0;
+  const baseAmount = data.amountInr - data.feedingFamiliesInr - feeInr;
+  const kindPrefix =
+    data.paymentKind === "deposit" ? "50% deposit — " : data.paymentKind === "balance" ? "Balance payment — " : "";
 
   return (
     <Document title={`Mera Khet Receipt ${data.receiptNumber}`}>
@@ -182,10 +191,17 @@ function ReceiptDocument({ data }: { data: ReceiptData }) {
           </View>
           <View style={styles.tableRow}>
             <Text style={styles.colDesc}>
+              {kindPrefix}
               {data.planName} ({data.planLabel}) — Plot{data.plotNumbers.length > 1 ? "s" : ""} {plotList}
             </Text>
             <Text style={styles.colAmt}>{baseAmount.toLocaleString("en-IN")}</Text>
           </View>
+          {feeInr > 0 && (
+            <View style={styles.tableRow}>
+              <Text style={styles.colDesc}>Split-payment convenience fee</Text>
+              <Text style={styles.colAmt}>{feeInr.toLocaleString("en-IN")}</Text>
+            </View>
+          )}
           {data.feedingFamiliesInr > 0 && (
             <View style={styles.tableRow}>
               <Text style={styles.colDesc}>Feeding Families Fund (included, not additional)</Text>
@@ -198,6 +214,9 @@ function ReceiptDocument({ data }: { data: ReceiptData }) {
           <Text style={styles.totalLabel}>Total Paid</Text>
           <Text style={styles.totalAmt}>₹{data.amountInr.toLocaleString("en-IN")}</Text>
         </View>
+        {data.paymentNote && (
+          <Text style={{ fontSize: 9.5, marginTop: 8, color: INK_SOFT }}>{data.paymentNote}</Text>
+        )}
 
         <View style={{ marginTop: 24 }}>
           <Text style={styles.label}>Payment Reference</Text>

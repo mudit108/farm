@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
+import { todayInIndia } from "@/lib/demo-data";
+import { normalizeIndianMobile, PHONE_ERROR_TEXT } from "@/lib/phone";
 
 export type FarmVisitState =
   | { status: "idle" }
@@ -17,8 +19,18 @@ export async function submitFarmVisit(
   const phone = String(formData.get("phone") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
 
-  if (!preferredDate) {
+  if (!preferredDate || !/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
     return { status: "error", message: "Please choose a preferred date." };
+  }
+  if (preferredDate <= todayInIndia()) {
+    return { status: "error", message: "Please choose a date from tomorrow onwards." };
+  }
+  if (!Number.isInteger(visitors) || visitors < 1 || visitors > 20) {
+    return { status: "error", message: "Number of visitors should be between 1 and 20." };
+  }
+  const normalizedPhone = normalizeIndianMobile(phone);
+  if (!normalizedPhone) {
+    return { status: "error", message: PHONE_ERROR_TEXT };
   }
 
   const supabase = await createSessionClient();
@@ -34,7 +46,7 @@ export async function submitFarmVisit(
     user_id: user.id,
     preferred_date: preferredDate,
     visitors,
-    phone: phone || null,
+    phone: normalizedPhone,
     notes: notes || null,
   });
 
