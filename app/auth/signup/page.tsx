@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { normalizeIndianMobile, PHONE_HELP_TEXT, PHONE_ERROR_TEXT } from "@/lib/phone";
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", address: "", pincode: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -33,7 +33,13 @@ export default function SignupPage() {
       options: {
         // Verified name/phone the claim-a-plot step reads later — never
         // taken from client input again after this point.
-        data: { full_name: form.name, phone: normalizedPhone, city: form.city.trim() },
+        data: {
+          full_name: form.name,
+          phone: normalizedPhone,
+          city: form.city.trim(),
+          address: form.address.trim() || null,
+          pincode: form.pincode.trim() || null,
+        },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/select-plot`,
       },
     });
@@ -101,6 +107,14 @@ export default function SignupPage() {
           <span className="mb-1.5 block text-sm font-medium">Delivery city</span>
           <input required type="text" placeholder="e.g. Jaipur" className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
           <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Where your harvest should be delivered. You can change this later.</span>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Address <span className="text-[var(--color-ink-soft)] font-normal">(optional)</span></span>
+          <input type="text" placeholder="House / street / area" className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Pincode <span className="text-[var(--color-ink-soft)] font-normal">(optional)</span></span>
+          <input type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 331023" className="input" value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })} />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium">Password</span>

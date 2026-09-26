@@ -225,6 +225,8 @@ export async function adminAssignPlan(formData: FormData): Promise<void> {
   const phone = String(formData.get("phone") || "").trim() || null;
   const email = String(formData.get("email") || "").trim() || null;
   const city = String(formData.get("city") || "").trim() || null;
+  const address = String(formData.get("address") || "").trim() || null;
+  const pincode = String(formData.get("pincode") || "").trim() || null;
 
   const supabase = createServiceClient();
 
@@ -255,6 +257,8 @@ export async function adminAssignPlan(formData: FormData): Promise<void> {
       phone,
       email,
       city,
+      address,
+      pincode,
       plan_id: planId,
       claim_batch_id: batchId,
       assigned_at: new Date().toISOString(),
@@ -263,6 +267,40 @@ export async function adminAssignPlan(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminAssignPlan update failed:", error);
+    return;
+  }
+
+  revalidateAll();
+}
+
+/**
+ * Edit a member's contact/address details after the fact — corrects what
+ * was captured at signup/assignment, and is the only way to backfill
+ * address + pincode for members who registered before those fields
+ * existed. Updates every plot row in the batch (a member with multiple
+ * plots has one row per plot, all sharing the same contact fields, same
+ * pattern as adminAssignPlan/khet_club_claim_my_plan above) so the record
+ * stays consistent across all of a member's plots.
+ */
+export async function adminUpdateMemberContact(formData: FormData): Promise<void> {
+  const claimBatchId = String(formData.get("claimBatchId") || "").trim();
+  if (!claimBatchId) return;
+
+  const fullName = String(formData.get("fullName") || "").trim() || null;
+  const phone = String(formData.get("phone") || "").trim() || null;
+  const email = String(formData.get("email") || "").trim() || null;
+  const city = String(formData.get("city") || "").trim() || null;
+  const address = String(formData.get("address") || "").trim() || null;
+  const pincode = String(formData.get("pincode") || "").trim() || null;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("khet_club_plots")
+    .update({ full_name: fullName ?? "Mera Khet Member", phone, email, city, address, pincode })
+    .eq("claim_batch_id", claimBatchId);
+
+  if (error) {
+    console.error("adminUpdateMemberContact failed:", error);
     return;
   }
 

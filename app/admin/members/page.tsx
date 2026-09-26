@@ -11,6 +11,7 @@ import {
   adminMarkPlotFilled,
   adminAssignPlan,
   adminFreeBatch,
+  adminUpdateMemberContact,
 } from "@/app/actions/admin-plots";
 import { adminApproveBatch, adminResendCertificate } from "@/app/actions/admin-certificate";
 import { adminAddDocument, adminDeleteDocument } from "@/app/actions/admin-content";
@@ -34,10 +35,25 @@ type PlotRow = {
   phone: string | null;
   email: string | null;
   city: string | null;
+  address: string | null;
+  pincode: string | null;
   plan_id: string | null;
   claim_batch_id: string | null;
   assigned_at: string | null;
   approved_at: string | null;
+};
+type PaymentRow = {
+  user_id: string;
+  amount: number;
+  status: string;
+  payment_kind: string;
+  created_at: string;
+};
+type InstallmentPlan = {
+  user_id: string;
+  balance_due_inr: number;
+  balance_due_date: string;
+  balance_paid: boolean;
 };
 type CertRow = { claim_batch_id: string; certificate_number: string; email_sent: boolean; whatsapp_sent: boolean };
 type Pref = { user_id: string; method: string; schedule: string; installment_kg: number | null; confirmed_total_kg: number | null };
@@ -59,6 +75,15 @@ function planLabel(planId: string | null) {
 function methodTitle(id: string) {
   return harvestOptions.find((o) => o.id === id)?.title ?? id;
 }
+function paymentSummaryText(
+  summary: { paidInr: number; balanceDueInr: number | null; balanceDueDate: string | null } | undefined
+): string {
+  if (!summary) return "—";
+  const paid = `₹${summary.paidInr.toLocaleString("en-IN")} paid`;
+  if (!summary.balanceDueInr) return paid;
+  const due = new Date(summary.balanceDueDate!).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+  return `${paid} · ₹${summary.balanceDueInr.toLocaleString("en-IN")} due ${due}`;
+}
 
 export default async function MembersPage({
   searchParams,
@@ -78,11 +103,13 @@ export default async function MembersPage({
     { data: deliveriesData },
     { data: requestsData },
     { data: docsData },
+    { data: paymentsData },
+    { data: installmentData },
   ] = await Promise.all([
     supabase.auth.admin.listUsers(),
     supabase
       .from("khet_club_plots")
-      .select("plot_number, status, user_id, full_name, phone, email, city, plan_id, claim_batch_id, assigned_at, approved_at")
+      .select("plot_number, status, user_id, full_name, phone, email, city, address, pincode, plan_id, claim_batch_id, assigned_at, approved_at")
       .order("plot_number"),
     supabase.from("khet_club_certificates").select("claim_batch_id, certificate_number, email_sent, whatsapp_sent"),
     supabase.from("khet_club_harvest_preferences").select("user_id, method, schedule, installment_kg, confirmed_total_kg"),
@@ -93,6 +120,12 @@ export default async function MembersPage({
       .eq("status", "pending")
       .order("requested_at"),
     supabase.from("khet_club_documents").select("id, name, file_url, user_id").order("created_at", { ascending: false }),
+    supabase
+      .from("khet_club_payments")
+      .select("user_id, amount, status, payment_kind, created_at")
+      .eq("status", "paid")
+      .order("created_at", { ascending: false }),
+    supabase.from("khet_club_installment_plans").select("user_id, balance_due_inr, balance_due_date, balance_paid"),
   ]);
 
   const users = usersData?.users ?? [];
@@ -104,6 +137,37 @@ export default async function MembersPage({
   const deliveries = (deliveriesData ?? []) as Delivery[];
   const changeRequests = (requestsData ?? []) as ChangeRequest[];
   const docs = (docsData ?? []) as Doc[];
+  const payments = (paymentsData ?? []) as PaymentRow[];
+  const installmentPlans = (installmentData ?? []) as InstallmentPlan[];
+
+  // One payment summary per member — total actually paid so far, plus any
+  // installment balance still owing. A member can have more than one paid
+  // row (e.g. a deposit + a later balance payment), so amounts are summed.
+  type PaymentSummary = { paidInr: number; kind: string; balanceDueInr: number | null; balanceDueDate: string | null; balancePaid: boolean };
+  const paymentSummaryByUser = new Map<string, PaymentSummary>();
+  for (const p of payments) {
+    const existing = paymentSummaryByUser.get(p.user_id);
+    if (existing) {
+      existing.paidInr += p.amount / 100;
+    } else {
+      paymentSummaryByUser.set(p.user_id, {
+        paidInr: p.amount / 100,
+        kind: p.payment_kind,
+        balanceDueInr: null,
+        balanceDueDate: null,
+        balancePaid: true,
+      });
+    }
+  }
+  for (const plan of installmentPlans) {
+    const summary = paymentSummaryByUser.get(plan.user_id);
+    if (!summary) continue;
+    if (!plan.balance_paid) {
+      summary.balanceDueInr = plan.balance_due_inr;
+      summary.balanceDueDate = plan.balance_due_date;
+    }
+    summary.balancePaid = plan.balance_paid;
+  }
 
   const filled = plots.filter((p) => p.status === "filled").length;
   const available = plots.length - filled;
@@ -114,6 +178,17 @@ export default async function MembersPage({
     const list = batches.get(p.claim_batch_id) ?? [];
     list.push(p);
     batches.set(p.claim_batch_id, list);
+  }
+
+  // Same plot data, grouped by user_id instead of batch — for the "All
+  // Accounts" tab, which lists every signed-up account (not just those
+  // with a completed allocation).
+  const plotsByUserId = new Map<string, PlotRow[]>();
+  for (const p of plots) {
+    if (!p.user_id) continue;
+    const list = plotsByUserId.get(p.user_id) ?? [];
+    list.push(p);
+    plotsByUserId.set(p.user_id, list);
   }
 
   // Filter by the search box. Matches name, email, phone, city, or a
@@ -182,6 +257,8 @@ export default async function MembersPage({
           <input name="phone" placeholder="Phone" className="input sm:col-span-1" />
           <input name="email" placeholder="Email" className="input sm:col-span-1" />
           <input name="city" placeholder="City" className="input sm:col-span-1" />
+          <input name="address" placeholder="Address (optional)" className="input sm:col-span-1" />
+          <input name="pincode" placeholder="Pincode (optional)" className="input sm:col-span-1" />
           <Button type="submit" size="sm" className="sm:col-span-1">Assign</Button>
         </ActionForm>
       </Card>
@@ -218,6 +295,9 @@ export default async function MembersPage({
               const cert = certificatesByBatch.get(batchId);
               const pref = first.user_id ? prefsByUser.get(first.user_id) : undefined;
               const prefOption = pref ? harvestOptions.find((o) => o.id === pref.method) : null;
+              const account = first.user_id ? usersById.get(first.user_id) : undefined;
+              const registeredAt = account?.created_at ? new Date(account.created_at).toLocaleDateString("en-IN") : null;
+              const payment = first.user_id ? paymentSummaryByUser.get(first.user_id) : undefined;
               return (
                 <Card key={batchId} className="p-4">
                   <div className="flex items-start justify-between gap-2">
@@ -233,7 +313,16 @@ export default async function MembersPage({
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-soft)]">
                     <span>{first.phone ?? "—"}</span>
                     <span>{first.city ?? "—"}</span>
-                    <span>{first.assigned_at ? new Date(first.assigned_at).toLocaleDateString("en-IN") : "—"}</span>
+                    <span title="Plot assigned">{first.assigned_at ? new Date(first.assigned_at).toLocaleDateString("en-IN") : "—"}</span>
+                  </div>
+                  {(first.address || first.pincode) && (
+                    <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+                      {[first.address, first.pincode].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+                    {registeredAt && <span>Registered {registeredAt}</span>}
+                    <span>{paymentSummaryText(payment)}</span>
                   </div>
                   {prefOption && (
                     <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
@@ -241,6 +330,22 @@ export default async function MembersPage({
                       {pref!.schedule === "monthly" ? ` (~${pref!.installment_kg} kg/mo)` : ""}
                     </p>
                   )}
+
+                  <details className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
+                    <summary className="cursor-pointer text-xs font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-green-deep)]">
+                      Edit contact &amp; address
+                    </summary>
+                    <ActionForm action={adminUpdateMemberContact} className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <input type="hidden" name="claimBatchId" value={batchId} />
+                      <input name="fullName" placeholder="Full name" defaultValue={first.full_name ?? ""} className="input" />
+                      <input name="phone" placeholder="Phone" defaultValue={first.phone ?? ""} className="input" />
+                      <input name="email" placeholder="Email" defaultValue={first.email ?? ""} className="input" />
+                      <input name="city" placeholder="City" defaultValue={first.city ?? ""} className="input" />
+                      <input name="address" placeholder="Address" defaultValue={first.address ?? ""} className="input sm:col-span-2" />
+                      <input name="pincode" placeholder="Pincode" defaultValue={first.pincode ?? ""} className="input" />
+                      <Button type="submit" size="sm" variant="outline">Save</Button>
+                    </ActionForm>
+                  </details>
 
                   {cert ? (
                     <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[var(--color-ink)]/10 pt-3">
@@ -300,12 +405,19 @@ export default async function MembersPage({
       </div>
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Email</th>
+                <th className="px-5 py-3 font-medium">Phone</th>
+                <th className="px-5 py-3 font-medium">City</th>
+                <th className="px-5 py-3 font-medium">Address</th>
+                <th className="px-5 py-3 font-medium">Registered</th>
                 <th className="px-5 py-3 font-medium">Confirmed</th>
+                <th className="px-5 py-3 font-medium">Plan</th>
+                <th className="px-5 py-3 font-medium">Plot(s)</th>
+                <th className="px-5 py-3 font-medium">Payment</th>
                 <th className="px-5 py-3 font-medium">Harvest Preference</th>
               </tr>
             </thead>
@@ -313,15 +425,32 @@ export default async function MembersPage({
               {users.map((u) => {
                 const pref = prefsByUser.get(u.id);
                 const prefOption = pref ? harvestOptions.find((o) => o.id === pref.method) : null;
+                const holding = plotsByUserId.get(u.id) ?? [];
+                const holdingFirst = holding[0];
+                const plotNumbers = holding.map((r) => r.plot_number).sort((a, b) => a - b);
+                const payment = paymentSummaryByUser.get(u.id);
                 return (
                   <tr key={u.id}>
-                    <td className="px-5 py-3 font-medium">{(u.user_metadata?.full_name as string) || "—"}</td>
+                    <td className="px-5 py-3 font-medium">{(u.user_metadata?.full_name as string) || holdingFirst?.full_name || "—"}</td>
                     <td className="px-5 py-3 text-[var(--color-ink-soft)]">{u.email}</td>
+                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">{holdingFirst?.phone || (u.user_metadata?.phone as string) || "—"}</td>
+                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">{holdingFirst?.city || "—"}</td>
+                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">
+                      {[holdingFirst?.address, holdingFirst?.pincode].filter(Boolean).join(" · ") || "—"}
+                    </td>
+                    <td className="px-5 py-3 text-xs text-[var(--color-ink-soft)]">
+                      {new Date(u.created_at).toLocaleDateString("en-IN")}
+                    </td>
                     <td className="px-5 py-3">
                       <Badge tone={u.email_confirmed_at ? "green" : "brown"}>
                         {u.email_confirmed_at ? "confirmed" : "pending"}
                       </Badge>
                     </td>
+                    <td className="px-5 py-3">{planLabel(holdingFirst?.plan_id ?? null) ?? "—"}</td>
+                    <td className="px-5 py-3 font-mono-data text-xs">
+                      {plotNumbers.length > 0 ? plotNumbers.map((n) => `#${n}`).join(", ") : "—"}
+                    </td>
+                    <td className="px-5 py-3 text-xs text-[var(--color-ink-soft)]">{paymentSummaryText(payment)}</td>
                     <td className="px-5 py-3">
                       {prefOption ? (
                         <>
@@ -339,7 +468,7 @@ export default async function MembersPage({
               })}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-5 py-6 text-center text-[var(--color-ink-soft)]">No customers yet.</td>
+                  <td colSpan={11} className="px-5 py-6 text-center text-[var(--color-ink-soft)]">No customers yet.</td>
                 </tr>
               )}
             </tbody>
@@ -386,7 +515,7 @@ export default async function MembersPage({
     <div className="p-6 sm:px-10">
       <Card className="overflow-hidden p-0">
         <div className="max-h-[640px] overflow-x-auto overflow-y-auto">
-          <table className="w-full min-w-[700px] text-left text-sm">
+          <table className="w-full min-w-[880px] text-left text-sm">
             <thead className="sticky top-0 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Plot</th>
@@ -396,6 +525,7 @@ export default async function MembersPage({
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">City</th>
+                <th className="px-4 py-3 font-medium">Address</th>
                 <th className="px-4 py-3 font-medium">Assigned</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -410,6 +540,9 @@ export default async function MembersPage({
                   <td className="px-4 py-2.5">{p.phone ?? "—"}</td>
                   <td className="px-4 py-2.5">{p.email ?? "—"}</td>
                   <td className="px-4 py-2.5">{p.city ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">
+                    {[p.address, p.pincode].filter(Boolean).join(" · ") || "—"}
+                  </td>
                   <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">
                     {p.assigned_at ? new Date(p.assigned_at).toLocaleDateString("en-IN") : "—"}
                   </td>
