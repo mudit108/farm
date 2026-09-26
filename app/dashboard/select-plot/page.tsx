@@ -92,7 +92,7 @@ export default async function SelectPlotPage() {
             {deadline && (
               <p className="mb-4 flex items-center gap-1.5 text-xs text-[var(--color-brown)]">
                 <Clock className="h-3.5 w-3.5" />
-                Registration closes {deadline.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
+                Registration closes {deadline.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}
               </p>
             )}
             <PlanSelectionForm grid={grid} prices={prices} seasonLabel={season?.season_label ?? "Current Season"} />
@@ -102,7 +102,7 @@ export default async function SelectPlotPage() {
             <p className="font-display text-lg">Registration closed</p>
             <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
               Registration for this season closed on{" "}
-              {deadline?.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}.
+              {deadline?.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}.
               Contact us if you have questions.
             </p>
           </Card>

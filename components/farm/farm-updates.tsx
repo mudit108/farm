@@ -41,7 +41,7 @@ export async function FarmUpdates() {
                 <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-[var(--color-green)]" />
                 <div>
                   <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-                    {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
                   </p>
                   <h3 className="mt-1 font-display text-lg">{u.title}</h3>
                   <p className="mt-1 text-sm leading-relaxed text-[var(--color-ink-soft)]">

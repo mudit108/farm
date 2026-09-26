@@ -27,12 +27,12 @@ export default async function AdminBudgetPage() {
 
   const [{ data: budgetData }, { data: paymentsData }, { data: expensesData }] = await Promise.all([
     supabase.from("khet_club_budget").select("*").order("sort_order"),
-    supabase.from("khet_club_payments").select("plan_id, amount, status").eq("status", "paid"),
-    supabase.from("khet_club_expenses").select("category, amount_inr"),
+    supabase.from("khet_club_payments").select("plan_id, amount, status, payment_kind").eq("status", "paid").is("archived_season_id", null),
+    supabase.from("khet_club_expenses").select("category, amount_inr").is("archived_season_id", null),
   ]);
 
   const budget = (budgetData ?? []) as BudgetRow[];
-  const payments = (paymentsData ?? []) as { plan_id: string; amount: number }[];
+  const payments = (paymentsData ?? []) as { plan_id: string; amount: number; payment_kind: string }[];
   const expenses = (expensesData ?? []) as { category: string; amount_inr: number }[];
 
   // Revenue in rupees (payments are stored in paise).
@@ -43,10 +43,11 @@ export default async function AdminBudgetPage() {
   // donations, so it isn't available to spend on farming or marketing.
   // Allocating percentages against gross revenue would silently
   // over-commit by this amount.
-  const fffCommitted = payments.reduce(
-    (sum, p) => sum + planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT,
-    0
-  );
+  // Counted once per purchase — a 50/50 balance payment is the same
+  // membership as its deposit, not a second one.
+  const fffCommitted = payments
+    .filter((p) => p.payment_kind !== "balance")
+    .reduce((sum, p) => sum + planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT, 0);
   const allocatable = Math.max(grossRevenue - fffCommitted, 0);
 
   // Actual spend, rolled up from granular expense categories into
@@ -63,8 +64,13 @@ export default async function AdminBudgetPage() {
     spentByBucket.set(bucket, (spentByBucket.get(bucket) ?? 0) + e.amount_inr);
   }
 
+  // Fixed-amount lines are taken off the top first; percentage lines share
+  // what's left. Otherwise fixed + percentage lines together could promise
+  // more money than actually exists.
+  const fixedTotal = budget.reduce((s, b) => s + (b.manual_amount_inr ?? 0), 0);
+  const percentPool = Math.max(allocatable - fixedTotal, 0);
   const rows = budget.map((b) => {
-    const allocated = b.manual_amount_inr ?? Math.round((allocatable * b.percent) / 100);
+    const allocated = b.manual_amount_inr ?? Math.round((percentPool * b.percent) / 100);
     const spent = spentByBucket.get(b.category) ?? 0;
     const remaining = allocated - spent;
     const usedPct = allocated > 0 ? Math.round((spent / allocated) * 100) : 0;

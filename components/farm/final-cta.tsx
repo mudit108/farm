@@ -21,7 +21,7 @@ export function FinalCta({
   deadline: string | null;
 }) {
   const deadlineLabel = deadline
-    ? new Date(deadline).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(deadline).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })
     : null;
 
   return (

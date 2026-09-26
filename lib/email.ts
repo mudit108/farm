@@ -454,7 +454,7 @@ export async function sendAdminDigestEmail(input: {
     const { error } = await resend.emails.send({
       from,
       to: adminEmails,
-      subject: `Mera Khet daily summary — ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
+      subject: `Mera Khet daily summary — ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}`,
       html: `
       <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
         <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — Daily Summary</p>

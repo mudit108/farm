@@ -7,6 +7,8 @@ import { broadcastWhatsAppToCurrentMembers } from "@/lib/whatsapp/broadcast";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { sendVisitStatusEmail } from "@/lib/email";
 import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { listAllUsers } from "@/lib/supabase/list-all-users";
+import { membershipPlans, todayInIndia } from "@/lib/demo-data";
 
 function revalidateCustomerFacing() {
   revalidatePath("/");
@@ -19,10 +21,10 @@ function revalidateCustomerFacing() {
 
 // --- Farm updates ---------------------------------------------------
 
-export async function adminPublishUpdate(formData: FormData): Promise<void> {
+export async function adminPublishUpdate(formData: FormData): Promise<ActionResult> {
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
-  if (!title) return;
+  if (!title) return fail("Add a title first.");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_updates").insert({
@@ -32,7 +34,7 @@ export async function adminPublishUpdate(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminPublishUpdate failed:", error);
-    return;
+    return fail("Couldn't publish the update. Please try again.");
   }
   revalidatePath("/admin/communications");
   revalidateCustomerFacing();
@@ -40,26 +42,28 @@ export async function adminPublishUpdate(formData: FormData): Promise<void> {
   // Also notify every current-season member on WhatsApp. Best-effort —
   // a WhatsApp failure never blocks the update itself from publishing.
   const whatsappBody = description ? `📢 ${title}\n\n${description}` : `📢 ${title}`;
-  await broadcastWhatsAppToCurrentMembers(whatsappBody, "automated");
+  const summary = await broadcastWhatsAppToCurrentMembers(whatsappBody, "automated");
+  return ok(`Update published — WhatsApp sent to ${summary.sent} member${summary.sent === 1 ? "" : "s"}${summary.failed ? ` (${summary.failed} failed)` : ""}.`);
 }
 
-export async function adminDeleteUpdate(formData: FormData): Promise<void> {
+export async function adminDeleteUpdate(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return fail("Missing update reference.");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_updates").delete().eq("id", id);
   if (error) {
     console.error("adminDeleteUpdate failed:", error);
-    return;
+    return fail("Couldn't delete the update.");
   }
   revalidatePath("/admin/communications");
   revalidateCustomerFacing();
+  return ok("Update deleted.");
 }
 
 // --- Season state -----------------------------------------------------
 
-export async function adminUpdateSeason(formData: FormData): Promise<void> {
+export async function adminUpdateSeason(formData: FormData): Promise<ActionResult> {
   const currentStage = String(formData.get("currentStage") || "").trim();
   const progress = Number(formData.get("progress") || 0);
   const health = String(formData.get("health") || "").trim();
@@ -67,7 +71,7 @@ export async function adminUpdateSeason(formData: FormData): Promise<void> {
   const estimatedHarvest = String(formData.get("estimatedHarvest") || "") || null;
   const registrationDeadline = String(formData.get("registrationDeadline") || "") || null;
 
-  if (!currentStage || !health) return;
+  if (!currentStage || !health) return fail("Stage and health are required.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -84,19 +88,20 @@ export async function adminUpdateSeason(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminUpdateSeason failed:", error);
-    return;
+    return fail("Couldn't save season details.");
   }
   revalidatePath("/admin/crops");
   revalidatePath("/dashboard/select-plot");
   revalidateCustomerFacing();
+  return ok("Season details saved.");
 }
 
 // --- Farm visits ------------------------------------------------------
 
-export async function adminSetVisitStatus(formData: FormData): Promise<void> {
+export async function adminSetVisitStatus(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
-  if (!id || !["approved", "declined", "completed"].includes(status)) return;
+  if (!id || !["approved", "declined", "completed"].includes(status)) return fail("Invalid visit update.");
 
   const supabase = createServiceClient();
 
@@ -115,7 +120,7 @@ export async function adminSetVisitStatus(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminSetVisitStatus failed:", error);
-    return;
+    return fail("Couldn't update the visit.");
   }
 
   // Notify the member — previously nothing at all reached them, despite
@@ -129,6 +134,7 @@ export async function adminSetVisitStatus(formData: FormData): Promise<void> {
       day: "2-digit",
       month: "long",
       year: "numeric",
+      timeZone: "Asia/Kolkata",
     });
 
     if (member?.email) {
@@ -161,18 +167,19 @@ export async function adminSetVisitStatus(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/visits");
   revalidatePath("/dashboard/farm-visit");
+  return ok(status === "completed" ? "Visit marked completed." : `Visit ${status} — member notified.`);
 }
 
 // --- Cameras ------------------------------------------------------------
 
-export async function adminUpsertCamera(formData: FormData): Promise<void> {
+export async function adminUpsertCamera(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
   const plotNumberRaw = String(formData.get("plotNumber") || "");
   const streamUrl = String(formData.get("streamUrl") || "").trim();
   const status = String(formData.get("status") || "not_configured");
 
-  if (!name) return;
+  if (!name) return fail("Give the camera a name.");
 
   const plotNumber = plotNumberRaw ? Number(plotNumberRaw) : null;
   const supabase = createServiceClient();
@@ -190,47 +197,51 @@ export async function adminUpsertCamera(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminUpsertCamera failed:", error);
-    return;
+    return fail("Couldn't save the camera.");
   }
   revalidatePath("/admin/cctv");
   revalidateCustomerFacing();
+  return ok("Camera saved.");
 }
 
-export async function adminDeleteCamera(formData: FormData): Promise<void> {
+export async function adminDeleteCamera(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return fail("Missing camera reference.");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_cameras").delete().eq("id", id);
   if (error) {
     console.error("adminDeleteCamera failed:", error);
-    return;
+    return fail("Couldn't remove the camera.");
   }
   revalidatePath("/admin/cctv");
   revalidateCustomerFacing();
+  return ok("Camera removed.");
 }
 
 // --- Documents ----------------------------------------------------------
 
-export async function adminAddDocument(formData: FormData): Promise<void> {
+export async function adminAddDocument(formData: FormData): Promise<ActionResult> {
   const name = String(formData.get("name") || "").trim();
   const fileUrl = String(formData.get("fileUrl") || "").trim();
-  const email = String(formData.get("email") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
 
-  if (!name || !fileUrl) return;
+  if (!name || !fileUrl) return fail("Add a document name and a file URL.");
+  if (!/^https?:\/\//i.test(fileUrl)) return fail("File URL must start with http:// or https://");
 
   const supabase = createServiceClient();
 
+  // A customer-specific document must resolve to a real account. If the
+  // email doesn't match anyone, refuse — silently saving it as a shared
+  // document would show a private file to every member.
   let userId: string | null = null;
   if (email) {
-    const { data } = await supabase
-      .from("khet_club_plots")
-      .select("user_id")
-      .eq("email", email)
-      .not("user_id", "is", null)
-      .limit(1)
-      .maybeSingle();
-    userId = (data as { user_id: string } | null)?.user_id ?? null;
+    const { data } = await listAllUsers(supabase);
+    const match = data.users.find((u) => u.email?.toLowerCase() === email);
+    if (!match) {
+      return fail(`No member account found for ${email}. Nothing was added — check the email.`);
+    }
+    userId = match.id;
   }
 
   const { error } = await supabase.from("khet_club_documents").insert({
@@ -241,23 +252,26 @@ export async function adminAddDocument(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminAddDocument failed:", error);
-    return;
+    return fail("Couldn't add the document. Please try again.");
   }
   revalidatePath("/admin/members");
   revalidatePath("/dashboard/account");
+  return ok(userId ? `Document added for ${email}.` : "Shared document added for all members.");
 }
 
-export async function adminDeleteDocument(formData: FormData): Promise<void> {
+export async function adminDeleteDocument(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return fail("Missing document reference.");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_documents").delete().eq("id", id);
   if (error) {
     console.error("adminDeleteDocument failed:", error);
-    return;
+    return fail("Couldn't remove the document.");
   }
+  revalidatePath("/admin/members");
   revalidatePath("/dashboard/account");
+  return ok("Document removed.");
 }
 
 export type ResizeFarmResult =
@@ -318,19 +332,20 @@ export async function adminResizeFarm(
   };
 }
 
-export async function adminMarkContactMessage(formData: FormData): Promise<void> {
+export async function adminMarkContactMessage(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
-  if (!id || !["read", "replied"].includes(status)) return;
+  if (!id || !["read", "replied"].includes(status)) return fail("Invalid status.");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_contact_messages").update({ status }).eq("id", id);
   if (error) {
     console.error("adminMarkContactMessage failed:", error);
-    return;
+    return fail("Couldn't update the message.");
   }
 
   revalidatePath("/admin/communications");
+  return ok("Message updated.");
 }
 
 /**
@@ -338,7 +353,7 @@ export async function adminMarkContactMessage(formData: FormData): Promise<void>
  * be changed from the admin panel instead of requiring a redeploy —
  * stored on khet_club_season, the general farm-settings singleton.
  */
-export async function adminUpdateContactInfo(formData: FormData): Promise<void> {
+export async function adminUpdateContactInfo(formData: FormData): Promise<ActionResult> {
   const contactEmail = String(formData.get("contactEmail") || "").trim();
   const contactPhone = String(formData.get("contactPhone") || "").trim();
 
@@ -353,11 +368,12 @@ export async function adminUpdateContactInfo(formData: FormData): Promise<void> 
 
   if (error) {
     console.error("adminUpdateContactInfo failed:", error);
-    return;
+    return fail("Couldn't save contact details.");
   }
 
   revalidatePath("/");
   revalidatePath("/admin/crops");
+  return ok("Contact details saved.");
 }
 
 /**
@@ -371,7 +387,7 @@ export async function adminUpdateContactInfo(formData: FormData): Promise<void> 
  * the checkout preview) only while offerEnds_${planId} hasn't passed yet.
  * Leaving the strike-price field blank clears the offer for that plan.
  */
-export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
+export async function adminUpdatePlanPrices(formData: FormData): Promise<ActionResult> {
   const supabase = createServiceClient();
 
   const updates: {
@@ -381,31 +397,40 @@ export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
     offer_ends_at: string | null;
   }[] = [];
   for (const planId of ["1-plot", "3-plots", "6-plots"]) {
+    const planName = membershipPlans.find((p) => p.id === planId)?.name ?? planId;
     const raw = formData.get(`price_${planId}`);
     if (raw === null) continue;
     const price = Number(raw);
-    if (!Number.isFinite(price) || price <= 0) continue;
+    if (!Number.isFinite(price) || price <= 0) return fail(`${planName}: enter a price greater than 0.`);
 
     const strikeRaw = String(formData.get(`strike_${planId}`) || "").trim();
     const offerEndsRaw = String(formData.get(`offerEnds_${planId}`) || "").trim();
-    const strikePrice = strikeRaw ? Number(strikeRaw) : null;
-    const validStrike = strikePrice !== null && Number.isFinite(strikePrice) && strikePrice > price;
+    let strikePrice: number | null = null;
+    let offerEnds: string | null = null;
 
-    updates.push({
-      plan_id: planId,
-      price_inr: Math.round(price),
-      // Only keep the strike price/date pair when the strike price is a real
-      // number greater than the actual price — otherwise the offer is cleared.
-      strike_price_inr: validStrike ? Math.round(strikePrice!) : null,
-      offer_ends_at: validStrike && offerEndsRaw ? offerEndsRaw : null,
-    });
+    // A blank was-price clears the offer. Otherwise it must be a real
+    // offer — higher than the actual price, with an end date — or the
+    // admin is told why, instead of it silently never showing.
+    if (strikeRaw) {
+      strikePrice = Math.round(Number(strikeRaw));
+      if (!Number.isFinite(strikePrice) || strikePrice <= price) {
+        return fail(`${planName}: the was-price must be higher than the actual price (₹${Math.round(price).toLocaleString("en-IN")}).`);
+      }
+      if (!offerEndsRaw) return fail(`${planName}: set an "offer valid till" date, or clear the was-price.`);
+      if (offerEndsRaw < todayInIndia()) {
+        return fail(`${planName}: the offer end date is in the past — pick a future date or clear the was-price.`);
+      }
+      offerEnds = offerEndsRaw;
+    }
+
+    updates.push({ plan_id: planId, price_inr: Math.round(price), strike_price_inr: strikePrice, offer_ends_at: offerEnds });
   }
-  if (updates.length === 0) return;
+  if (updates.length === 0) return fail("Nothing to save.");
 
   const { error } = await supabase.from("khet_club_plan_prices").upsert(updates);
   if (error) {
     console.error("adminUpdatePlanPrices failed:", error);
-    return;
+    return fail("Couldn't save prices. Please try again.");
   }
 
   revalidatePath("/");
@@ -413,6 +438,7 @@ export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
   revalidatePath("/our-wheat");
   revalidatePath("/admin/crops");
   revalidatePath("/dashboard/select-plot");
+  return ok("Prices saved — live on the site now.");
 }
 
 /**
@@ -421,29 +447,30 @@ export async function adminUpdatePlanPrices(formData: FormData): Promise<void> {
  * on /admin — admin may have real reasons the two differ (offline
  * contributions, timing of actual wheat purchases).
  */
-export async function adminUpdateFFFAmount(formData: FormData): Promise<void> {
+export async function adminUpdateFFFAmount(formData: FormData): Promise<ActionResult> {
   const raw = String(formData.get("fffCollectedInr") || "");
   const amount = Math.round(Number(raw));
-  if (!Number.isFinite(amount) || amount < 0) return;
+  if (!Number.isFinite(amount) || amount < 0) return fail("Enter a valid amount (0 or more).");
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("khet_club_season").update({ fff_collected_inr: amount }).eq("id", 1);
   if (error) {
     console.error("adminUpdateFFFAmount failed:", error);
-    return;
+    return fail("Couldn't save the amount.");
   }
 
   revalidatePath("/");
   revalidatePath("/admin/income");
+  return ok("Feeding Families total updated.");
 }
 
 /**
  * Marks a member's dashboard support message resolved. These were
  * previously written to the database and read by nothing at all.
  */
-export async function adminResolveSupportMessage(formData: FormData): Promise<void> {
+export async function adminResolveSupportMessage(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return fail("Missing message reference.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -453,10 +480,11 @@ export async function adminResolveSupportMessage(formData: FormData): Promise<vo
 
   if (error) {
     console.error("adminResolveSupportMessage failed:", error);
-    return;
+    return fail("Couldn't update the message.");
   }
 
   revalidatePath("/admin/communications");
+  return ok("Marked as resolved.");
 }
 
 export type CloseSeasonResult =
@@ -528,10 +556,10 @@ export async function adminCloseSeason(
  * hardcoded — if the real facility changes, a hardcoded figure would
  * quietly become a false claim.
  */
-export async function adminUpdateWarehouseCapacity(formData: FormData): Promise<void> {
+export async function adminUpdateWarehouseCapacity(formData: FormData): Promise<ActionResult> {
   const raw = String(formData.get("warehouseCapacityTonnes") || "");
   const tonnes = Math.round(Number(raw));
-  if (!Number.isFinite(tonnes) || tonnes <= 0) return;
+  if (!Number.isFinite(tonnes) || tonnes <= 0) return fail("Enter a capacity greater than 0.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -541,11 +569,12 @@ export async function adminUpdateWarehouseCapacity(formData: FormData): Promise<
 
   if (error) {
     console.error("adminUpdateWarehouseCapacity failed:", error);
-    return;
+    return fail("Couldn't save capacity.");
   }
 
   revalidatePath("/");
   revalidatePath("/admin/crops");
+  return ok("Warehouse capacity saved.");
 }
 
 /**
@@ -555,13 +584,13 @@ export async function adminUpdateWarehouseCapacity(formData: FormData): Promise<
  * must be able to follow it rather than silently describing something
  * that is no longer true.
  */
-export async function adminUpdateHarvestDistribution(formData: FormData): Promise<void> {
+export async function adminUpdateHarvestDistribution(formData: FormData): Promise<ActionResult> {
   const model = String(formData.get("harvestDistributionModel") || "");
   const deductionRaw = String(formData.get("harvestDeductionPercent") || "0");
   const deduction = Number(deductionRaw);
 
-  if (!["pooled", "per_plot"].includes(model)) return;
-  if (!Number.isFinite(deduction) || deduction < 0 || deduction > 100) return;
+  if (!["pooled", "per_plot"].includes(model)) return fail("Deduction must be between 0 and 100.");
+  if (!Number.isFinite(deduction) || deduction < 0 || deduction > 100) return fail("Deduction must be between 0 and 100.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -574,12 +603,13 @@ export async function adminUpdateHarvestDistribution(formData: FormData): Promis
 
   if (error) {
     console.error("adminUpdateHarvestDistribution failed:", error);
-    return;
+    return fail("Couldn't save harvest settings.");
   }
 
   revalidatePath("/admin/crops");
   revalidatePath("/terms");
   revalidatePath("/membership-agreement");
+  return ok("Harvest distribution saved.");
 }
 
 /**

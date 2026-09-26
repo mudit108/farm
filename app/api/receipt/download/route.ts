@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     feedingFamiliesInr: receipt.feeding_families_inr,
     razorpayOrderId: payment?.razorpay_order_id ?? "",
     razorpayPaymentId: payment?.razorpay_payment_id ?? null,
-    issuedDate: new Date(receipt.issued_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
+    issuedDate: new Date(receipt.issued_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }),
   });
 
   return new NextResponse(new Uint8Array(pdfBuffer), {

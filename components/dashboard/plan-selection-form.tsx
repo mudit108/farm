@@ -81,6 +81,16 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
 
   const plan = plansWithLivePricing.find((p) => p.id === planId) ?? null;
 
+  // A discount preview is priced for one specific plan. Switching plans
+  // must drop it, or the "Pay ₹X" button would show the old plan's
+  // discounted amount while the server charges the new plan's price.
+  function selectPlan(id: string) {
+    if (id !== planId && discount.status !== "idle") setDiscount({ status: "idle" });
+    setPlanId(id);
+    setStartPlot(null);
+    setState({ step: "idle" });
+  }
+
   // Mirrors the server's math in createPlanOrder exactly (fee charged
   // ON the deposit, not split) — this is a preview only, the server
   // recomputes and is authoritative for what's actually charged.
@@ -203,9 +213,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                   : ""
               )}
               onClick={() => {
-                setPlanId(p.id);
-                setStartPlot(null);
-                setState({ step: "idle" });
+                selectPlan(p.id);
               }}
             >
               <Badge tone={p.id === "3-plots" ? "green" : "brown"}>{p.tagline}</Badge>
@@ -249,9 +257,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
                 className="mt-4 w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setPlanId(p.id);
-                  setStartPlot(null);
-                  setState({ step: "idle" });
+                  selectPlan(p.id);
                 }}
               >
                 {active ? "Selected" : `Select ${p.name}`}
@@ -422,7 +428,7 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
               <div className="flex items-center justify-between text-xs text-[var(--color-ink-soft)]">
                 <span>
                   Then ₹{balanceDueInr.toLocaleString("en-IN")} by{" "}
-                  {balanceDueDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  {balanceDueDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
                 </span>
               </div>
             )}

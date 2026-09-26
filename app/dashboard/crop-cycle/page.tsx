@@ -105,7 +105,7 @@ export default async function FarmActivityPage() {
                     <p className="font-medium">{stage}</p>
                     {stageDates[i] && (
                       <p className="text-xs text-[var(--color-ink-soft)]">
-                        ~{stageDates[i]!.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        ~{stageDates[i]!.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
                       </p>
                     )}
                   </div>
@@ -124,13 +124,13 @@ export default async function FarmActivityPage() {
             <div className="flex justify-between">
               <dt className="text-[var(--color-ink-soft)]">Sowing date</dt>
               <dd className="font-medium">
-                {season?.sowing_date ? new Date(season.sowing_date).toLocaleDateString("en-IN") : "—"}
+                {season?.sowing_date ? new Date(season.sowing_date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-[var(--color-ink-soft)]">Expected harvest</dt>
               <dd className="font-medium">
-                {season?.estimated_harvest ? new Date(season.estimated_harvest).toLocaleDateString("en-IN") : "—"}
+                {season?.estimated_harvest ? new Date(season.estimated_harvest).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
               </dd>
             </div>
             <div className="flex justify-between">
@@ -177,7 +177,7 @@ export default async function FarmActivityPage() {
                 {weather.daily.map((d) => (
                   <div key={d.date} className="flex flex-col items-center gap-1 text-center">
                     <span className="text-[10px] text-[var(--color-ink-soft)]">
-                      {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}
+                      {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" })}
                     </span>
                     <WeatherIcon code={d.weatherCode} className="h-4 w-4 text-[var(--color-brown)]" />
                     <span className="text-[10px] font-medium">
@@ -250,7 +250,7 @@ export default async function FarmActivityPage() {
       {updates.map((u) => (
         <Card key={u.id} className="p-5">
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-            {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
           </p>
           <p className="mt-1 font-display text-lg">{u.title}</p>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{u.description}</p>

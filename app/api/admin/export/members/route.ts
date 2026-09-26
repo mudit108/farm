@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { NextResponse } from "next/server";
 import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -16,7 +17,7 @@ export async function GET() {
 
   const admin = createServiceClient();
   const [{ data: usersData }, { data: plots }, { data: prefs }, { data: payments }] = await Promise.all([
-    admin.auth.admin.listUsers(),
+    listAllUsers(admin),
     admin
       .from("khet_club_plots")
       .select("plot_number, user_id, plan_id, phone, city, address, pincode")

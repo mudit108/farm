@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 const fmtDate = (d: string | null, fallback: string) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : fallback;
+  d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : fallback;
 
 export default async function TheFarmPage() {
   const [season, counts, updates] = await Promise.all([getSeason(), getPlotCounts(), getFarmUpdates(5)]);

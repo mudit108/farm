@@ -142,13 +142,13 @@ export function FarmTransparency({
               <div>
                 <p className="font-mono-data text-xs uppercase tracking-wide text-white/50">Sowing</p>
                 <p className="mt-1 font-display text-xl">
-                  {season?.sowing_date ? new Date(season.sowing_date).toLocaleDateString("en-IN") : "Near Diwali"}
+                  {season?.sowing_date ? new Date(season.sowing_date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Near Diwali"}
                 </p>
               </div>
               <div>
                 <p className="font-mono-data text-xs uppercase tracking-wide text-white/50">Est. Harvest</p>
                 <p className="mt-1 font-display text-xl">
-                  {season?.estimated_harvest ? new Date(season.estimated_harvest).toLocaleDateString("en-IN") : "Spring"}
+                  {season?.estimated_harvest ? new Date(season.estimated_harvest).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Spring"}
                 </p>
               </div>
             </div>

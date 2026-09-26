@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { NextResponse } from "next/server";
 import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -25,7 +26,7 @@ export async function GET() {
   const admin = createServiceClient();
   const [{ data: payments }, { data: usersData }] = await Promise.all([
     admin.from("khet_club_payments").select("*").order("created_at", { ascending: false }),
-    admin.auth.admin.listUsers(),
+    listAllUsers(admin),
   ]);
 
   const usersById = new Map((usersData?.users ?? []).map((u) => [u.id, u]));
@@ -38,7 +39,7 @@ export async function GET() {
       email: memberUser?.email || "",
       plan: planLabel(p.plan_id),
       amount_inr: p.amount / 100,
-      feeding_families_inr: p.status === "paid" ? planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT : 0,
+      feeding_families_inr: p.status === "paid" && p.payment_kind !== "balance" ? planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT : 0,
       status: p.status,
       razorpay_order_id: p.razorpay_order_id,
       razorpay_payment_id: p.razorpay_payment_id ?? "",

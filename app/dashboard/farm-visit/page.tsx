@@ -54,7 +54,7 @@ export default async function HelpPage() {
                   <div key={v.id} className="flex items-center justify-between border-b border-[var(--color-ink)]/10 pb-3 text-sm last:border-0 last:pb-0">
                     <div>
                       <p className="font-medium">
-                        {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
                       </p>
                       <p className="text-xs text-[var(--color-ink-soft)]">{v.visitors} visitor{v.visitors > 1 ? "s" : ""}</p>
                     </div>

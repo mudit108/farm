@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendAdminDigestEmail } from "@/lib/email";
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
 
   const [{ data: usersData }, { data: payments }, { count: pendingVisits }, { count: openSupport }, { count: newContact }] =
     await Promise.all([
-      supabase.auth.admin.listUsers(),
+      listAllUsers(supabase),
       supabase
         .from("khet_club_payments")
         .select("user_id, plan_id, amount, status, created_at")

@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, Badge } from "@/components/ui/card";
@@ -18,7 +19,7 @@ export default async function AdminOverview() {
     { data: paidPayments },
   ] = await Promise.all([
     supabase.from("khet_club_plots").select("status, user_id"),
-    supabase.auth.admin.listUsers(),
+    listAllUsers(supabase),
     supabase.from("khet_club_cameras").select("id", { count: "exact", head: true }).eq("status", "online"),
     supabase.from("khet_club_farm_visits").select("id", { count: "exact", head: true }).eq("status", "requested"),
     supabase
@@ -27,7 +28,9 @@ export default async function AdminOverview() {
       .eq("status", "requested")
       .order("created_at", { ascending: false })
       .limit(3),
-    supabase.from("khet_club_payments").select("plan_id").eq("status", "paid"),
+    // A 50/50 balance payment is the same purchase as its deposit, so it must
+    // not be counted again toward the Feeding Families Fund.
+    supabase.from("khet_club_payments").select("plan_id").eq("status", "paid").neq("payment_kind", "balance").is("archived_season_id", null),
   ]);
 
   const totalPlots = plots?.length ?? 0;
@@ -101,7 +104,7 @@ export default async function AdminOverview() {
                   <Badge tone="gold">Pending</Badge>
                 </div>
                 <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-                  Requested for {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} · {v.visitors} visitor{v.visitors > 1 ? "s" : ""}
+                  Requested for {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })} · {v.visitors} visitor{v.visitors > 1 ? "s" : ""}
                 </p>
               </Card>
             );

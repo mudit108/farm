@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import Link from "next/link";
 import { ActionForm } from "@/components/admin/action-form";
 import { Download } from "lucide-react";
@@ -30,6 +31,7 @@ type Payment = {
   status: "created" | "paid" | "failed" | "refunded";
   created_at: string;
   discount_inr: number;
+  payment_kind: "full" | "deposit" | "balance";
 };
 type Expense = {
   id: string;
@@ -81,9 +83,11 @@ export default async function AdminFinancePage({
 
   const [{ data: allPayments }, { data: usersData }, { data: allExpenses }, { data: seasonData }, { data: installmentData }] =
     await Promise.all([
-      supabase.from("khet_club_payments").select("*").order("created_at", { ascending: false }),
-      supabase.auth.admin.listUsers(),
-      supabase.from("khet_club_expenses").select("*").order("expense_date", { ascending: false }),
+      // Current season only — closing a season stamps its payments/expenses
+      // with archived_season_id, so totals here never mix seasons.
+      supabase.from("khet_club_payments").select("*").is("archived_season_id", null).order("created_at", { ascending: false }),
+      listAllUsers(supabase),
+      supabase.from("khet_club_expenses").select("*").is("archived_season_id", null).order("expense_date", { ascending: false }),
       supabase.rpc("khet_club_get_season"),
       // Oldest-due first, so the most overdue balance surfaces at the
       // top rather than getting lost under recent ones — the whole
@@ -119,25 +123,28 @@ export default async function AdminFinancePage({
   const refunded = payments.filter((p) => p.status === "refunded");
 
   const totalRevenue = paid.reduce((sum, p) => sum + p.amount, 0);
-  const refundedTotal = refunded.reduce((sum, p) => sum + p.amount, 0);
-  const netRevenue = totalRevenue - refundedTotal;
-  const feedingFamiliesFund = paid.reduce((sum, p) => sum + planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT, 0);
+  // Refunded payments are already status "refunded", not "paid", so they're
+  // already excluded from totalRevenue — subtracting them again would
+  // under-report income.
+  const netRevenue = totalRevenue;
+  // One purchase = one order. A 50/50 balance payment belongs to the same
+  // purchase as its deposit, so it's excluded from order counts and the
+  // Feeding Families Fund (otherwise both would be double-counted).
+  const orders = paid.filter((p) => p.payment_kind !== "balance");
+  const feedingFamiliesFund = orders.reduce((sum, p) => sum + planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT, 0);
 
   const now = new Date();
+  // "This month" in India time, not the server's UTC clock.
+  const thisMonth = todayInIndia().slice(0, 7);
+  const monthOf = (iso: string) => todayInIndia(new Date(iso)).slice(0, 7);
   const thisMonthRevenue = paid
-    .filter((p) => {
-      const d = new Date(p.created_at);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
+    .filter((p) => monthOf(p.created_at) === thisMonth)
     .reduce((sum, p) => sum + p.amount, 0);
-  const avgOrderValue = paid.length > 0 ? Math.round(totalRevenue / paid.length) : 0;
+  const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount_inr, 0) * 100; // normalize to paise for comparison
   const thisMonthExpenses = expenses
-    .filter((e) => {
-      const d = new Date(e.expense_date);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
+    .filter((e) => e.expense_date.slice(0, 7) === thisMonth)
     .reduce((sum, e) => sum + e.amount_inr, 0);
 
   const netPosition = (netRevenue - totalExpenses) / 100;
@@ -394,7 +401,7 @@ export default async function AdminFinancePage({
                         ₹{ip.balance_due_inr.toLocaleString("en-IN")}
                       </td>
                       <td className={`px-2 py-2.5 text-xs ${overdue ? "font-medium text-[var(--color-live)]" : "text-[var(--color-ink-soft)]"}`}>
-                        {due.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        {due.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
                         {overdue ? ` — ${Math.abs(daysLeft)}d overdue` : ` — ${daysLeft}d left`}
                         {(() => {
                           // Same late rule the member sees (lib/demo-data.ts).
@@ -502,7 +509,7 @@ export default async function AdminFinancePage({
                 return (
                   <tr key={p.id}>
                     <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">
-                      {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
                     </td>
                     <td className="px-4 py-2.5">
                       <p className="font-medium">{name}</p>
@@ -511,7 +518,7 @@ export default async function AdminFinancePage({
                     <td className="px-4 py-2.5">{planLabel(p.plan_id)}</td>
                     <td className="px-4 py-2.5 font-mono-data font-medium">₹{(p.amount / 100).toLocaleString("en-IN")}</td>
                     <td className="px-4 py-2.5 text-xs text-[var(--color-brown)]">
-                      {p.status === "paid" ? `₹${(planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}` : "—"}
+                      {p.status === "paid" && p.payment_kind !== "balance" ? `₹${(planPlots(p.plan_id) * FEEDING_FAMILIES_PER_PLOT).toLocaleString("en-IN")}` : "—"}
                     </td>
                     <td className="px-4 py-2.5"><Badge tone={statusTone(p.status)}>{p.status}</Badge></td>
                     <td className="px-4 py-2.5 font-mono-data text-xs text-[var(--color-ink-soft)]">{p.razorpay_order_id}</td>
@@ -623,7 +630,7 @@ export default async function AdminFinancePage({
               {filteredExpenses.map((e) => (
                 <tr key={e.id}>
                   <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">
-                    {new Date(e.expense_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    {new Date(e.expense_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
                   </td>
                   <td className="px-4 py-2.5"><Badge tone="brown">{categoryLabel(e.category)}</Badge></td>
                   <td className="px-4 py-2.5">{e.description}</td>

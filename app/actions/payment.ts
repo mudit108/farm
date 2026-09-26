@@ -128,7 +128,7 @@ export async function createPlanOrder(
   if (season?.registration_deadline && new Date() > new Date(`${season.registration_deadline}T23:59:59`)) {
     return {
       status: "error",
-      message: `Registration closed on ${new Date(season.registration_deadline).toLocaleDateString("en-IN")}.`,
+      message: `Registration closed on ${new Date(season.registration_deadline).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}.`,
     };
   }
 
@@ -421,7 +421,7 @@ export async function verifyPaymentAndClaim(input: {
             feedingFamiliesInr,
             razorpayOrderId: payment.razorpay_order_id,
             razorpayPaymentId: input.paymentId,
-            issuedDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
+            issuedDate: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }),
           });
 
           const emailResult = await sendReceiptEmail({

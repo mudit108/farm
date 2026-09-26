@@ -48,7 +48,7 @@ export default async function MyFarmPage() {
   const season = (seasonRow as { season_label: string; sowing_date: string | null }[] | null)?.[0];
   const seasonLabel = season?.season_label ?? "Current Season";
   const sowingLabel = season?.sowing_date
-    ? new Date(season.sowing_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(season.sowing_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })
     : "Near Diwali";
 
   let myPlots: MyPlot[] = [];
@@ -185,7 +185,7 @@ export default async function MyFarmPage() {
             <div className="flex justify-between">
               <dt className="text-[var(--color-ink-soft)]">First assigned</dt>
               <dd className="font-medium">
-                {myPlots[0].assigned_at ? new Date(myPlots[0].assigned_at).toLocaleDateString("en-IN") : "—"}
+                {myPlots[0].assigned_at ? new Date(myPlots[0].assigned_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
               </dd>
             </div>
           </dl>
@@ -314,7 +314,7 @@ export default async function MyFarmPage() {
                       <div>
                         <p className="font-medium">{pmtPlan ? `${pmtPlan.name} (${pmtPlan.label})` : pmt.plan_id}</p>
                         <p className="text-xs text-[var(--color-ink-soft)]">
-                          {new Date(pmt.created_at).toLocaleDateString("en-IN")} · ₹
+                          {new Date(pmt.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })} · ₹
                           {(pmt.amount / 100).toLocaleString("en-IN")}
                         </p>
                         {receipt && (
@@ -362,7 +362,7 @@ export default async function MyFarmPage() {
                   <div className="mt-4 divide-y divide-[var(--color-ink)]/10">
                     {deliveries.map((d) => (
                       <div key={d.id} className="grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 py-2 text-sm">
-                        <span>{new Date(d.delivered_at).toLocaleDateString("en-IN")}</span>
+                        <span>{new Date(d.delivered_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</span>
                         <span className="order-last col-span-3 text-xs text-[var(--color-ink-soft)] empty:hidden sm:order-none sm:col-span-1 sm:text-sm">{d.notes ?? ""}</span>
                         <span className="whitespace-nowrap text-right font-mono-data font-medium">{d.kg_delivered} kg</span>
                       </div>

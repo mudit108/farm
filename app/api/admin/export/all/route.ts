@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
 import { createSessionClient } from "@/lib/supabase/session";
@@ -52,7 +53,7 @@ export async function GET() {
     { data: expenses },
     { data: redemptions },
   ] = await Promise.all([
-    admin.auth.admin.listUsers(),
+    listAllUsers(admin),
     admin.from("khet_club_plots").select("*").order("plot_number"),
     admin.from("khet_club_payments").select("*").order("created_at", { ascending: false }),
     admin.from("khet_club_receipts").select("*").order("issued_at", { ascending: false }),

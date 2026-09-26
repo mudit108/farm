@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { Card, Badge } from "@/components/ui/card";
@@ -24,7 +25,7 @@ export default async function VisitsPage() {
       .from("khet_club_farm_visits")
       .select("id, user_id, preferred_date, visitors, phone, notes, status")
       .order("created_at", { ascending: false }),
-    supabase.auth.admin.listUsers(),
+    listAllUsers(supabase),
   ]);
 
   const visits = (visitsData ?? []) as Visit[];
@@ -47,7 +48,7 @@ export default async function VisitsPage() {
                   {(user?.user_metadata?.full_name as string) || user?.email || "Unknown"}
                 </p>
                 <p className="text-sm text-[var(--color-ink-soft)]">
-                  {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} ·{" "}
+                  {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })} ·{" "}
                   {v.visitors} visitor{v.visitors > 1 ? "s" : ""}
                   {v.phone ? ` · ${v.phone}` : ""}
                 </p>

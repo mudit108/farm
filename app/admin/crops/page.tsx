@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { currentCrop, membershipPlans } from "@/lib/demo-data";
+import { currentCrop, membershipPlans, todayInIndia } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
 import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution, adminSetRegistrationsPaused } from "@/app/actions/admin-content";
 import { adminCreateDiscountCode, adminToggleDiscountCode } from "@/app/actions/admin-discounts";
@@ -175,6 +175,19 @@ export default async function CropsManagementPage() {
                       />
                     </label>
                   </div>
+                  {offerRow?.strike_price_inr && offerRow.offer_ends_at && (
+                    <p
+                      className={`mt-2 inline-block rounded px-2 py-0.5 text-[11px] font-medium ${
+                        offerRow.offer_ends_at >= todayInIndia()
+                          ? "bg-[var(--color-green-soft)] text-[var(--color-green-deep)]"
+                          : "bg-[var(--color-ink)]/5 text-[var(--color-ink-soft)]"
+                      }`}
+                    >
+                      {offerRow.offer_ends_at >= todayInIndia()
+                        ? `Offer live — showing until ${new Date(`${offerRow.offer_ends_at}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}`
+                        : "Offer expired — no longer shown on the site"}
+                    </p>
+                  )}
                   <p className="mt-1 text-[11px] text-[var(--color-ink-soft)]">
                     Leave the was-price blank to remove the offer. It only shows on the
                     site while today is on or before the date above — no need to come
@@ -242,7 +255,7 @@ export default async function CropsManagementPage() {
                       {" · "}
                       {c.times_used}
                       {c.max_uses ? `/${c.max_uses}` : ""} used
-                      {c.expires_at && ` · expires ${new Date(c.expires_at).toLocaleDateString("en-IN")}`}
+                      {c.expires_at && ` · expires ${new Date(c.expires_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`}
                       {c.note && ` · ${c.note}`}
                     </span>
                   </div>
@@ -452,7 +465,7 @@ export default async function CropsManagementPage() {
                     {s.fff_collected_inr > 0 && ` · ₹${s.fff_collected_inr.toLocaleString("en-IN")} to Feeding Families`}
                   </p>
                   <p className="text-xs text-[var(--color-ink-soft)]">
-                    Closed {new Date(s.closed_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    Closed {new Date(s.closed_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
                   </p>
                 </div>
               ))}

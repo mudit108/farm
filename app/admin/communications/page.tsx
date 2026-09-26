@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { Card, Badge } from "@/components/ui/card";
@@ -44,7 +45,7 @@ export default async function CommunicationsPage() {
 
   const [{ data: updatesData }, { data: usersData }, { data: plots }, { data: logData }, { data: contactData }, { data: supportData }] = await Promise.all([
     supabase.from("khet_club_updates").select("id, title, description, created_at").order("created_at", { ascending: false }),
-    supabase.auth.admin.listUsers(),
+    listAllUsers(supabase),
     supabase.from("khet_club_plots").select("user_id").eq("status", "filled").not("user_id", "is", null),
     supabase
       .from("khet_club_whatsapp_messages")
@@ -111,7 +112,7 @@ export default async function CommunicationsPage() {
               <div>
                 <p className="font-medium">{m.subject}</p>
                 <p className="text-xs text-[var(--color-ink-soft)]">
-                  {name} · {member?.email ?? "—"} · {new Date(m.created_at).toLocaleString("en-IN")}
+                  {name} · {member?.email ?? "—"} · {new Date(m.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
                 </p>
               </div>
               <Badge tone={m.status === "open" ? "gold" : "green"}>{m.status}</Badge>
@@ -147,7 +148,7 @@ export default async function CommunicationsPage() {
             <div>
               <p className="font-medium">{m.name}</p>
               <p className="text-xs text-[var(--color-ink-soft)]">
-                {m.phone} · {m.email} · {new Date(m.created_at).toLocaleString("en-IN")}
+                {m.phone} · {m.email} · {new Date(m.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
               </p>
             </div>
             <Badge tone={m.status === "new" ? "gold" : m.status === "replied" ? "green" : "brown"}>{m.status}</Badge>
@@ -194,7 +195,7 @@ export default async function CommunicationsPage() {
           <Card key={u.id} className="flex items-start justify-between gap-4 p-4">
             <div>
               <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-                {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
               </p>
               <p className="mt-1 font-medium">{u.title}</p>
               {u.description && <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{u.description}</p>}
@@ -312,7 +313,7 @@ export default async function CommunicationsPage() {
                         {row.status === "failed" && row.error_message ? row.error_message : row.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">{new Date(row.created_at).toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">{new Date(row.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</td>
                   </tr>
                 );
               })}

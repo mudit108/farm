@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/lib/supabase/list-all-users";
 import Link from "next/link";
 import { ActionForm } from "@/components/admin/action-form";
 import { Download } from "lucide-react";
@@ -81,7 +82,7 @@ function paymentSummaryText(
   if (!summary) return "—";
   const paid = `₹${summary.paidInr.toLocaleString("en-IN")} paid`;
   if (!summary.balanceDueInr) return paid;
-  const due = new Date(summary.balanceDueDate!).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+  const due = new Date(summary.balanceDueDate!).toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "Asia/Kolkata" });
   return `${paid} · ₹${summary.balanceDueInr.toLocaleString("en-IN")} due ${due}`;
 }
 
@@ -106,7 +107,7 @@ export default async function MembersPage({
     { data: paymentsData },
     { data: installmentData },
   ] = await Promise.all([
-    supabase.auth.admin.listUsers(),
+    listAllUsers(supabase),
     supabase
       .from("khet_club_plots")
       .select("plot_number, status, user_id, full_name, phone, email, city, address, pincode, plan_id, claim_batch_id, assigned_at, approved_at")
@@ -202,6 +203,8 @@ export default async function MembersPage({
       rows[0]?.email,
       rows[0]?.phone,
       rows[0]?.city,
+      rows[0]?.address,
+      rows[0]?.pincode,
       user?.email,
       user?.user_metadata?.full_name as string | undefined,
       ...rows.map((r) => String(r.plot_number)),
@@ -267,7 +270,7 @@ export default async function MembersPage({
         <input
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Search by name, email, phone, city, or plot number…"
+          placeholder="Search by name, email, phone, city, address, pincode or plot…"
           className="input max-w-md flex-1"
         />
         <Button type="submit" variant="outline">Search</Button>
@@ -277,6 +280,12 @@ export default async function MembersPage({
           </Link>
         )}
       </form>
+
+      {batches.size === 0 && (
+        <p className="mt-6 text-sm text-[var(--color-ink-soft)]">
+          No members yet. Once someone buys a plan (or you assign one above), they&apos;ll appear here.
+        </p>
+      )}
 
       {batches.size > 0 && (
         <div className="mt-6">
@@ -296,7 +305,7 @@ export default async function MembersPage({
               const pref = first.user_id ? prefsByUser.get(first.user_id) : undefined;
               const prefOption = pref ? harvestOptions.find((o) => o.id === pref.method) : null;
               const account = first.user_id ? usersById.get(first.user_id) : undefined;
-              const registeredAt = account?.created_at ? new Date(account.created_at).toLocaleDateString("en-IN") : null;
+              const registeredAt = account?.created_at ? new Date(account.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : null;
               const payment = first.user_id ? paymentSummaryByUser.get(first.user_id) : undefined;
               return (
                 <Card key={batchId} className="p-4">
@@ -313,7 +322,7 @@ export default async function MembersPage({
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-soft)]">
                     <span>{first.phone ?? "—"}</span>
                     <span>{first.city ?? "—"}</span>
-                    <span title="Plot assigned">{first.assigned_at ? new Date(first.assigned_at).toLocaleDateString("en-IN") : "—"}</span>
+                    <span title="Plot assigned">{first.assigned_at ? new Date(first.assigned_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}</span>
                   </div>
                   {(first.address || first.pincode) && (
                     <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
@@ -344,6 +353,10 @@ export default async function MembersPage({
                       <input name="address" placeholder="Address" defaultValue={first.address ?? ""} className="input sm:col-span-2" />
                       <input name="pincode" placeholder="Pincode" defaultValue={first.pincode ?? ""} className="input" />
                       <Button type="submit" size="sm" variant="outline">Save</Button>
+                      <p className="text-[11px] text-[var(--color-ink-soft)] sm:col-span-2">
+                        Also updates the member&apos;s account, so certificates and WhatsApp use the new name and phone.
+                        Their login email stays the same.
+                      </p>
                     </ActionForm>
                   </details>
 
@@ -361,9 +374,18 @@ export default async function MembersPage({
                         <button className="text-xs font-medium text-[var(--color-brown)] hover:underline">Resend</button>
                       </ActionForm>
                     </div>
+                  ) : !first.user_id ? (
+                    <p className="mt-3 border-t border-[var(--color-ink)]/10 pt-3 text-xs text-[var(--color-ink-soft)]">
+                      Offline reservation — no member account, so no certificate is issued.
+                    </p>
                   ) : (
-                    <ActionForm action={adminApproveBatch} successMessage="Approved — certificate issued and sent." className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
+                    <ActionForm action={adminApproveBatch} className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
                       <input type="hidden" name="claimBatchId" value={batchId} />
+                      {payment?.balanceDueInr ? (
+                        <p className="mb-2 text-xs text-[var(--color-brown)]">
+                          Heads up: ₹{payment.balanceDueInr.toLocaleString("en-IN")} balance still unpaid.
+                        </p>
+                      ) : null}
                       <Button type="submit" size="sm" className="w-full">Approve & Issue Certificate</Button>
                     </ActionForm>
                   )}
@@ -439,7 +461,7 @@ export default async function MembersPage({
                       {[holdingFirst?.address, holdingFirst?.pincode].filter(Boolean).join(" · ") || "—"}
                     </td>
                     <td className="px-5 py-3 text-xs text-[var(--color-ink-soft)]">
-                      {new Date(u.created_at).toLocaleDateString("en-IN")}
+                      {new Date(u.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
                     </td>
                     <td className="px-5 py-3">
                       <Badge tone={u.email_confirmed_at ? "green" : "brown"}>
@@ -544,7 +566,7 @@ export default async function MembersPage({
                     {[p.address, p.pincode].filter(Boolean).join(" · ") || "—"}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">
-                    {p.assigned_at ? new Date(p.assigned_at).toLocaleDateString("en-IN") : "—"}
+                    {p.assigned_at ? new Date(p.assigned_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     {p.status === "filled" ? (
@@ -699,7 +721,7 @@ export default async function MembersPage({
                 return (
                   <tr key={d.id} className={isVoided ? "opacity-55" : ""}>
                     <td className="px-4 py-2.5">{(user?.user_metadata?.full_name as string) || user?.email || "—"}</td>
-                    <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">{new Date(d.delivered_at).toLocaleDateString("en-IN")}</td>
+                    <td className="px-4 py-2.5 text-xs text-[var(--color-ink-soft)]">{new Date(d.delivered_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</td>
                     <td className={`px-4 py-2.5 font-mono-data ${isVoided ? "line-through" : ""}`}>{d.kg_delivered} kg</td>
                     <td className="px-4 py-2.5 text-[var(--color-ink-soft)]">
                       {isVoided ? (

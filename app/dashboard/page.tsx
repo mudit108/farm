@@ -103,7 +103,7 @@ export default async function DashboardOverview() {
                 <Stat label="Status" value={myPlots[0].status} />
                 <Stat
                   label="Assigned"
-                  value={myPlots[0].assigned_at ? new Date(myPlots[0].assigned_at).toLocaleDateString("en-IN") : "—"}
+                  value={myPlots[0].assigned_at ? new Date(myPlots[0].assigned_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
                 />
               </div>
 
@@ -175,7 +175,7 @@ export default async function DashboardOverview() {
             </div>
             <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
               {season?.estimated_harvest
-                ? `Harvest expected ${new Date(season.estimated_harvest).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}`
+                ? `Harvest expected ${new Date(season.estimated_harvest).toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}`
                 : "Harvest date to be confirmed"}
             </p>
           </Card>
@@ -243,7 +243,7 @@ export default async function DashboardOverview() {
         {latestUpdate ? (
           <Card className="mt-3 p-5">
             <p className="text-xs text-[var(--color-ink-soft)]">
-              {new Date(latestUpdate.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+              {new Date(latestUpdate.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
             </p>
             <p className="mt-1 font-medium">{latestUpdate.title}</p>
             <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{latestUpdate.description}</p>

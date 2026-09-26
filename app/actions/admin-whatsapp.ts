@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { broadcastWhatsAppToCurrentMembers } from "@/lib/whatsapp/broadcast";
+import { ok, fail, type ActionResult } from "@/lib/action-result";
 
-export async function adminSendWhatsAppIndividual(formData: FormData): Promise<void> {
+export async function adminSendWhatsAppIndividual(formData: FormData): Promise<ActionResult> {
   const userId = String(formData.get("userId") || "");
   const message = String(formData.get("message") || "").trim();
-  if (!userId || !message) return;
+  if (!userId) return fail("Choose a member first.");
+  if (!message) return fail("Type a message first.");
 
   const admin = createServiceClient();
   const { data: userRes } = await admin.auth.admin.getUserById(userId);
@@ -24,7 +26,7 @@ export async function adminSendWhatsAppIndividual(formData: FormData): Promise<v
       error_message: "no_phone_on_file",
     });
     revalidatePath("/admin/communications");
-    return;
+    return fail("This member has no phone number on file, so nothing was sent.");
   }
 
   const result = await sendWhatsAppMessage(phone, message);
@@ -39,13 +41,20 @@ export async function adminSendWhatsAppIndividual(formData: FormData): Promise<v
   });
 
   revalidatePath("/admin/communications");
+  return result.success ? ok("WhatsApp message sent.") : fail(`WhatsApp didn't send: ${result.error ?? "unknown error"}.`);
 }
 
-export async function adminBroadcastWhatsApp(formData: FormData): Promise<void> {
+export async function adminBroadcastWhatsApp(formData: FormData): Promise<ActionResult> {
   const message = String(formData.get("message") || "").trim();
-  if (!message) return;
+  if (!message) return fail("Type a message first.");
 
-  await broadcastWhatsAppToCurrentMembers(message, "broadcast");
+  const summary = await broadcastWhatsAppToCurrentMembers(message, "broadcast");
 
   revalidatePath("/admin/communications");
+  if (summary.sent === 0 && summary.failed > 0) {
+    return fail(`Broadcast failed for all ${summary.failed} members — check WhatsApp setup.`);
+  }
+  return ok(
+    `Sent to ${summary.sent} member${summary.sent === 1 ? "" : "s"}${summary.failed > 0 ? `, ${summary.failed} failed` : ""}.`
+  );
 }

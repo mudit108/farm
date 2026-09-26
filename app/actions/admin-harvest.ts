@@ -1,17 +1,19 @@
 "use server";
 
+import { ok, fail, type ActionResult } from "@/lib/action-result";
+
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createSessionClient } from "@/lib/supabase/session";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 
-export async function adminSetHarvestTotal(formData: FormData): Promise<void> {
+export async function adminSetHarvestTotal(formData: FormData): Promise<ActionResult> {
   const userId = String(formData.get("userId") || "");
   const totalKgRaw = String(formData.get("totalKg") || "").trim();
-  if (!userId) return;
+  if (!userId) return fail("Enter a total in kg.");
 
   const totalKg = totalKgRaw ? Math.round(Number(totalKgRaw)) : null;
-  if (totalKgRaw && (!Number.isFinite(totalKg) || (totalKg ?? 0) <= 0)) return;
+  if (totalKgRaw && (!Number.isFinite(totalKg) || (totalKg ?? 0) <= 0)) return fail("Enter a total in kg.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -21,21 +23,22 @@ export async function adminSetHarvestTotal(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminSetHarvestTotal failed:", error);
-    return;
+    return fail("Couldn't save the total.");
   }
 
   revalidatePath("/admin/members");
   revalidatePath("/dashboard/my-farm");
+  return ok("Harvest total saved.");
 }
 
-export async function adminRecordDelivery(formData: FormData): Promise<void> {
+export async function adminRecordDelivery(formData: FormData): Promise<ActionResult> {
   const userId = String(formData.get("userId") || "");
   const kgRaw = String(formData.get("kgDelivered") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
   const deliveredAt = String(formData.get("deliveredAt") || "") || undefined;
 
   const kgDelivered = Math.round(Number(kgRaw));
-  if (!userId || !Number.isFinite(kgDelivered) || kgDelivered <= 0) return;
+  if (!userId || !Number.isFinite(kgDelivered) || kgDelivered <= 0) return fail("Enter the kg delivered.");
 
   const supabase = createServiceClient();
 
@@ -48,7 +51,7 @@ export async function adminRecordDelivery(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminRecordDelivery failed:", error);
-    return;
+    return fail("Couldn't record the delivery.");
   }
 
   revalidatePath("/admin/members");
@@ -81,6 +84,7 @@ export async function adminRecordDelivery(formData: FormData): Promise<void> {
       error_message: result.success ? null : result.error,
     });
   }
+  return ok("Delivery recorded.");
 }
 
 /**
@@ -93,14 +97,14 @@ export async function adminRecordDelivery(formData: FormData): Promise<void> {
  * can be restored with a single update. Requires a reason, so the log
  * explains itself months later.
  */
-export async function adminVoidDelivery(formData: FormData): Promise<void> {
+export async function adminVoidDelivery(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
   const reason = String(formData.get("voidReason") || "").trim();
-  if (!id) return;
+  if (!id) return fail("Enter a reason for voiding.");
 
   if (!reason) {
     console.warn("adminVoidDelivery blocked: a reason is required.");
-    return;
+    return fail("Enter a reason for voiding.");
   }
 
   const session = await createSessionClient();
@@ -121,17 +125,18 @@ export async function adminVoidDelivery(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminVoidDelivery failed:", error);
-    return;
+    return fail("Couldn't void the delivery.");
   }
 
   revalidatePath("/admin/members");
   revalidatePath("/dashboard/my-farm");
+  return ok("Delivery voided.");
 }
 
 /** Undoes a void — the reason it's worth keeping the row at all. */
-export async function adminRestoreDelivery(formData: FormData): Promise<void> {
+export async function adminRestoreDelivery(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return fail("Missing delivery reference.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -141,11 +146,12 @@ export async function adminRestoreDelivery(formData: FormData): Promise<void> {
 
   if (error) {
     console.error("adminRestoreDelivery failed:", error);
-    return;
+    return fail("Couldn't restore the delivery.");
   }
 
   revalidatePath("/admin/members");
   revalidatePath("/dashboard/my-farm");
+  return ok("Delivery restored.");
 }
 
 /**
@@ -155,15 +161,15 @@ export async function adminRestoreDelivery(formData: FormData): Promise<void> {
  * as service_role; the admin's own id (from their session) is recorded
  * as the reviewer.
  */
-export async function adminApproveHarvestChange(formData: FormData): Promise<void> {
+export async function adminApproveHarvestChange(formData: FormData): Promise<ActionResult> {
   const requestId = String(formData.get("requestId") || "");
-  if (!requestId) return;
+  if (!requestId) return fail("Request not found or already handled.");
 
   const sessionSupabase = await createSessionClient();
   const {
     data: { user: admin },
   } = await sessionSupabase.auth.getUser();
-  if (!admin) return;
+  if (!admin) return fail("Request not found or already handled.");
 
   const supabase = createServiceClient();
 
@@ -173,7 +179,7 @@ export async function adminApproveHarvestChange(formData: FormData): Promise<voi
     .eq("id", requestId)
     .maybeSingle();
 
-  if (!req || req.status !== "pending") return;
+  if (!req || req.status !== "pending") return fail("Request not found or already handled.");
 
   const { error: updateError } = await supabase
     .from("khet_club_harvest_preferences")
@@ -186,7 +192,7 @@ export async function adminApproveHarvestChange(formData: FormData): Promise<voi
 
   if (updateError) {
     console.error("adminApproveHarvestChange: preference update failed:", updateError);
-    return;
+    return fail("Couldn't approve the change.");
   }
 
   await supabase
@@ -196,17 +202,18 @@ export async function adminApproveHarvestChange(formData: FormData): Promise<voi
 
   revalidatePath("/admin/members");
   revalidatePath("/dashboard/my-farm");
+  return ok("Change approved and applied.");
 }
 
-export async function adminRejectHarvestChange(formData: FormData): Promise<void> {
+export async function adminRejectHarvestChange(formData: FormData): Promise<ActionResult> {
   const requestId = String(formData.get("requestId") || "");
-  if (!requestId) return;
+  if (!requestId) return fail("Request not found or already handled.");
 
   const sessionSupabase = await createSessionClient();
   const {
     data: { user: admin },
   } = await sessionSupabase.auth.getUser();
-  if (!admin) return;
+  if (!admin) return fail("Request not found or already handled.");
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -217,9 +224,10 @@ export async function adminRejectHarvestChange(formData: FormData): Promise<void
 
   if (error) {
     console.error("adminRejectHarvestChange failed:", error);
-    return;
+    return fail("Couldn't reject the request.");
   }
 
   revalidatePath("/admin/members");
   revalidatePath("/dashboard/my-farm");
+  return ok("Change request rejected.");
 }

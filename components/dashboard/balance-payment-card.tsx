@@ -120,7 +120,7 @@ export function BalancePaymentCard({
 
   const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
   const fmt = (d: string) =>
-    new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+    new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
   const { stage, daysLeft, releaseDate } = status;
   const fee = stage === "late" ? lateFeeInr : 0;
   const total = plan.balance_due_inr + fee;

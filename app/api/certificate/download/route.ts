@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     plotNumbers: cert.plot_numbers,
     areaSqFt: cert.area_sq_ft,
     season: "Wheat Season 2026–27",
-    issuedDate: new Date(cert.issued_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
+    issuedDate: new Date(cert.issued_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }),
   });
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
