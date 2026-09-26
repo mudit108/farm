@@ -225,7 +225,7 @@ export default async function MyFarmPage() {
                         (mine
                           ? "bg-[var(--color-gold)] text-[var(--color-ink)] ring-1 ring-[var(--color-brown)]"
                           : p.status === "filled"
-                          ? "bg-[var(--color-green)]/25 text-[var(--color-ink-soft)]"
+                          ? "bg-[var(--color-green)]/45 text-[var(--color-ink-soft)]"
                           : "bg-[var(--color-ink)]/5 text-[var(--color-ink-soft)]")
                       }
                     >
@@ -236,7 +236,7 @@ export default async function MyFarmPage() {
               </div>
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--color-ink-soft)]">
                 <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-gold)]" />Yours</span>
-                <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-green)]/25" />Other members</span>
+                <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-green)]/45" />Other members</span>
                 <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[var(--color-ink)]/10" />Available</span>
               </p>
             </div>

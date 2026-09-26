@@ -84,6 +84,7 @@ export default async function AdminFinancePage({
   const supabase = createServiceClient();
 
   const [
+    { data: plotOwners },
     { data: allPayments },
     { data: usersData },
     { data: allExpenses },
@@ -92,6 +93,7 @@ export default async function AdminFinancePage({
     { data: receiptsData },
   ] =
     await Promise.all([
+      supabase.from("khet_club_plots").select("user_id").not("user_id", "is", null),
       // Current season only — closing a season stamps its payments/expenses
       // with archived_season_id, so totals here never mix seasons.
       supabase.from("khet_club_payments").select("*").is("archived_season_id", null).order("created_at", { ascending: false }),
@@ -110,6 +112,7 @@ export default async function AdminFinancePage({
     ]);
 
   const payments = (allPayments ?? []) as Payment[];
+  const usersWithPlots = new Set(((plotOwners ?? []) as { user_id: string }[]).map((r) => r.user_id));
   const receiptByPayment = new Map(
     ((receiptsData ?? []) as { payment_id: string; receipt_number: string }[]).map((r) => [r.payment_id, r.receipt_number])
   );
@@ -367,11 +370,12 @@ export default async function AdminFinancePage({
       {needsReview.length > 0 && (
         <Card className="mt-6 border-[var(--color-live)]/40 bg-[var(--color-live)]/5 p-5">
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-live)]">
-            Needs review — paid but no plots ({needsReview.length})
+            Needs review — payments not linked to any plots ({needsReview.length})
           </p>
           <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
-            These customers paid, but their plots couldn&apos;t be assigned and the automatic refund also failed. Refund them
-            from Razorpay (then mark refunded below), or assign plots by hand in Members.
+            These payments succeeded but no plots were assigned for them (e.g. the plot claim failed and the automatic refund
+            didn&apos;t go through, or a test payment). Check each one: refund it in Razorpay and mark it refunded below, or
+            assign plots by hand in Members.
           </p>
           <div className="mt-3 space-y-2 text-sm">
             {needsReview.map((p) => {
@@ -380,7 +384,11 @@ export default async function AdminFinancePage({
                 <div key={p.id} className="flex flex-wrap justify-between gap-2">
                   <span>
                     <span className="font-medium">{(u?.user_metadata?.full_name as string) || u?.email || "Unknown"}</span>{" "}
-                    <span className="text-[var(--color-ink-soft)]">· {u?.email ?? "—"} · {planLabel(p.plan_id)}</span>
+                    <span className="text-[var(--color-ink-soft)]">
+                      · {u?.email ?? "—"} · {planLabel(p.plan_id)} ·{" "}
+                      {new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
+                      {usersWithPlots.has(p.user_id) ? " · holds other plots" : " · holds no plots"}
+                    </span>
                   </span>
                   <span className="font-mono-data">₹{(p.amount / 100).toLocaleString("en-IN")} · {p.razorpay_payment_id ?? p.razorpay_order_id}</span>
                 </div>

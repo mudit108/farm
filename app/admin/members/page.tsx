@@ -361,7 +361,7 @@ export default async function MembersPage({
                     </p>
                   )}
 
-                  {first.user_id && !paidBatches.has(batchId) && (
+                  {first.user_id && !paidBatches.has(batchId) && !payment && (
                     <details className="mt-3 border-t border-[var(--color-ink)]/10 pt-3">
                       <summary className="cursor-pointer text-xs font-medium text-[var(--color-brown)] hover:text-[var(--color-green-deep)]">
                         No payment recorded — record an offline payment
