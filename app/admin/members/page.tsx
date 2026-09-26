@@ -109,6 +109,7 @@ export default async function MembersPage({
     { data: paymentsData },
     { data: installmentData },
     { data: clearLogData },
+    { data: memberDetailsData },
   ] = await Promise.all([
     listAllUsers(supabase),
     supabase
@@ -135,7 +136,21 @@ export default async function MembersPage({
       .select("id, plot_number, previous_full_name, previous_phone, previous_email, previous_plan_id, was_member_held, cleared_at")
       .order("cleared_at", { ascending: false })
       .limit(30),
+    supabase
+      .from("khet_club_member_details")
+      .select("user_id, delivery_time_pref, delivery_days_note, delivery_instructions, payout_upi, payout_account_name, payout_account_number, payout_ifsc"),
   ]);
+  type MemberDetailRow = {
+    user_id: string;
+    delivery_time_pref: string | null;
+    delivery_days_note: string | null;
+    delivery_instructions: string | null;
+    payout_upi: string | null;
+    payout_account_name: string | null;
+    payout_account_number: string | null;
+    payout_ifsc: string | null;
+  };
+  const detailsByUser = new Map(((memberDetailsData ?? []) as MemberDetailRow[]).map((d) => [d.user_id, d]));
   type ClearLog = {
     id: string;
     plot_number: number;
@@ -468,7 +483,45 @@ export default async function MembersPage({
           <Download className="h-3 w-3" /> Export CSV
         </a>
       </div>
-      <Card className="overflow-hidden p-0">
+
+      {/* Phones: one card per account instead of a wide table. */}
+      <div className="space-y-3 md:hidden">
+        {users.map((u) => {
+          const holding = plotsByUserId.get(u.id) ?? [];
+          const h = holding[0];
+          const plotNumbers = holding.map((r) => r.plot_number).sort((a, b) => a - b);
+          const phone = h?.phone || (u.user_metadata?.phone as string) || "";
+          return (
+            <Card key={u.id} className="p-4 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">{(u.user_metadata?.full_name as string) || h?.full_name || "—"}</p>
+                  <p className="text-xs text-[var(--color-ink-soft)]">{u.email}</p>
+                </div>
+                <Badge tone={u.email_confirmed_at ? "green" : "brown"}>{u.email_confirmed_at ? "confirmed" : "pending"}</Badge>
+              </div>
+              <div className="mt-2 space-y-0.5 text-xs text-[var(--color-ink-soft)]">
+                {phone && (
+                  <p>
+                    <a href={`tel:${phone}`} className="font-medium text-[var(--color-green-deep)]">{phone}</a>
+                    {" · "}
+                    <a href={`https://wa.me/91${phone.replace(/\D/g, "").slice(-10)}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[var(--color-green-deep)]">WhatsApp</a>
+                  </p>
+                )}
+                <p>{[h?.address, h?.city, h?.pincode].filter(Boolean).join(", ") || "No address yet"}</p>
+                <p>
+                  Registered {new Date(u.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
+                  {plotNumbers.length > 0 && ` · ${planLabel(h?.plan_id ?? null) ?? ""} · ${plotNumbers.map((n) => `#${n}`).join(", ")}`}
+                </p>
+                <p>{paymentSummaryByUser.has(u.id) ? paymentSummaryText(paymentSummaryByUser.get(u.id)) : "No payment yet"}</p>
+              </div>
+            </Card>
+          );
+        })}
+        {users.length === 0 && <p className="text-sm text-[var(--color-ink-soft)]">No customers yet.</p>}
+      </div>
+
+      <Card className="hidden overflow-hidden p-0 md:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
@@ -741,6 +794,33 @@ export default async function MembersPage({
               </div>
               <Badge tone={total ? "green" : "brown"}>{total ? `${total} kg total` : "Total not set"}</Badge>
             </div>
+            {(() => {
+              const d = detailsByUser.get(pref.user_id);
+              const plot = plotsByUserId.get(pref.user_id)?.[0];
+              if (pref.method === "sell-to-market") {
+                return (
+                  <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
+                    Payout:{" "}
+                    {d?.payout_upi || d?.payout_account_number
+                      ? [
+                          d.payout_upi && `UPI ${d.payout_upi}`,
+                          d.payout_account_number && `A/c ${d.payout_account_number} · ${d.payout_ifsc ?? ""} · ${d.payout_account_name ?? ""}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" | ")
+                      : <span className="text-[var(--color-brown)]">not given yet</span>}
+                  </p>
+                );
+              }
+              return (
+                <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
+                  Deliver to: {[plot?.address, plot?.city, plot?.pincode].filter(Boolean).join(", ") || <span className="text-[var(--color-brown)]">no address yet</span>}
+                  {d?.delivery_time_pref && d.delivery_time_pref !== "any" ? ` · ${d.delivery_time_pref}` : ""}
+                  {d?.delivery_days_note ? ` · ${d.delivery_days_note}` : ""}
+                  {d?.delivery_instructions ? ` · “${d.delivery_instructions}”` : ""}
+                </p>
+              );
+            })()}
 
             {total !== null && (
               <div className="mt-4">

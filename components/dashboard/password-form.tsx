@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { updatePassword, type PasswordState } from "@/app/actions/profile";
+import { Turnstile } from "@/components/ui/turnstile";
 
 const initialState: PasswordState = { status: "idle" };
 
@@ -12,6 +13,10 @@ export function PasswordForm() {
   return (
     <form action={formAction} className="space-y-4">
       <label className="block">
+        <span className="mb-1.5 block text-sm font-medium">Current password</span>
+        <input name="currentPassword" type="password" required autoComplete="current-password" className="input" />
+      </label>
+      <label className="block">
         <span className="mb-1.5 block text-sm font-medium">New password</span>
         <input name="newPassword" type="password" required autoComplete="new-password" className="input" />
       </label>
@@ -20,6 +25,7 @@ export function PasswordForm() {
         <input name="confirmPassword" type="password" required autoComplete="new-password" className="input" />
       </label>
 
+      <Turnstile key={state.status === "error" ? state.message : state.status} />
       {state.status === "error" && (
         <p className="text-sm text-[var(--color-live)]">{state.message}</p>
       )}

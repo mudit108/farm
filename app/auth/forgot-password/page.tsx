@@ -3,24 +3,33 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Turnstile } from "@/components/ui/turnstile";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !captchaToken) {
+      setError("Please complete the \"I'm human\" check first.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
+      captchaToken: captchaToken || undefined,
     });
     setLoading(false);
     if (error) {
       setError(error.message);
+      setCaptchaKey((k) => k + 1);
       return;
     }
     setSent(true);
@@ -48,6 +57,7 @@ export default function ForgotPasswordPage() {
           <span className="mb-1.5 block text-sm font-medium">Email</span>
           <input required type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
+        <Turnstile key={captchaKey} onToken={setCaptchaToken} />
         {error && <p className="text-sm text-[var(--color-live)]">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Sending…" : "Send Reset Link"}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Turnstile } from "@/components/ui/turnstile";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -13,22 +14,34 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !captchaToken) {
+      setError("Please complete the \"I'm human\" check first.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
 
     if (error) {
       setLoading(false);
       if (error.message.toLowerCase().includes("email not confirmed")) {
         setError("Please confirm your email before logging in — check your inbox for the link.");
+        setCaptchaKey((k) => k + 1);
       } else {
         setError("Incorrect email or password.");
+        setCaptchaKey((k) => k + 1);
       }
       return;
     }
@@ -67,6 +80,7 @@ function LoginForm() {
           />
         </label>
 
+        <Turnstile key={captchaKey} onToken={setCaptchaToken} />
         {error && <p className="text-sm text-[var(--color-live)]">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={loading}>

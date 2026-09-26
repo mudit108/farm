@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
 import { PaymentService } from "@/lib/payments/payment-service";
-import { sendPlotConfirmationEmail } from "@/lib/email";
+import { sendPlotConfirmationEmail, sendAdminAlertEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { issueReceiptForPayment } from "@/lib/payments/receipts";
+import { checkReferralCode, recordReferralReward } from "@/lib/payments/referrals";
 import {
   membershipPlans,
   installmentFeeInr,
@@ -80,8 +81,24 @@ export async function createPlanOrder(
   let priceInr = basePriceInr;
   let discountCodeId: string | null = null;
   let discountInr = 0;
+  let referrerUserId: string | null = null;
 
-  if (discountCode && discountCode.trim()) {
+  // The one code box accepts either a friend's referral code or an
+  // ordinary discount code. Referral codes are checked first.
+  const referral =
+    discountCode && discountCode.trim()
+      ? await checkReferralCode(createServiceClient(), { code: discountCode, userId: user.id, priceInr: basePriceInr })
+      : ({ kind: "not_referral" } as const);
+  if (referral.kind === "invalid") {
+    return { status: "error", message: referral.message };
+  }
+  if (referral.kind === "valid") {
+    priceInr = referral.finalInr;
+    discountInr = referral.discountInr;
+    referrerUserId = referral.referrerUserId;
+  }
+
+  if (referral.kind === "not_referral" && discountCode && discountCode.trim()) {
     const admin0 = createServiceClient();
     const { data: discountData, error: discountError } = await admin0.rpc("khet_club_validate_discount", {
       p_code: discountCode.trim(),
@@ -197,6 +214,8 @@ export async function createPlanOrder(
       start_plot: startPlot ?? null,
       discount_code_id: discountCodeId,
       discount_inr: discountInr,
+      referrer_user_id: referrerUserId,
+      referral_discount_inr: referrerUserId ? discountInr : 0,
       payment_kind: paymentMode === "installment" ? "deposit" : "full",
       installment_fee_inr: fee,
       balance_due_inr: balanceDueInr,
@@ -338,6 +357,16 @@ export async function verifyPaymentAndClaim(input: {
       await admin.from("khet_club_payments").update({ status: "refunded" }).eq("id", payment.id);
     } catch (refundErr) {
       console.error("Automatic refund also failed — needs manual review:", refundErr);
+      await sendAdminAlertEmail({
+        subject: "Customer paid but got no plots — refund failed",
+        lines: [
+          `Customer: ${user.email ?? user.id}`,
+          `Plan: ${payment.plan_id} · Amount: ₹${(payment.amount / 100).toLocaleString("en-IN")}`,
+          `Razorpay payment: ${input.paymentId}`,
+          `Why the plot claim failed: ${error.message}`,
+          "Refund them from the Razorpay dashboard (then Mark refunded in Finance), or assign plots by hand.",
+        ],
+      });
     }
     return { status: "error", message: claimErrorMessage(error) };
   }
@@ -378,6 +407,13 @@ export async function verifyPaymentAndClaim(input: {
       // this — but this must not fail silently, since it's the only
       // record that a balance is owed at all.
       console.error("Failed to create installment plan record after deposit:", planError);
+      await sendAdminAlertEmail({
+        subject: "50/50 deposit paid but balance record failed",
+        lines: [
+          `Customer: ${user.email ?? user.id} · Plan: ${payment.plan_id}`,
+          `Balance owed: ₹${(payment.balance_due_inr ?? 0).toLocaleString("en-IN")} — it won't appear in Finance's balance list until fixed.`,
+        ],
+      });
     }
   }
 
@@ -390,6 +426,7 @@ export async function verifyPaymentAndClaim(input: {
       email: user.email ?? null,
       fullName: (user.user_metadata?.full_name as string) || "Mera Khet Member",
     });
+    await recordReferralReward(admin, payment.id);
   }
 
   if (user.email) {
@@ -464,6 +501,20 @@ export async function previewDiscountCode(planId: string, code: string): Promise
   const admin = createServiceClient();
 
   const since = new Date(Date.now() - DISCOUNT_ATTEMPT_WINDOW_MINUTES * 60 * 1000).toISOString();
+  const referralPreview = async (): Promise<DiscountPreview | null> => {
+    const { data: priceRow } = await admin.from("khet_club_plan_prices").select("price_inr").eq("plan_id", planId).maybeSingle();
+    if (!priceRow) return null;
+    const referral = await checkReferralCode(admin, { code: trimmed, userId: user.id, priceInr: priceRow.price_inr });
+    if (referral.kind === "not_referral") return null;
+    if (referral.kind === "invalid") return { status: "invalid", message: referral.message };
+    return {
+      status: "valid",
+      originalInr: priceRow.price_inr,
+      discountInr: referral.discountInr,
+      finalInr: referral.finalInr,
+      code: trimmed.toUpperCase(),
+    };
+  };
   const { count } = await admin
     .from("khet_club_discount_attempts")
     .select("id", { count: "exact", head: true })
@@ -476,6 +527,16 @@ export async function previewDiscountCode(planId: string, code: string): Promise
       status: "invalid",
       message: "Too many code attempts. Please wait a while before trying again.",
     };
+  }
+
+  const referralResult = await referralPreview();
+  if (referralResult) {
+    await admin.from("khet_club_discount_attempts").insert({
+      user_id: user.id,
+      attempted_code: trimmed.toUpperCase().slice(0, 32),
+      succeeded: referralResult.status === "valid",
+    });
+    return referralResult;
   }
 
   const { data, error } = await admin.rpc("khet_club_validate_discount", {
@@ -700,6 +761,10 @@ export async function verifyBalancePayment(input: {
 
     if (settleError) {
       console.error("Failed to mark installment plan settled after paid balance:", settleError);
+      await sendAdminAlertEmail({
+        subject: "Balance paid but not marked settled",
+        lines: [`Customer: ${user.email ?? user.id}`, `Razorpay order: ${input.orderId}`, "Mark it paid in Finance so they don't get reminders."],
+      });
     }
   }
 

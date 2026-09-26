@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { HarvestPreference } from "@/components/dashboard/harvest-preference";
 import { BalancePaymentCard } from "@/components/dashboard/balance-payment-card";
+import { ReferralCard } from "@/components/dashboard/referral-card";
+import { MemberDetailsForm, type MemberDetails } from "@/components/dashboard/member-details-form";
 import { createSessionClient } from "@/lib/supabase/session";
 import { getMyInstallmentPlans } from "@/app/actions/payment";
 import {
@@ -65,6 +67,8 @@ export default async function MyFarmPage() {
   let receiptsByPayment = new Map<string, Receipt>();
   let confirmedTotalKg: number | null = null;
   let deliveries: Delivery[] = [];
+  let memberDetails: MemberDetails | null = null;
+  let harvestMethod: string | null = null;
   let farmGrid: { plot_number: number; status: "available" | "filled" }[] = [];
   let installmentPlans: Awaited<ReturnType<typeof getMyInstallmentPlans>> = [];
 
@@ -106,6 +110,16 @@ export default async function MyFarmPage() {
     // Own read, RLS-scoped — safe to call directly rather than fold
     // into the Promise.all above, since it does its own session lookup.
     installmentPlans = await getMyInstallmentPlans();
+    const [{ data: detailsRow }, { data: methodRow }] = await Promise.all([
+      supabase
+        .from("khet_club_member_details")
+        .select("delivery_time_pref, delivery_days_note, delivery_instructions, payout_upi, payout_account_name, payout_account_number, payout_ifsc")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase.from("khet_club_harvest_preferences").select("method").eq("user_id", user.id).maybeSingle(),
+    ]);
+    memberDetails = (detailsRow as MemberDetails | null) ?? null;
+    harvestMethod = (methodRow?.method as string | undefined) ?? null;
     const { data: gridData } = await supabase.rpc("khet_club_all_plot_statuses");
     farmGrid = (gridData ?? []) as typeof farmGrid;
   }
@@ -352,6 +366,8 @@ export default async function MyFarmPage() {
             </div>
           </Card>
 
+          {user && <ReferralCard userId={user.id} fullName={(user.user_metadata?.full_name as string) ?? null} />}
+
           <Card className="flex-1 p-6">
             <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               Payment History
@@ -438,6 +454,22 @@ export default async function MyFarmPage() {
         <div className="lg:col-span-2">
           <HarvestPreference />
         </div>
+
+        {user && (
+          <div className="lg:col-span-2">
+            <Card className="p-6">
+              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                {harvestMethod === "sell-to-market" ? "Payout details" : "Delivery details"}
+              </p>
+              <p className="mt-1 mb-4 text-sm text-[var(--color-ink-soft)]">
+                {harvestMethod === "sell-to-market"
+                  ? "You chose to sell your harvest — tell us where to send the money."
+                  : "Help us deliver your harvest at a time that suits you. You can change these anytime."}
+              </p>
+              <MemberDetailsForm details={memberDetails} method={harvestMethod} />
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

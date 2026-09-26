@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
+import { createAnonClient } from "@/lib/supabase/anon";
 import { normalizeIndianMobile, PHONE_ERROR_TEXT } from "@/lib/phone";
 
 export type ProfileState =
@@ -88,8 +89,13 @@ export async function updatePassword(
   _prev: PasswordState,
   formData: FormData
 ): Promise<PasswordState> {
+  const currentPassword = String(formData.get("currentPassword") || "");
   const newPassword = String(formData.get("newPassword") || "");
   const confirmPassword = String(formData.get("confirmPassword") || "");
+
+  if (!currentPassword) {
+    return { status: "error", message: "Please enter your current password." };
+  }
 
   if (newPassword.length < 8) {
     return { status: "error", message: "Please use at least 8 characters." };
@@ -99,6 +105,33 @@ export async function updatePassword(
   }
 
   const supabase = await createSessionClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) {
+    return { status: "error", message: "Please log in again." };
+  }
+
+  // Confirm the current password with a throwaway client that never
+  // touches the member's session cookies — so someone using a phone left
+  // logged in can't change the password without knowing it.
+  const verifier = createAnonClient();
+  const captchaToken = String(formData.get("cf-turnstile-response") || "") || undefined;
+  const { error: verifyError } = await verifier.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+    options: captchaToken ? { captchaToken } : undefined,
+  });
+  if (verifyError) {
+    return {
+      status: "error",
+      message: verifyError.message.toLowerCase().includes("captcha")
+        ? "Please complete the \"I'm human\" check and try again."
+        : "Your current password isn't right.",
+    };
+  }
+  await verifier.auth.signOut({ scope: "local" });
+
   const { error } = await supabase.auth.updateUser({ password: newPassword });
 
   if (error) {

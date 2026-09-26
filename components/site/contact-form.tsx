@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { submitContactMessage, type ContactState } from "@/app/actions/contact";
+import { Turnstile, Honeypot } from "@/components/ui/turnstile";
 
 const initialState: ContactState = { status: "idle" };
 
@@ -37,6 +38,8 @@ export function ContactForm({ whatsapp }: { whatsapp: string | null }) {
         <label htmlFor="c-msg">Message</label>
         <textarea id="c-msg" name="message" rows={4} required />
       </div>
+      <Honeypot />
+      <Turnstile key={state.status === "error" ? state.message : "fresh"} />
       {state.status === "error" && (
         <p className="form-err" role="alert">
           {state.message}

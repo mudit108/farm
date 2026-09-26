@@ -40,10 +40,16 @@ export default async function CctvManagementPage() {
           <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
             Add Camera
           </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Members see the live feed on Farm Activity → Live Camera once a camera is <strong>online</strong> and has a
+            stream link. Browsers can&apos;t play a camera&apos;s raw rtsp:// feed — the simplest setup is to stream the
+            camera to an <strong>unlisted YouTube Live</strong> and paste that link here. Leave the plot number empty for a
+            farm-wide camera every member can watch; set it to show a camera only to that plot&apos;s member.
+          </p>
           <ActionForm action={adminUpsertCamera} className="mt-4 grid gap-3 sm:grid-cols-4">
             <input name="name" required placeholder="Camera name" className="input" />
             <input name="plotNumber" type="number" min={1} max={maxPlot} placeholder="Plot # (optional)" className="input" />
-            <input name="streamUrl" placeholder="rtsp:// or https://…m3u8" className="input" />
+            <input name="streamUrl" placeholder="YouTube Live link, or https://…m3u8" className="input" />
             <select name="status" defaultValue="not_configured" className="input">
               <option value="not_configured">Not configured</option>
               <option value="online">Online</option>

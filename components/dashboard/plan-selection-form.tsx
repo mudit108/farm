@@ -47,9 +47,20 @@ type FlowState =
   | { step: "success"; plotNumbers: number[] }
   | { step: "error"; message: string };
 
-export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlot[]; prices: PlanPrice[]; seasonLabel: string }) {
+export function PlanSelectionForm({
+  grid,
+  prices,
+  seasonLabel,
+  initialCode = "",
+}: {
+  grid: GridPlot[];
+  prices: PlanPrice[];
+  seasonLabel: string;
+  /** A friend's referral code carried over from their invite link. */
+  initialCode?: string;
+}) {
   const [state, setState] = useState<FlowState>({ step: "idle" });
-  const [discountCode, setDiscountCode] = useState("");
+  const [discountCode, setDiscountCode] = useState(initialCode);
   const [discount, setDiscount] = useState<DiscountPreview>({ status: "idle" });
   const [checkingCode, setCheckingCode] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
@@ -449,8 +460,13 @@ export function PlanSelectionForm({ grid, prices, seasonLabel }: { grid: GridPlo
 
           <div className="mt-3">
             <span className="mb-1.5 block text-xs font-medium text-[var(--color-ink-soft)]">
-              Discount code (optional)
+              Discount or referral code (optional)
             </span>
+            {initialCode && discount.status === "idle" && (
+              <p className="mb-1.5 text-xs text-[var(--color-green-deep)]">
+                You were invited by a friend — tap Apply to use their code.
+              </p>
+            )}
             <div className="flex gap-2">
               <input
                 value={discountCode}

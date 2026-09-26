@@ -97,7 +97,12 @@ export default async function SelectPlotPage() {
                 Registration closes {deadline.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}
               </p>
             )}
-            <PlanSelectionForm grid={grid} prices={prices} seasonLabel={season?.season_label ?? "Current Season"} />
+            <PlanSelectionForm
+              grid={grid}
+              prices={prices}
+              seasonLabel={season?.season_label ?? "Current Season"}
+              initialCode={myPlots.length === 0 ? ((user?.user_metadata?.referred_by_code as string) ?? "") : ""}
+            />
           </>
         ) : (
           <Card className="max-w-lg p-6 text-center">

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { issueReceiptForPayment } from "@/lib/payments/receipts";
+import { recordReferralReward } from "@/lib/payments/referrals";
 import { PaymentService } from "@/lib/payments/payment-service";
 import { createServiceClient } from "@/lib/supabase/service";
-import { sendPlotConfirmationEmail } from "@/lib/email";
+import { sendPlotConfirmationEmail, sendAdminAlertEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { membershipPlans, INSTALLMENT_DUE_DAYS } from "@/lib/demo-data";
 
@@ -72,7 +73,13 @@ export async function POST(request: Request) {
         })
         .eq("claim_batch_id", record.claim_batch_id)
         .eq("balance_paid", false);
-      if (settleError) console.error("Webhook: failed to settle balance:", settleError);
+      if (settleError) {
+        console.error("Webhook: failed to settle balance:", settleError);
+        await sendAdminAlertEmail({
+          subject: "Balance paid but not marked settled",
+          lines: [`Customer id: ${record.user_id}`, `Razorpay order: ${orderId}`, "Mark it paid in Finance so they don't get reminders."],
+        });
+      }
     }
     const { data: balUser } = await admin.auth.admin.getUserById(record.user_id);
     await issueReceiptForPayment(admin, {
@@ -112,6 +119,16 @@ export async function POST(request: Request) {
       await admin.from("khet_club_payments").update({ status: "refunded" }).eq("id", record.id);
     } catch (refundErr) {
       console.error("Automatic refund also failed — needs manual review:", refundErr);
+      await sendAdminAlertEmail({
+        subject: "Customer paid but got no plots — refund failed",
+        lines: [
+          `Customer id: ${record.user_id}`,
+          `Plan: ${record.plan_id} · Amount: ₹${(record.amount / 100).toLocaleString("en-IN")}`,
+          `Razorpay payment: ${paymentId}`,
+          `Why the plot claim failed: ${error.message}`,
+          "Refund them from the Razorpay dashboard (then Mark refunded in Finance), or assign plots by hand.",
+        ],
+      });
     }
     return NextResponse.json({ received: true });
   }
@@ -150,6 +167,10 @@ export async function POST(request: Request) {
     });
     if (planError) {
       console.error("Webhook: failed to create installment plan record:", planError);
+      await sendAdminAlertEmail({
+        subject: "50/50 deposit paid but balance record failed",
+        lines: [`Customer id: ${record.user_id} · Plan: ${record.plan_id}`, `Balance owed: ₹${(record.balance_due_inr ?? 0).toLocaleString("en-IN")}`],
+      });
     }
   }
 
@@ -164,6 +185,7 @@ export async function POST(request: Request) {
     email: user?.email ?? null,
     fullName: (user?.user_metadata?.full_name as string) || "Mera Khet Member",
   });
+  await recordReferralReward(admin, record.id);
   if (user?.email) {
     const plan = membershipPlans.find((p) => p.id === record.plan_id);
     await sendPlotConfirmationEmail({

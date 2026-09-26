@@ -558,7 +558,36 @@ export default async function AdminFinancePage({
           </div>
         </div>
 
-        <div className="max-h-[560px] overflow-x-auto overflow-y-auto">
+        {/* Phones: a compact list instead of the wide table. */}
+        <div className="max-h-[560px] divide-y divide-[var(--color-ink)]/10 overflow-y-auto md:hidden">
+          {filtered.map((p) => {
+            const u = usersById.get(p.user_id);
+            return (
+              <div key={p.id} className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
+                <div>
+                  <p className="font-medium">{(u?.user_metadata?.full_name as string) || u?.email || "Unknown"}</p>
+                  <p className="text-xs text-[var(--color-ink-soft)]">
+                    {planLabel(p.plan_id)}
+                    {p.payment_kind !== "full" ? ` · ${p.payment_kind}` : ""} ·{" "}
+                    {new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
+                  </p>
+                  {receiptByPayment.has(p.id) && (
+                    <a href={`/api/receipt/download?payment=${p.id}`} className="text-xs font-medium text-[var(--color-green)]">
+                      Receipt {receiptByPayment.get(p.id)}
+                    </a>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="font-mono-data font-medium">₹{(p.amount / 100).toLocaleString("en-IN")}</p>
+                  <Badge tone={statusTone(p.status)}>{p.status}</Badge>
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length === 0 && <p className="px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">No transactions in this filter.</p>}
+        </div>
+
+        <div className="hidden max-h-[560px] overflow-x-auto overflow-y-auto md:block">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="sticky top-0 border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               <tr>

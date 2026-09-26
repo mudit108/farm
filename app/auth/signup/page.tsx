@@ -1,20 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Turnstile, Honeypot } from "@/components/ui/turnstile";
 import { normalizeIndianMobile, PHONE_HELP_TEXT, PHONE_ERROR_TEXT } from "@/lib/phone";
+
+/** Shown when someone arrives from a friend's invite link (?ref=CODE). */
+function InviteNotice() {
+  const ref = useSearchParams().get("ref");
+  if (!ref) return null;
+  return (
+    <p className="mt-4 rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] px-3 py-2 text-sm text-[var(--color-green-deep)]">
+      You&apos;ve been invited by a friend — their referral discount will be ready for you at checkout.
+    </p>
+  );
+}
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", address: "", pincode: "", password: "" });
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Hidden trap field: people never see it, simple bots fill it in.
+    // Pretend it worked and create nothing.
+    const trap = (e.currentTarget as HTMLFormElement).elements.namedItem("company_website") as HTMLInputElement | null;
+    if (trap?.value) {
+      setDone(true);
+      return;
+    }
 
     // Validate before hitting Supabase — every WhatsApp path messages
     // this number, so a junk value here means silent unreachability.
@@ -24,6 +47,10 @@ export default function SignupPage() {
       return;
     }
 
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !captchaToken) {
+      setError("Please complete the \"I'm human\" check first.");
+      return;
+    }
     setLoading(true);
 
     const supabase = createClient();
@@ -39,8 +66,14 @@ export default function SignupPage() {
           city: form.city.trim(),
           address: form.address.trim() || null,
           pincode: form.pincode.trim() || null,
+          // Friend's referral code from an invite link (?ref=CODE) — pre-filled
+          // at checkout; the discount itself is validated server-side there.
+          referred_by_code:
+            new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16) ||
+            null,
         },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/select-plot`,
+        captchaToken: captchaToken || undefined,
       },
     });
 
@@ -51,12 +84,16 @@ export default function SignupPage() {
       const msg = error.message.toLowerCase();
       if (msg.includes("already registered") || msg.includes("already been registered")) {
         setError("An account with this email already exists — try logging in instead.");
+        setCaptchaKey((k) => k + 1);
       } else if (msg.includes("password")) {
         setError("Please choose a password with at least 8 characters.");
+        setCaptchaKey((k) => k + 1);
       } else if (msg.includes("email")) {
         setError("Please enter a valid email address.");
+        setCaptchaKey((k) => k + 1);
       } else {
         setError("Couldn't create your account. Please try again, or contact us if it keeps happening.");
+        setCaptchaKey((k) => k + 1);
       }
       return;
     }
@@ -88,6 +125,9 @@ export default function SignupPage() {
       <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
         Create an account, confirm your email, then select your plot.
       </p>
+      <Suspense fallback={null}>
+        <InviteNotice />
+      </Suspense>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <label className="block">
@@ -121,6 +161,8 @@ export default function SignupPage() {
           <input required type="password" minLength={8} className="input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </label>
 
+        <Honeypot />
+        <Turnstile key={captchaKey} onToken={setCaptchaToken} />
         {error && <p className="text-sm text-[var(--color-live)]">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={loading}>

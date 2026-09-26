@@ -512,3 +512,85 @@ export async function sendAdminDigestEmail(input: {
     return { sent: false, reason: "send_failed" as const };
   }
 }
+
+/**
+ * Plain branded email to a member — used by automated reminders. `paragraphs`
+ * are escaped; `cta` renders a single button link.
+ */
+export async function sendMemberNoticeEmail(input: {
+  to: string;
+  fullName: string;
+  subject: string;
+  label: string;
+  paragraphs: string[];
+  cta?: { text: string; url: string };
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { sent: false, reason: "not_configured" as const };
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+  const body = input.paragraphs
+    .map((p) => `<p style="font-size: 14px; line-height: 1.6; margin: 0 0 14px;">${escapeHtml(p)}</p>`)
+    .join("");
+  const cta = input.cta
+    ? `<p style="margin: 22px 0;"><a href="${escapeHtml(input.cta.url)}" style="background:#24402C;color:#fff;text-decoration:none;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;">${escapeHtml(input.cta.text)}</a></p>`
+    : "";
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to: input.to,
+      subject: input.subject,
+      html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #232920;">
+        <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #8A5A34; margin: 0 0 16px;">Mera Khet — ${escapeHtml(input.label)}</p>
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Hello ${escapeHtml(input.fullName)},</h1>
+        ${body}${cta}
+        <p style="font-size: 13px; color: #5B6357; margin-top: 32px;">— The Mera Khet Team, Sujangarh, Rajasthan</p>
+      </div>`,
+    });
+    if (error) {
+      console.error("Resend member notice failed:", error);
+      return { sent: false, reason: "send_failed" as const };
+    }
+    return { sent: true as const };
+  } catch (err) {
+    console.error("Resend member notice threw:", err);
+    return { sent: false, reason: "send_failed" as const };
+  }
+}
+
+/**
+ * Urgent email to every admin (ADMIN_EMAILS) when something needs a human
+ * right away — e.g. a customer paid but their plots couldn't be assigned
+ * and the automatic refund also failed. Never throws.
+ */
+export async function sendAdminAlertEmail(input: { subject: string; lines: string[] }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  if (!apiKey || to.length === 0) {
+    console.warn("Admin alert not emailed (RESEND_API_KEY or ADMIN_EMAILS missing):", input.subject, input.lines);
+    return { sent: false as const };
+  }
+  const resend = new Resend(apiKey);
+  const from = process.env.RESEND_FROM_EMAIL || "Mera Khet <onboarding@resend.dev>";
+  try {
+    const { error } = await resend.emails.send({
+      from,
+      to,
+      subject: `⚠️ Mera Khet: ${input.subject}`,
+      html: `<div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; padding: 24px; color: #232920;">
+        <h2 style="font-size: 18px; margin: 0 0 12px; color: #9B2C2C;">${escapeHtml(input.subject)}</h2>
+        ${input.lines.map((l) => `<p style="font-size: 14px; margin: 0 0 8px;">${escapeHtml(l)}</p>`).join("")}
+        <p style="font-size: 12px; color: #5B6357; margin-top: 20px;">Sent automatically by the Mera Khet website. Check Admin → Finance → Needs review.</p>
+      </div>`,
+    });
+    if (error) console.error("Admin alert send failed:", error);
+    return { sent: !error };
+  } catch (err) {
+    console.error("Admin alert threw:", err);
+    return { sent: false as const };
+  }
+}

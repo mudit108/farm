@@ -6,6 +6,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { currentCrop } from "@/lib/demo-data";
 import { createSessionClient } from "@/lib/supabase/session";
 import { getFarmWeather } from "@/lib/weather";
+import { CameraPlayer } from "@/components/dashboard/camera-player";
 import { cn } from "@/lib/utils";
 import samplePhoto from "@/public/images/cctv/cam-main-field.jpg";
 
@@ -18,7 +19,7 @@ type Season = {
   sowing_date: string | null;
   estimated_harvest: string | null;
 };
-type CameraStatus = { camera_name: string; status: string };
+type CameraStatus = { camera_name: string; status: string; stream_url: string | null };
 type Update = { id: string; title: string; description: string; created_at: string; photo_url: string | null };
 
 function WeatherIcon({ code, className }: { code: number; className?: string }) {
@@ -213,7 +214,9 @@ export default async function FarmActivityPage({ searchParams }: { searchParams:
           </div>
         </div>
 
-        {camera && farmingHasBegun ? (
+        {camera && farmingHasBegun && camera.status === "online" && camera.stream_url ? (
+          <CameraPlayer streamUrl={camera.stream_url} title={`Live view — ${camera.camera_name}`} />
+        ) : camera && farmingHasBegun ? (
           <div className="relative aspect-video bg-[var(--color-ink)]">
             <Image
               src={samplePhoto}

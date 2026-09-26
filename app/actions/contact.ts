@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendContactNotificationEmail } from "@/lib/email";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export type ContactState =
   | { status: "idle" }
@@ -47,8 +48,19 @@ export async function submitContactMessage(
     return { status: "error", message: "Please fill in every field." };
   }
 
-  const supabase = createServiceClient();
   const ip = await getClientIp();
+
+  // Bot checks: the hidden trap field must be empty, and (once configured)
+  // the Cloudflare Turnstile token must verify. A bot gets a "success"
+  // screen so it has nothing to learn from — nothing is stored or emailed.
+  if (String(formData.get("company_website") || "").trim()) {
+    return { status: "success" };
+  }
+  if (!(await verifyTurnstile(String(formData.get("cf-turnstile-response") || "") || null, ip))) {
+    return { status: "error", message: "Please complete the \"I'm human\" check and try again." };
+  }
+
+  const supabase = createServiceClient();
 
   if (ip) {
     const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();

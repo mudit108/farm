@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
-import { Card } from "@/components/ui/card";
+import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { currentCrop, membershipPlans, todayInIndia } from "@/lib/demo-data";
 import { createServiceClient } from "@/lib/supabase/service";
 import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { adminUpdateSeason, adminUpdateContactInfo, adminUpdatePlanPrices, adminUpdateWarehouseCapacity, adminUpdateHarvestDistribution, adminSetRegistrationsPaused } from "@/app/actions/admin-content";
 import { adminCreateDiscountCode, adminToggleDiscountCode } from "@/app/actions/admin-discounts";
+import { adminUpdateReferralSettings, adminSetReferralRewardStatus } from "@/app/actions/admin-referrals";
 import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
 import { CloseSeasonForm } from "@/components/admin/close-season-form";
 
@@ -64,6 +65,9 @@ export default async function CropsManagementPage() {
     { data: archiveData },
     { data: redemptionsData },
     usersRes,
+    { data: referralSettingsRow },
+    { data: referralRewardsData },
+    { data: referralCodesData },
   ] =
     await Promise.all([
       supabase.rpc("khet_club_get_season"),
@@ -85,7 +89,34 @@ export default async function CropsManagementPage() {
         .select("id, code_id, user_id, plan_id, discount_inr, final_inr, redeemed_at")
         .order("redeemed_at", { ascending: false }),
       listAllUsers(supabase),
+      supabase.from("khet_club_referral_settings").select("enabled, friend_discount_inr, referrer_reward_inr").eq("id", 1).maybeSingle(),
+      supabase
+        .from("khet_club_referral_rewards")
+        .select("id, referrer_user_id, referee_user_id, reward_inr, status, paid_note, created_at")
+        .order("created_at", { ascending: false }),
+      supabase.from("khet_club_referral_codes").select("user_id, code"),
     ]);
+  const referralSettings = (referralSettingsRow as { enabled: boolean; friend_discount_inr: number; referrer_reward_inr: number } | null) ?? {
+    enabled: false,
+    friend_discount_inr: 1000,
+    referrer_reward_inr: 1000,
+  };
+  type ReferralReward = {
+    id: string;
+    referrer_user_id: string;
+    referee_user_id: string;
+    reward_inr: number;
+    status: "pending" | "paid" | "cancelled";
+    paid_note: string | null;
+    created_at: string;
+  };
+  const referralRewards = (referralRewardsData ?? []) as ReferralReward[];
+  const referralCodeByUser = new Map(((referralCodesData ?? []) as { user_id: string; code: string }[]).map((r) => [r.user_id, r.code]));
+  const pendingRewardTotal = referralRewards.filter((r) => r.status === "pending").reduce((s, r) => s + r.reward_inr, 0);
+  const displayName = (id: string) => {
+    const u = usersById.get(id);
+    return (u?.user_metadata?.full_name as string) || u?.email || "Unknown";
+  };
   const usersById = new Map(usersRes.data.users.map((u) => [u.id, u]));
   type Redemption = { id: string; code_id: string; user_id: string; plan_id: string; discount_inr: number; final_inr: number; redeemed_at: string };
   const redemptionsByCode = new Map<string, Redemption[]>();
@@ -221,6 +252,80 @@ export default async function CropsManagementPage() {
             })}
             <Button type="submit" className="w-full">Save Prices</Button>
           </ActionForm>
+        </Card>
+
+        <Card className="mt-6 max-w-lg p-5">
+          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+            Referral Program
+          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Every member with plots gets a personal code on their My Farm page. A new customer who uses it gets the
+            discount on their first purchase; the member who referred them earns the reward once that payment succeeds.
+            Changing the amounts only affects new referrals.
+          </p>
+          <ActionForm action={adminUpdateReferralSettings} className="mt-4 space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" name="enabled" defaultChecked={referralSettings.enabled} className="h-4 w-4" />
+              Referral program is on
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Friend&apos;s discount (₹)</span>
+                <input name="friendDiscountInr" type="number" min={0} step={1} defaultValue={referralSettings.friend_discount_inr} className="input" />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium">Referrer&apos;s reward (₹)</span>
+                <input name="referrerRewardInr" type="number" min={0} step={1} defaultValue={referralSettings.referrer_reward_inr} className="input" />
+              </label>
+            </div>
+            <Button type="submit" className="w-full">Save Referral Settings</Button>
+          </ActionForm>
+
+          <div className="mt-5 border-t border-[var(--color-ink)]/10 pt-4">
+            <p className="text-sm font-medium">
+              Rewards {referralRewards.length > 0 && <span className="font-normal text-[var(--color-ink-soft)]">· ₹{pendingRewardTotal.toLocaleString("en-IN")} to pay out</span>}
+            </p>
+            {referralRewards.length === 0 ? (
+              <p className="mt-1 text-xs text-[var(--color-ink-soft)]">No referrals yet.</p>
+            ) : (
+              <div className="mt-2 divide-y divide-[var(--color-ink)]/10">
+                {referralRewards.map((r) => (
+                  <div key={r.id} className="py-2.5 text-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p>
+                          <span className="font-medium">{displayName(r.referrer_user_id)}</span>
+                          <span className="text-xs text-[var(--color-ink-soft)]"> ({referralCodeByUser.get(r.referrer_user_id) ?? "—"})</span>{" "}
+                          referred <span className="font-medium">{displayName(r.referee_user_id)}</span>
+                        </p>
+                        <p className="text-xs text-[var(--color-ink-soft)]">
+                          ₹{r.reward_inr.toLocaleString("en-IN")} ·{" "}
+                          {new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
+                          {r.paid_note ? ` · ${r.paid_note}` : ""}
+                        </p>
+                      </div>
+                      <Badge tone={r.status === "paid" ? "green" : r.status === "cancelled" ? "brown" : "gold"}>{r.status}</Badge>
+                    </div>
+                    {r.status === "pending" && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <ActionForm action={adminSetReferralRewardStatus} className="flex flex-1 gap-2">
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="status" value="paid" />
+                          <input name="note" placeholder="How paid (e.g. UPI ref)" className="input flex-1 py-1 text-xs" />
+                          <Button type="submit" size="sm" variant="outline">Mark paid</Button>
+                        </ActionForm>
+                        <ActionForm action={adminSetReferralRewardStatus} confirmMessage="Cancel this reward? (e.g. the friend was refunded)">
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="status" value="cancelled" />
+                          <button className="text-xs font-medium text-[var(--color-live)] hover:underline">Cancel</button>
+                        </ActionForm>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Card>
 
         <Card className="mt-6 max-w-lg p-5">
