@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Image from "next/image";
-import { Sun, Cloud, CloudRain, CloudFog, CloudLightning, Droplets, Wind, Radio } from "lucide-react";
+import { Sun, Cloud, CloudRain, CloudFog, CloudLightning, Droplets, Wind, Radio, Check, CalendarDays, CloudSun, Sprout } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
+import { Panel, ProgressBar } from "@/components/dashboard/ui";
 import { currentCrop } from "@/lib/demo-data";
+import { stageDetails } from "@/lib/site-content";
+import { formatDay, stageWhenLabels } from "@/lib/season-timeline";
 import { createSessionClient } from "@/lib/supabase/session";
 import { getFarmWeather } from "@/lib/weather";
 import { CameraPlayer } from "@/components/dashboard/camera-player";
@@ -11,6 +14,8 @@ import { cn } from "@/lib/utils";
 import samplePhoto from "@/public/images/cctv/cam-main-field.jpg";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Farm Activity | Mera Khet", robots: { index: false } };
 
 type Season = {
   current_stage: string;
@@ -64,160 +69,125 @@ export default async function FarmActivityPage({ searchParams }: { searchParams:
   // nothing to watch during field prep, so it stays gated even if a
   // camera has already been technically assigned to the plot.
   const farmingHasBegun = currentIndex >= 1;
-
-  // Approximate date for each stage, linearly interpolated between the
-  // real sowing and harvest dates — not a fabricated schedule, just
-  // even spacing across the two real anchor points we actually have.
-  const stageDates: (Date | null)[] = (() => {
-    if (!season?.sowing_date || !season?.estimated_harvest) {
-      return currentCrop.stages.map(() => null);
-    }
-    const start = new Date(season.sowing_date).getTime();
-    const end = new Date(season.estimated_harvest).getTime();
-    const totalStages = currentCrop.stages.length - 1;
-    return currentCrop.stages.map((_, i) => new Date(start + ((end - start) * i) / totalStages));
-  })();
+  const when = stageWhenLabels(currentCrop.stages, season?.sowing_date ?? null, season?.estimated_harvest ?? null);
 
   const cropCycleContent = (
-    <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-3">
-      <Card className="p-6 lg:col-span-2">
-        <ol>
+    <div className="mk-page-pad grid gap-6 lg:grid-cols-3">
+      <Panel icon={Sprout} label="Crop cycle · RAJ 1482 wheat" className="lg:col-span-2">
+        <ol className="mk-stages">
           {currentCrop.stages.map((stage, i) => {
             const state = i < currentIndex ? "done" : i === currentIndex ? "current" : "upcoming";
+            const copy = stageDetails[stage];
             return (
-              <li key={stage} className="relative flex gap-4 pb-8 last:pb-0">
-                <div className="flex flex-col items-center">
-                  <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono-data text-[11px] font-semibold ${
-                      state === "done"
-                        ? "bg-[var(--color-green)] text-white"
-                        : state === "current"
-                        ? "bg-[var(--color-brown)] text-white"
-                        : "bg-[var(--color-ink)]/5 text-[var(--color-ink-soft)]"
-                    }`}
-                  >
-                    {i + 1}
-                  </span>
-                  {i < currentCrop.stages.length - 1 && (
-                    <span className="mt-1 w-px flex-1 bg-[var(--color-ink)]/10" />
-                  )}
-                </div>
-                <div className="pt-0.5">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-medium">{stage}</p>
-                    {stageDates[i] && (
-                      <p className="text-xs text-[var(--color-ink-soft)]">
-                        ~{stageDates[i]!.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}
-                      </p>
-                    )}
+              <li key={stage} className={`is-${state}`} aria-current={state === "current" ? "step" : undefined}>
+                <span className="mk-stage-dot" aria-hidden="true">
+                  {state === "done" ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : i + 1}
+                </span>
+                <div className="mk-stage-body">
+                  <div className="mk-stage-head">
+                    <p className="mk-stage-name">
+                      {stage}
+                      {state === "current" && <span className="mk-stage-now">Now</span>}
+                      {state === "done" && <span className="sr-only"> (done)</span>}
+                    </p>
+                    {when[i] && <p className="mk-stage-when">{when[i]}</p>}
                   </div>
-                  {state === "current" && <p className="text-xs text-[var(--color-brown)]">Current stage</p>}
+                  {state === "current" && copy && (
+                    <div className="mk-stage-detail">
+                      <p>{copy.desc}</p>
+                      <p>
+                        <span>What you&apos;ll see</span> {copy.see}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </li>
             );
           })}
         </ol>
-      </Card>
+      </Panel>
 
-      <div className="space-y-6">
-        <Card className="p-6">
-          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Timeline</p>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-[var(--color-ink-soft)]">Sowing date</dt>
-              <dd className="font-medium">
-                {season?.sowing_date ? new Date(season.sowing_date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
-              </dd>
+      <div className="flex min-w-0 flex-col gap-6">
+        <Panel icon={CalendarDays} label="Timeline">
+          <dl className="mk-facts mk-facts-rows">
+            <div>
+              <dt>Sowing date</dt>
+              <dd>{season?.sowing_date ? formatDay(season.sowing_date, "long") : "—"}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-[var(--color-ink-soft)]">Expected harvest</dt>
-              <dd className="font-medium">
-                {season?.estimated_harvest ? new Date(season.estimated_harvest).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}
-              </dd>
+            <div>
+              <dt>Expected harvest</dt>
+              <dd>{season?.estimated_harvest ? formatDay(season.estimated_harvest, "long") : "—"}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-[var(--color-ink-soft)]">Progress</dt>
-              <dd className="font-medium">{season?.progress ?? 0}%</dd>
+            <div>
+              <dt>Progress</dt>
+              <dd>{season?.progress ?? 0}%</dd>
             </div>
           </dl>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-ink)]/10">
-            <div
-              className="h-full rounded-full bg-[var(--color-gold)] transition-all"
-              style={{ width: `${season?.progress ?? 0}%` }}
-            />
+          <div className="mt-4">
+            <ProgressBar value={season?.progress ?? 0} label="Season progress" />
           </div>
-        </Card>
+        </Panel>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-              Weather — Sujangarh, Rajasthan
-            </p>
-            {weather && <span className="text-[10px] text-[var(--color-ink-soft)]">Live</span>}
-          </div>
-
+        <Panel icon={CloudSun} label="Weather at the farm" className="mk-weather" action={weather ? <span className="mk-chip">Live</span> : undefined}>
           {weather ? (
             <>
-              <div className="mt-3 flex items-center gap-4">
-                <WeatherIcon code={weather.current.weatherCode} className="h-10 w-10 text-[var(--color-brown)]" />
+              <div className="mk-weather-now">
+                <WeatherIcon code={weather.current.weatherCode} className="h-11 w-11 text-[var(--color-brown)]" />
                 <div>
-                  <p className="font-display text-3xl">{Math.round(weather.current.temperatureC)}°C</p>
-                  <p className="text-xs text-[var(--color-ink-soft)]">{weather.current.condition}</p>
+                  <p className="mk-weather-temp">{Math.round(weather.current.temperatureC)}°C</p>
+                  <p className="mk-muted">{weather.current.condition} · Sujangarh</p>
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-4 text-xs text-[var(--color-ink-soft)]">
-                <span className="flex items-center gap-1">
-                  <Droplets className="h-3.5 w-3.5" /> {weather.current.humidity}%
+              <div className="mk-weather-meta">
+                <span>
+                  <Droplets className="h-3.5 w-3.5" aria-hidden="true" /> {weather.current.humidity}% humidity
                 </span>
-                <span className="flex items-center gap-1">
-                  <Wind className="h-3.5 w-3.5" /> {Math.round(weather.current.windKph)} km/h
+                <span>
+                  <Wind className="h-3.5 w-3.5" aria-hidden="true" /> {Math.round(weather.current.windKph)} km/h
                 </span>
               </div>
 
-              <div className="mt-5 grid grid-cols-5 gap-1 border-t border-[var(--color-ink)]/10 pt-4">
+              <div className="mk-weather-days">
                 {weather.daily.map((d) => (
-                  <div key={d.date} className="flex flex-col items-center gap-1 text-center">
-                    <span className="text-[10px] text-[var(--color-ink-soft)]">
-                      {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" })}
-                    </span>
+                  <div key={d.date}>
+                    <span>{new Date(d.date).toLocaleDateString("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" })}</span>
                     <WeatherIcon code={d.weatherCode} className="h-4 w-4 text-[var(--color-brown)]" />
-                    <span className="text-[10px] font-medium">
-                      {Math.round(d.maxC)}°/{Math.round(d.minC)}°
-                    </span>
+                    <b>
+                      {Math.round(d.maxC)}°<small>/{Math.round(d.minC)}°</small>
+                    </b>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-[10px] text-[var(--color-ink-soft)]">Data via Open-Meteo, updated every 30 minutes.</p>
+              <p className="mk-fine">Data via Open-Meteo, updated every 30 minutes.</p>
             </>
           ) : (
-            <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-              Weather data is temporarily unavailable — please check back shortly.
-            </p>
+            <p className="mk-muted">Weather data is temporarily unavailable — please check back shortly.</p>
           )}
-        </Card>
+        </Panel>
       </div>
     </div>
   );
 
   const liveCameraContent = (
-    <div className="p-6 sm:px-10">
-      <Card className="overflow-hidden p-0">
-        <div className="flex items-center justify-between border-b border-[var(--color-ink)]/10 px-5 py-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <span className={cn("h-2 w-2 rounded-full", isOnline && farmingHasBegun ? "live-dot bg-[var(--color-live)]" : "bg-[var(--color-ink)]/30")} />
+    <div className="mk-page-pad">
+      <div className="mk-camframe">
+        <div className="mk-camframe-bar">
+          <span className="flex items-center gap-2">
+            <span className={cn("mk-live-dot", isOnline && farmingHasBegun && "is-on")} aria-hidden="true" />
             {!farmingHasBegun
               ? "Camera access starts once sowing begins"
               : camera
-              ? `${camera.camera_name} — ${camera.status}`
-              : "No camera assigned yet"}
-          </div>
+                ? `${camera.camera_name} — ${camera.status}`
+                : "No camera assigned yet"}
+          </span>
+          <span className="hidden sm:inline">Sujangarh, Rajasthan</span>
         </div>
 
         {camera && farmingHasBegun && camera.status === "online" && camera.stream_url ? (
           <CameraPlayer streamUrl={camera.stream_url} title={`Live view — ${camera.camera_name}`} />
         ) : camera && farmingHasBegun ? (
-          <div className="relative aspect-video bg-[var(--color-ink)]">
+          <div className="mk-camframe-view">
             <Image
               src={samplePhoto}
               alt={`Recent sample view from ${camera.camera_name}`}
@@ -227,51 +197,59 @@ export default async function FarmActivityPage({ searchParams }: { searchParams:
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3">
               <p className="text-xs text-white/80">
-                Sample view — live video streaming for your camera isn&apos;t
-                connected yet. This is a recent photo, not your real-time feed.
+                Sample view — live video streaming for your camera isn&apos;t connected yet. This is a recent photo, not your real-time feed.
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex aspect-video items-center justify-center bg-[var(--color-ink)]">
-            <div className="flex flex-col items-center gap-3 px-8 text-center text-white/50">
-              <Radio className="h-8 w-8" />
-              <p className="max-w-xs text-sm">
+          <div className="mk-camframe-view mk-camframe-empty">
+            <Image src={samplePhoto} alt="" fill sizes="(min-width: 1024px) 900px, 100vw" className="object-cover" aria-hidden="true" />
+            <div className="mk-camframe-msg">
+              <Radio className="h-8 w-8" aria-hidden="true" />
+              <p>
                 {!farmingHasBegun
-                  ? "Camera access begins once sowing starts — there's nothing to show during field preparation yet."
+                  ? `Camera access begins once sowing starts${season?.sowing_date ? ` on ${formatDay(season.sowing_date, "long")}` : ""} — there's nothing to watch during field preparation yet.`
                   : "A camera hasn't been assigned to your plot yet. Check back once our team sets one up."}
               </p>
             </div>
           </div>
         )}
-      </Card>
+      </div>
+      <p className="mk-fine mt-3 text-center">
+        Live video depends on the weather and the network at the farm — if it drops, you&apos;ll see the latest photo, clearly labelled as a photo.
+      </p>
     </div>
   );
 
   const updatesContent = (
-    <div className="space-y-4 p-6 sm:px-10">
-      {updates.length === 0 && <p className="text-sm text-[var(--color-ink-soft)]">No updates published yet.</p>}
-      {updates.map((u) => (
-        <Card key={u.id} className="p-5">
-          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-            {new Date(u.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
-          </p>
-          <p className="mt-1 font-display text-lg">{u.title}</p>
-          <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)]">{u.description}</p>
-          {u.photo_url && (
-            // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL from any host
-            <img src={u.photo_url} alt="" loading="lazy" className="mt-3 max-h-80 w-full rounded-[var(--radius-sm)] object-cover" />
-          )}
-        </Card>
-      ))}
+    <div className="mk-page-pad">
+      {updates.length === 0 && <p className="mk-muted">No updates published yet.</p>}
+      <ol className="mk-feed">
+        {updates.map((u) => (
+          <li key={u.id}>
+            <p className="mk-feed-date">
+              {new Date(u.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
+            </p>
+            <article className="mk-feed-card">
+              <h3>{u.title}</h3>
+              <p>{u.description}</p>
+              {u.photo_url && (
+                // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL from any host
+                <img src={u.photo_url} alt="" loading="lazy" />
+              )}
+            </article>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 
   return (
     <div>
       <PageHeader
-        title="Farm Activity"
-        subtitle={`${currentCrop.name} (${currentCrop.localName})${plotNumbers.length ? ` — Plots ${plotNumbers.map((n) => `#${n}`).join(", ")}` : ""}`}
+        eyebrow="Farm Activity"
+        title={season?.current_stage ? `Now: ${season.current_stage}` : "Farm Activity"}
+        subtitle={`${currentCrop.name} (${currentCrop.localName})${plotNumbers.length ? ` — ${plotNumbers.length > 1 ? "Plots" : "Plot"} ${plotNumbers.map((n) => `#${n}`).join(", ")}` : ""}`}
       />
 
       <Tabs

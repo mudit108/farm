@@ -459,7 +459,8 @@ export async function verifyPaymentAndClaim(input: {
   }
 
   revalidatePath("/");
-  revalidatePath("/dashboard");
+  // "layout" also refreshes the dashboard sidebar, which shows the member's plot numbers.
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard/select-plot");
   revalidatePath("/dashboard/my-farm");
 

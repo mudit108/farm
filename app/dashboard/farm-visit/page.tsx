@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
+import { CalendarDays, MessageCircle } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Card, Badge } from "@/components/ui/card";
+import { Badge } from "@/components/ui/card";
+import { Panel } from "@/components/dashboard/ui";
 import { FarmVisitForm } from "@/components/dashboard/farm-visit-form";
 import { SupportForm } from "@/components/dashboard/support-form";
 import { createSessionClient } from "@/lib/supabase/session";
@@ -8,6 +11,8 @@ import { addDays, todayInIndia } from "@/lib/demo-data";
 import { whatsappHref } from "@/components/site/footer";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Visits & Support | Mera Khet", robots: { index: false } };
 
 type Visit = {
   id: string;
@@ -57,74 +62,57 @@ export default async function HelpPage() {
 
   return (
     <div>
-      <PageHeader title="Visits & Support" subtitle="Request a farm visit or reach our support team." />
+      <PageHeader eyebrow="We're here to help" title="Visits & Support" subtitle="Come and stand in your field, or ask us anything." />
 
-      <div className="grid gap-6 p-6 sm:px-10 lg:grid-cols-2">
-        <Card className="p-6">
-          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-            Request a Farm Visit
-          </p>
-          <p className="mt-1 mb-4 text-sm text-[var(--color-ink-soft)]">
-            Subject to scheduling and farm conditions.
-          </p>
-          <FarmVisitForm
-            minDate={addDays(todayInIndia(), 1)}
-            defaultPhone={(user?.user_metadata?.phone as string) ?? ""}
-          />
+      <div className="mk-page-pad grid gap-6 lg:grid-cols-2">
+        <Panel icon={CalendarDays} label="Request a farm visit">
+          <p className="mk-muted mb-4">Subject to scheduling and farm conditions.</p>
+          <FarmVisitForm minDate={addDays(todayInIndia(), 1)} defaultPhone={(user?.user_metadata?.phone as string) ?? ""} />
 
           {visits.length > 0 && (
-            <div className="mt-6 border-t border-[var(--color-ink)]/10 pt-5">
-              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-                Your Requests
-              </p>
-              <div className="mt-3 space-y-3">
+            <div className="mk-subsection">
+              <h3 className="mk-subhead">Your requests</h3>
+              <div className="mk-rows">
                 {visits.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between border-b border-[var(--color-ink)]/10 pb-3 text-sm last:border-0 last:pb-0">
-                    <div>
-                      <p className="font-medium">
-                        {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
+                  <div key={v.id} className="mk-row">
+                    <div className="mk-row-main">
+                      <p className="font-semibold text-[var(--color-ink)]">
+                        {new Date(v.preferred_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}
                       </p>
-                      <p className="text-xs text-[var(--color-ink-soft)]">{v.visitors} visitor{v.visitors > 1 ? "s" : ""}</p>
+                      <p className="mk-muted">
+                        {v.visitors} visitor{v.visitors > 1 ? "s" : ""}
+                      </p>
                     </div>
-                    <Badge tone={v.status === "requested" ? "gold" : v.status === "approved" || v.status === "completed" ? "green" : "brown"}>
-                      {v.status}
-                    </Badge>
+                    <Badge tone={v.status === "requested" ? "gold" : v.status === "approved" || v.status === "completed" ? "green" : "brown"}>{v.status}</Badge>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </Card>
+        </Panel>
 
-        <Card className="p-6">
-          <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
-            Contact Support
-          </p>
-          <p className="mt-1 mb-4 text-sm text-[var(--color-ink-soft)]">
-            Reach our team about your farm or membership.
-          </p>
+        <Panel icon={MessageCircle} label="Contact support">
+          <p className="mk-muted mb-4">Reach our team about your farm or membership — a real person reads every message.</p>
           <SupportForm whatsappUrl={whatsappHref(season?.contact_phone ?? null, "Hi, I'm a Mera Khet member and have a question.")} />
 
           {supportMessages.length > 0 && (
-            <div className="mt-6 border-t border-[var(--color-ink)]/10 pt-5">
-              <p className="font-mono-data text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">Your Messages</p>
-              <div className="mt-3 space-y-3">
+            <div className="mk-subsection">
+              <h3 className="mk-subhead">Your messages</h3>
+              <div className="space-y-4">
                 {supportMessages.map((m) => (
-                  <div key={m.id} className="rounded-[var(--radius-sm)] border border-[var(--color-ink)]/10 p-3 text-sm">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium">{m.subject}</p>
-                        <p className="text-xs text-[var(--color-ink-soft)]">{fmtDateTime(m.created_at)}</p>
+                  <div key={m.id} className="mk-thread">
+                    <div className="mk-thread-head">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[var(--color-ink)]">{m.subject}</p>
+                        <p className="mk-muted">{fmtDateTime(m.created_at)}</p>
                       </div>
                       <Badge tone={m.admin_reply ? "green" : "gold"}>{m.admin_reply ? "Replied" : "Waiting for reply"}</Badge>
                     </div>
-                    <p className="mt-2 whitespace-pre-line text-[var(--color-ink-soft)]">{m.message}</p>
+                    <p className="mk-bubble mk-bubble-me">{m.message}</p>
                     {m.admin_reply && (
-                      <div className="mt-2 rounded-[var(--radius-sm)] bg-[var(--color-green-soft)] p-2.5">
-                        <p className="text-xs font-medium text-[var(--color-green-deep)]">
-                          Mera Khet team{m.replied_at ? ` · ${fmtDateTime(m.replied_at)}` : ""}
-                        </p>
-                        <p className="mt-1 whitespace-pre-line">{m.admin_reply}</p>
+                      <div className="mk-bubble mk-bubble-team">
+                        <p className="mk-bubble-from">Mera Khet team{m.replied_at ? ` · ${fmtDateTime(m.replied_at)}` : ""}</p>
+                        <p>{m.admin_reply}</p>
                       </div>
                     )}
                   </div>
@@ -132,7 +120,7 @@ export default async function HelpPage() {
               </div>
             </div>
           )}
-        </Card>
+        </Panel>
       </div>
     </div>
   );

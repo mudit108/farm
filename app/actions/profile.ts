@@ -74,7 +74,8 @@ export async function updateProfile(
 
   revalidatePath("/dashboard/account");
   revalidatePath("/dashboard/my-farm");
-  revalidatePath("/dashboard");
+  // "layout" also refreshes the dashboard sidebar, which shows the member's first name.
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/admin/members");
 
   return { status: "success" };

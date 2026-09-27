@@ -1,12 +1,14 @@
-import { CheckCircle2, Clock } from "lucide-react";
+import type { Metadata } from "next";
+import { Clock, PauseCircle } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Card, Badge } from "@/components/ui/card";
 import { PlanSelectionForm } from "@/components/dashboard/plan-selection-form";
 import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { createSessionClient } from "@/lib/supabase/session";
 import { summarizePlotHoldings, todayInIndia } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Select Plan | Mera Khet", robots: { index: false } };
 
 type MyPlot = {
   plot_number: number;
@@ -55,33 +57,36 @@ export default async function SelectPlotPage() {
 
   return (
     <div>
-      <PageHeader title="Select Plan" subtitle="Choose your plan and claim your plot(s) at Mera Khet." />
+      <PageHeader
+        eyebrow={season?.season_label ?? "Current Season"}
+        title={myPlots.length > 0 ? "Add more plots" : "Select your plan"}
+        subtitle="Choose your plan and claim your plot(s) at Mera Khet."
+      />
 
-      <div className="p-6 sm:px-10">
+      <div className="mk-page-pad">
         {myPlots.length > 0 && (
-          <Card className="mb-8 max-w-lg p-6 text-center">
-            <CheckCircle2 className="mx-auto h-8 w-8 text-[var(--color-green-deep)]" />
-            {myPlots[0].custom_name && (
-              <p className="mt-3 font-display text-xl text-[var(--color-brown)]">{myPlots[0].custom_name}</p>
-            )}
-            <p className="mt-1 font-display text-2xl">
-              {myPlots.length > 1 ? "Plots " : "Plot "}
-              {myPlots.map((p) => `#${p.plot_number}`).join(", ")}
-            </p>
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
-              <Badge tone="green">{myPlots[0].status === "filled" ? "Reserved" : myPlots[0].status}</Badge>
-              {holdings.label && <Badge tone="brown">{holdings.label}</Badge>}
-              {holdings.isMixedPlans && <Badge tone="gold">Multiple Purchases</Badge>}
+          <section className="mk-plot-hero mk-plot-hero-compact mb-8">
+            <div className="mk-plot-hero-main">
+              <p className="mk-plot-k">You hold</p>
+              {myPlots[0].custom_name && <p className="mk-plot-name">“{myPlots[0].custom_name}”</p>}
+              <p className="mk-plot-nums">
+                {myPlots.length > 1 ? "Plots " : "Plot "}
+                {myPlots.map((p) => `#${p.plot_number}`).join(", ")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="mk-plot-tag">{myPlots[0].status === "filled" ? "Reserved" : myPlots[0].status}</span>
+                {holdings.label && <span className="mk-plot-tag">{holdings.label}</span>}
+                {holdings.isMixedPlans && <span className="mk-plot-tag">Multiple purchases</span>}
+              </div>
+              <p className="mk-plot-meta mt-3">
+                {holdings.totalPlots} plot{holdings.totalPlots > 1 ? "s" : ""} total · {holdings.areaSqFt.toLocaleString("en-IN")} sq ft ·{" "}
+                {holdings.wheatMinKg}–{holdings.wheatMaxKg} kg wheat target
+              </p>
             </div>
-            <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-              {holdings.totalPlots} plot{holdings.totalPlots > 1 ? "s" : ""} total ·{" "}
-              {holdings.areaSqFt.toLocaleString()} sq ft · {holdings.wheatMinKg}–{holdings.wheatMaxKg} kg wheat target
-            </p>
-
-            <div className="mt-5 border-t border-[var(--color-ink)]/10 pt-5 text-left">
+            <div className="mk-plot-hero-side">
               <PlotNicknameForm initialName={myPlots[0].custom_name ?? ""} />
             </div>
-          </Card>
+          </section>
         )}
 
         {isOpen ? (
@@ -92,8 +97,8 @@ export default async function SelectPlotPage() {
                 : "Pick the plan that fits — you'll be assigned the next available plots automatically, or choose exactly which ones you want."}
             </p>
             {deadline && (
-              <p className="mb-4 flex items-center gap-1.5 text-xs text-[var(--color-brown)]">
-                <Clock className="h-3.5 w-3.5" />
+              <p className="mk-deadline">
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                 Registration closes {deadline.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}
               </p>
             )}
@@ -105,9 +110,12 @@ export default async function SelectPlotPage() {
             />
           </>
         ) : (
-          <Card className="max-w-lg p-6 text-center">
-            <p className="font-display text-lg">{paused ? "Bookings are paused" : "Registration closed"}</p>
-            <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+          <div className="mk-empty">
+            <span className="mk-empty-icon" aria-hidden="true">
+              <PauseCircle className="h-6 w-6" />
+            </span>
+            <h2>{paused ? "Bookings are paused" : "Registration closed"}</h2>
+            <p>
               {paused ? (
                 <>New bookings are paused for a short while. Please check back soon, or contact us if you have questions.</>
               ) : (
@@ -118,7 +126,7 @@ export default async function SelectPlotPage() {
                 </>
               )}
             </p>
-          </Card>
+          </div>
         )}
       </div>
     </div>

@@ -19,16 +19,16 @@ export const dashboardNavGroups = [
   },
 ];
 
-// Flat list — for the mobile bottom bar, which shows all 6 directly now
-// that the count is small enough to fit (no "More" overflow needed).
-// Defined separately from dashboardNavGroups (rather than derived via
-// flatMap) — TypeScript's inference over flatMap on differently-shaped
-// readonly tuples doesn't flatten to a clean union type.
+// Flat list for the phone bottom bar, which shows all six pages directly.
+// `short` labels keep every item on one line at phone widths. Defined
+// separately from dashboardNavGroups (rather than derived via flatMap) —
+// TypeScript's inference over flatMap on differently-shaped readonly
+// tuples doesn't flatten to a clean union type.
 export const dashboardNav = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/my-farm", label: "My Farm", icon: Sprout },
-  { href: "/dashboard/select-plot", label: "Select Plan", icon: ClipboardCheck },
-  { href: "/dashboard/crop-cycle", label: "Farm Activity", icon: Activity },
-  { href: "/dashboard/account", label: "Account", icon: User },
-  { href: "/dashboard/farm-visit", label: "Visits & Support", icon: LifeBuoy },
+  { href: "/dashboard", label: "Overview", short: "Home", icon: LayoutDashboard },
+  { href: "/dashboard/my-farm", label: "My Farm", short: "My Farm", icon: Sprout },
+  { href: "/dashboard/select-plot", label: "Select Plan", short: "Plans", icon: ClipboardCheck },
+  { href: "/dashboard/crop-cycle", label: "Farm Activity", short: "Activity", icon: Activity },
+  { href: "/dashboard/account", label: "Account", short: "Account", icon: User },
+  { href: "/dashboard/farm-visit", label: "Visits & Support", short: "Support", icon: LifeBuoy },
 ];
