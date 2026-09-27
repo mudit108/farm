@@ -12,39 +12,6 @@ export function WheatMark({ size = 26 }: { size?: number }) {
   );
 }
 
-// Nine pairs of ears, tapering toward the base. Each draws itself in on load (see .wheat-art in site.css).
-const EARS = Array.from({ length: 9 }, (_, i) => {
-  const y = 26 + i * 24;
-  const spread = 14 + (9 - i) * 1.2;
-  return { y, tip: y - 16, xl: 60 - spread, xr: 60 + spread, w: 2.4 - i * 0.09, delay: 0.3 + i * 0.085 };
-});
-
-export function HeroWheat() {
-  return (
-    <div className="wheat-art" aria-hidden="true">
-      <svg viewBox="0 0 120 250" fill="none">
-        <line className="stem" x1="60" y1="240" x2="60" y2="8" stroke="#B4872E" strokeWidth="2.5" strokeLinecap="round" style={{ animationDelay: ".18s" }} />
-        {EARS.flatMap((e) =>
-          [e.xl, e.xr].map((x) => (
-            <line
-              key={`${e.y}-${x}`}
-              className="ear"
-              x1="60"
-              y1={e.y}
-              x2={x.toFixed(1)}
-              y2={e.tip}
-              stroke="#B4872E"
-              strokeWidth={e.w.toFixed(2)}
-              strokeLinecap="round"
-              style={{ animationDelay: `${e.delay.toFixed(2)}s` }}
-            />
-          ))
-        )}
-      </svg>
-    </div>
-  );
-}
-
 export function Check() {
   return (
     <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden="true">

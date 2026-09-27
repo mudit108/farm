@@ -3,20 +3,23 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteFrame } from "@/components/site/frame";
 import { SectionHead } from "@/components/site/heads";
-import { CountUp, HeroMeter, Rule, Section } from "@/components/site/motion";
-import { Arrow, Check, HeroWheat } from "@/components/site/marks";
+import { CountUp, HeroMeter, Section } from "@/components/site/motion";
+import { Arrow } from "@/components/site/marks";
 import { CameraViewer } from "@/components/site/camera-viewer";
 import { FaqPreview } from "@/components/site/faq";
 import { ContactForm } from "@/components/site/contact-form";
 import { whatsappHref } from "@/components/site/footer";
-import { FieldBand, PlanCards, PlotMapGrid, PlotMapLegend, Ticker } from "@/components/site/blocks";
+import { PlanCards, PlotMapGrid, PlotMapLegend, Ticker } from "@/components/site/blocks";
+import { HeroArt, shortDate, type SeasonCard } from "@/components/site/home";
 import farmerTeamPhoto from "@/public/images/farmer-team-field.jpg";
+import wheatEarPhoto from "@/public/images/wheat-ear-macro.jpg";
 import harvestRawPhoto from "@/public/images/harvest-delivered-raw.jpg";
 import harvestFlourPhoto from "@/public/images/harvest-milled-atta.jpg";
 import harvestMarketPhoto from "@/public/images/harvest-sold-market.jpg";
 import { getCurrentMember } from "@/lib/current-member";
 import { getPlanCards, getPlotCounts, getSeason } from "@/lib/public-data";
 import { buildFaqs } from "@/lib/site-content";
+import { todayInIndia } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +32,7 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 export default async function Home() {
   const [season, counts, plans, member] = await Promise.all([getSeason(), getPlotCounts(), getPlanCards(), getCurrentMember()]);
   const reserveHref = member.isLoggedIn ? "/dashboard/select-plot" : "/auth/signup";
+  const reserveLabel = member.isLoggedIn ? "Choose your plots" : "Reserve Your Plot";
   const collected = season?.fff_collected_inr ?? 0;
   const faqs = buildFaqs({
     prices: Object.fromEntries(plans.map((p) => [p.id, p.priceInr])),
@@ -37,19 +41,53 @@ export default async function Home() {
   const pick = ["What do I receive with my membership?", "Is my plot legally owned by me?", "Is the farm organic?", "What are my options for the harvest?", "Can I cancel?"];
   const faqPreview = pick.map((q) => faqs.find((f) => f.q === q)).filter((f): f is NonNullable<typeof f> => Boolean(f));
 
+  // Season facts for the hero card and the closing call to action. Dates in
+  // the past are dropped rather than shown as if they were still ahead.
+  const today = todayInIndia();
+  const sowing = season?.sowing_date && season.sowing_date >= today ? season.sowing_date : null;
+  const deadline = season?.registration_deadline && season.registration_deadline >= today ? season.registration_deadline : null;
+  const deadlinePassed = !!season?.registration_deadline && season.registration_deadline < today;
+  const plotsKnown = counts.total > 0;
+  const open = Math.max(counts.total - counts.filled, 0);
+  const bookingsOpen = !season?.registrations_paused && !deadlinePassed && (!plotsKnown || open > 0);
+
+  const seasonCard: SeasonCard | null = season
+    ? sowing
+      ? { label: "Sowing begins", value: shortDate(sowing), note: season.season_label }
+      : { label: "In the field now", value: season.current_stage, note: season.season_label }
+    : null;
+
+  const dates =
+    deadline && sowing
+      ? `Bookings close ${shortDate(deadline)}, and sowing begins ${shortDate(sowing)}.`
+      : deadline
+        ? `Bookings close ${shortDate(deadline)}.`
+        : sowing
+          ? `Sowing begins ${shortDate(sowing)}.`
+          : "";
+  const closerText = bookingsOpen
+    ? [plotsKnown ? `${open} of ${counts.total} plots are still open.` : "", dates].filter(Boolean).join(" ") ||
+      "Reserve a plot and follow it from sowing to harvest."
+    : season?.registrations_paused
+      ? "Bookings are paused for now. Send us a note and we'll tell you the moment they reopen."
+      : `${deadlinePassed ? "Bookings for this season have closed." : "Every plot this season is taken."} Send us a note and we'll let you know when the next season opens.`;
+
   return (
     <SiteFrame>
-      <header className="hero">
+      <header className="hero home-hero">
         <div className="hero-texture" />
+        <div className="hero-glow" aria-hidden="true" />
         <div className="hero-grid">
-          <div>
+          <div className="hero-copy">
             <p className="eyebrow fade">Apna Khet · Apni Pehchaan</p>
             <h1>
               <span className="line">
                 <span>Your own wheat,</span>
               </span>
               <span className="line">
-                <span>grown for you.</span>
+                <span>
+                  grown <em>for you.</em>
+                </span>
               </span>
             </h1>
             <p className="hero-sub fade d4">
@@ -58,7 +96,7 @@ export default async function Home() {
             </p>
             <div className="hero-actions fade d5">
               <Link href={reserveHref} className="btn btn-primary">
-                <span>{member.isLoggedIn ? "Choose your plots" : "Reserve Your Plot"}</span>
+                <span>{reserveLabel}</span>
               </Link>
               <Link href="/how-it-works" className="btn btn-ghost">
                 <span>See How It Works</span>
@@ -66,7 +104,7 @@ export default async function Home() {
             </div>
             <HeroMeter filled={counts.filled} total={counts.total} />
           </div>
-          <HeroWheat />
+          <HeroArt card={seasonCard} />
         </div>
         <div className="scroll-cue" aria-hidden="true">
           <span className="scroll-line" />
@@ -78,14 +116,14 @@ export default async function Home() {
 
       <Section className="stats">
         <div className="mk-wrap">
-          <div className="stats-grid">
+          <div className="stats-panel">
             {[
               ["24×7 Camera Coverage", "A live view of the field on your dashboard, from sowing through harvest.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><ellipse cx="15" cy="15" rx="13" ry="8" stroke="#B4872E" strokeWidth="1.6" /><circle cx="15" cy="15" r="3.4" fill="#B4872E" /></svg>],
               ["Tested Every Month", "Farm test results shared with every member, every month.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><path d="M15 26C15 26 6 21 6 12C6 6 10 3 15 3C20 3 24 6 24 12C24 21 15 26 15 26Z" stroke="#B4872E" strokeWidth="1.6" /><line x1="15" y1="26" x2="15" y2="10" stroke="#B4872E" strokeWidth="1.6" /></svg>],
               ["RAJ 1482 Seed", "Bred for Rajasthan's conditions, on a ~140-day cycle.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="12" stroke="#B4872E" strokeWidth="1.6" strokeDasharray="3 3" /><circle cx="15" cy="15" r="4" fill="#B4872E" /></svg>],
               ["Seasonal Only", "One dedicated season at a time — no long contracts.", <svg key="i" width="30" height="30" viewBox="0 0 30 30" fill="none"><rect x="4" y="6" width="22" height="20" rx="2.5" stroke="#B4872E" strokeWidth="1.6" /><line x1="4" y1="12" x2="26" y2="12" stroke="#B4872E" strokeWidth="1.6" /><line x1="10" y1="3" x2="10" y2="8" stroke="#B4872E" strokeWidth="1.6" strokeLinecap="round" /><line x1="20" y1="3" x2="20" y2="8" stroke="#B4872E" strokeWidth="1.6" strokeLinecap="round" /></svg>],
             ].map(([title, text, icon], i) => (
-              <div key={title as string} className={`card stat-card fade d${i + 1}`}>
+              <div key={title as string} className={`stat-cell fade d${i + 1}`}>
                 <div className="stat-icon">{icon}</div>
                 <p className="stat-title">{title}</p>
                 <p className="stat-text">{text}</p>
@@ -95,40 +133,59 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Section id="story" className="section">
+      <Section id="story" className="section tint">
         <div className="mk-wrap">
-          <SectionHead
-            center
-            num="01 — The Farm"
-            title={["Food should never", "be a mystery."]}
-            lead="We come from a farming family that watched agriculture fade from our own generation. Mera Khet is our way back to those roots — farmed by experienced farmers from our own village, and creating work there too."
-          />
-          <div className="why-grid">
-            {[
-              ["Full Transparency", "A live camera, monthly farm test results and regular updates — no mystery in your food."],
-              ["No Shortcuts for Yield", "No harmful chemicals used just to push the yield. Next wheat season, we plan to farm 100% organically."],
-              ["Whole Wheat, Milled Whole", "Bran and germ left intact — real roti and chapati quality, from a variety bred for this soil."],
-            ].map(([h, p], i) => (
-              <div key={h} className={`card why-card fade d${i * 2 + 1}`}>
-                <div className="why-check">
-                  <Check />
-                </div>
-                <h3>{h}</h3>
-                <p>{p}</p>
+          <div className="story-wrap">
+            <div className="story-media fade">
+              <div className="story-photo">
+                <Image
+                  src={farmerTeamPhoto}
+                  alt="Two farmers walking through a wheat field"
+                  fill
+                  sizes="(min-width: 960px) 470px, 100vw"
+                  placeholder="blur"
+                  style={{ objectPosition: "center 26%" }}
+                />
               </div>
-            ))}
-          </div>
-          <div className="more-link fade d6">
-            <Link href="/our-wheat" className="mk-link">
-              What makes our wheat different <Arrow />
-            </Link>
+              <div className="story-note fade d4">
+                <span className="story-note-k">Farmed by</span>
+                <span className="story-note-v">Our own village&apos;s farmers</span>
+                <span className="story-note-s">Not outsourced labour.</span>
+              </div>
+            </div>
+            <div className="story-copy">
+              <SectionHead
+                num="01 — The Farm"
+                title={["Food should never", "be a mystery."]}
+                lead="We come from a farming family that watched agriculture fade from our own generation. Mera Khet is our way back to those roots — farmed by experienced farmers from our own village, and creating work there too."
+                style={{ marginBottom: 36 }}
+              />
+              <ol className="story-points">
+                {[
+                  ["Full Transparency", "A live camera, monthly farm test results and regular updates — no mystery in your food."],
+                  ["No Shortcuts for Yield", "No harmful chemicals used just to push the yield. Next wheat season, we plan to farm 100% organically."],
+                  ["Whole Wheat, Milled Whole", "Bran and germ left intact — real roti and chapati quality, from a variety bred for this soil."],
+                ].map(([h, p], i) => (
+                  <li key={h} className={`fade d${i + 4}`}>
+                    <span className="sp-num">0{i + 1}</span>
+                    <div>
+                      <h3>{h}</h3>
+                      <p>{p}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <div className="story-more fade d7">
+                <Link href="/our-wheat" className="mk-link">
+                  What makes our wheat different <Arrow />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </Section>
 
-      <FieldBand />
-
-      <Section id="how-it-works" className="section">
+      <Section id="how-it-works" className="section home-steps">
         <div className="mk-wrap">
           <SectionHead center num="02 — How It Works" title={["From land to harvest."]} />
           <div className="process-row">
@@ -154,16 +211,7 @@ export default async function Home() {
         </div>
       </Section>
 
-      <FieldBand
-        photo={farmerTeamPhoto}
-        alt="Two of our farmers, from Sujangarh village, walking through the wheat field"
-        objectPosition="center 30%"
-        caption="Farmed by our own village's farmers — not outsourced labour"
-      />
-
-      <Rule />
-
-      <Section id="live" className="section">
+      <Section id="live" className="section dark-panel">
         <div className="mk-wrap">
           <SectionHead
             center
@@ -184,9 +232,7 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Rule />
-
-      <Section id="harvest" className="section">
+      <Section id="harvest" className="section home-harvest">
         <div className="mk-wrap">
           <SectionHead
             center
@@ -203,6 +249,7 @@ export default async function Home() {
               <div key={k} className={`card harvest-card fade d${i * 2 + 1}`}>
                 <div className="photo-slot filled harvest-photo">
                   <Image src={photo} alt={alt} fill sizes="(min-width: 960px) 33vw, 100vw" placeholder="blur" />
+                  <span className="harvest-tag">Option {i + 1}</span>
                 </div>
                 <div className="harvest-body">
                   <h3>{h}</h3>
@@ -211,7 +258,7 @@ export default async function Home() {
               </div>
             ))}
           </div>
-          <div className="more-link fade d7" style={{ marginTop: 40 }}>
+          <div className="more-link fade d7" style={{ marginTop: 44 }}>
             <Link href="/how-it-works#harvest" className="mk-link">
               Everything that happens after harvest <Arrow />
             </Link>
@@ -219,9 +266,7 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Rule />
-
-      <Section id="register" className="section">
+      <Section id="register" className="section tint">
         <div className="mk-wrap">
           <div className="map-wrap">
             <div>
@@ -237,8 +282,6 @@ export default async function Home() {
           </div>
         </div>
       </Section>
-
-      <Rule />
 
       <Section id="pricing" className="section">
         <div className="mk-wrap">
@@ -294,7 +337,36 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Rule />
+      <Section className="closer">
+        <div className="closer-panel">
+          <Image src={wheatEarPhoto} alt="" fill sizes="100vw" placeholder="blur" className="closer-img" style={{ objectPosition: "32% 50%" }} />
+          <div className="closer-shade" aria-hidden="true" />
+          <div className="mk-wrap closer-copy">
+            <p className="eyebrow fade">{season?.season_label || "This season"}</p>
+            <h2>
+              <span className="line">
+                <span>{bookingsOpen ? "Your plot is" : "Be first in line"}</span>
+              </span>
+              <span className="line">
+                <span>
+                  <em>{bookingsOpen ? "waiting." : "next season."}</em>
+                </span>
+              </span>
+            </h2>
+            <p className="closer-text fade d4">{closerText}</p>
+            <div className="hero-actions fade d5">
+              {bookingsOpen && (
+                <Link href={reserveHref} className="btn btn-gold">
+                  <span>{reserveLabel}</span>
+                </Link>
+              )}
+              <Link href="#contact" className={bookingsOpen ? "btn btn-glass" : "btn btn-gold"}>
+                <span>Ask us a question</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Section>
 
       <Section id="contact" className="section">
         <div className="mk-wrap">
