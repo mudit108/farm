@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { listAllUsers } from "@/lib/supabase/list-all-users";
 import Link from "next/link";
 import { ActionForm } from "@/components/admin/action-form";
@@ -21,6 +22,8 @@ import { adminUpdateFFFAmount } from "@/app/actions/admin-content";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Finance" };
 
 type Payment = {
   id: string;
@@ -779,7 +782,7 @@ export default async function AdminFinancePage({
 
   return (
     <div>
-      <PageHeader title="Finance" subtitle="Real income and expenses — not projections." />
+      <PageHeader eyebrow="Money" title="Finance" subtitle="Real income and expenses — not projections." />
       <Tabs
         defaultTab={tab}
         tabs={[

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AlertTriangle, CheckCircle2, Lock } from "lucide-react";
 import { ActionForm } from "@/components/admin/action-form";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -8,6 +9,8 @@ import { FEEDING_FAMILIES_PER_PLOT, EXPENSE_TO_BUDGET, membershipPlans } from "@
 import { adminUpdateBudgetPercents, adminSetBudgetOverride } from "@/app/actions/admin-budget";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Budget" };
 
 type BudgetRow = {
   category: string;
@@ -87,7 +90,7 @@ export default async function AdminBudgetPage() {
 
   return (
     <>
-      <PageHeader title="Budget" subtitle="Allocation, spend, and what's left" />
+      <PageHeader eyebrow="Money" title="Budget" subtitle="Allocation, spend, and what's left" />
 
       <div className="p-6 sm:px-10">
         {/* Revenue basis — stated explicitly so the numbers below are

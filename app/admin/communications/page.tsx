@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
@@ -10,6 +11,8 @@ import { isValidIndianMobile } from "@/lib/phone";
 import { adminSendWhatsAppIndividual, adminBroadcastWhatsApp } from "@/app/actions/admin-whatsapp";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Communications" };
 
 type Update = { id: string; title: string; description: string; created_at: string };
 type LogRow = {
@@ -353,7 +356,7 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
 
   return (
     <div>
-      <PageHeader title="Communications" subtitle="Farm updates, WhatsApp messaging, and inbound contact messages." />
+      <PageHeader eyebrow="People" title="Communications" subtitle="Farm updates, WhatsApp messaging, and inbound contact messages." />
       <Tabs
         defaultTab={tab}
         tabs={[

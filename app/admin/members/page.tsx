@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { listAllUsers } from "@/lib/supabase/list-all-users";
 import Link from "next/link";
 import { ActionForm } from "@/components/admin/action-form";
@@ -28,6 +29,8 @@ import {
 import { membershipPlans, harvestOptions } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Members" };
 
 type PlotRow = {
   plot_number: number;
@@ -918,7 +921,7 @@ export default async function MembersPage({
 
   return (
     <div>
-      <PageHeader title="Members" subtitle={`${filled} filled · ${available} available · ${plots.length} total plots`} />
+      <PageHeader eyebrow="People" title="Members" subtitle={`${filled} filled · ${available} available · ${plots.length} total plots`} />
       <Tabs
         defaultTab={tab}
         tabs={[

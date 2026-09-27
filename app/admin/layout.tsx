@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { createSessionClient } from "@/lib/supabase/session";
+import "./admin.css";
+
+export const metadata: Metadata = {
+  title: { default: "Admin | Mera Khet", template: "%s · Admin | Mera Khet" },
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // proxy.ts already guarantees an authenticated, allowlisted user reaches

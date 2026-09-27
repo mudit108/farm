@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { listAllUsers } from "@/lib/supabase/list-all-users";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
@@ -7,6 +8,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { adminSetVisitStatus } from "@/app/actions/admin-content";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Visit Requests" };
 
 type Visit = {
   id: string;
@@ -33,7 +36,7 @@ export default async function VisitsPage() {
 
   return (
     <div>
-      <PageHeader title="Visit Requests" subtitle="Approve or decline customer farm-visit requests." />
+      <PageHeader eyebrow="People" title="Visit Requests" subtitle="Approve or decline customer farm-visit requests." />
 
       <div className="space-y-4 p-6 sm:px-10">
         {visits.length === 0 && (

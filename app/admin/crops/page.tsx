@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ActionForm } from "@/components/admin/action-form";
 import { Card, Badge } from "@/components/ui/card";
@@ -12,6 +13,8 @@ import { ResizeFarmForm } from "@/components/admin/resize-farm-form";
 import { CloseSeasonForm } from "@/components/admin/close-season-form";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Crops & Season" };
 
 type Season = {
   current_stage: string;
@@ -137,9 +140,9 @@ export default async function CropsManagementPage() {
 
   return (
     <div>
-      <PageHeader title="Crops & Season" subtitle="Mera Khet currently grows one crop per season." />
+      <PageHeader eyebrow="Farm" title="Crops & Season" subtitle="Mera Khet currently grows one crop per season." />
 
-      <div className="p-6 sm:px-10">
+      <div className="mk-admin-cols p-6 sm:px-10">
         <Card className="max-w-md p-5">
           <p className="font-display text-lg uppercase">{currentCrop.name}</p>
           <p className="text-xs text-[var(--color-ink-soft)]">{currentCrop.localName} · {currentCrop.season}</p>

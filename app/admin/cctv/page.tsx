@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Video } from "lucide-react";
 import { ActionForm } from "@/components/admin/action-form";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -7,6 +8,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { adminUpsertCamera, adminDeleteCamera } from "@/app/actions/admin-content";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "CCTV" };
 
 type Camera = {
   id: string;
@@ -28,7 +31,7 @@ export default async function CctvManagementPage() {
 
   return (
     <div>
-      <PageHeader title="CCTV" subtitle="Assign cameras to plots and configure stream sources." />
+      <PageHeader eyebrow="Farm" title="CCTV" subtitle="Assign cameras to plots and configure stream sources." />
 
       <div className="p-6 sm:px-10">
         <p className="mb-4 text-sm text-[var(--color-ink-soft)]">
