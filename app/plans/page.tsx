@@ -177,7 +177,7 @@ export default async function PlansPage() {
             The Feeding Families Fund amount is set aside from the price shown, not charged on top. Milling and packing are included; the only extra
             charge is delivery: free for 15 kg bags, ₹150 per 30 kg bag and ₹250 per 50 kg bag. Discount codes and the split-payment fee are shown at checkout.
           </p>
-          <DeliveryStrip showDetails />
+          <DeliveryStrip />
         </div>
       </Section>
 

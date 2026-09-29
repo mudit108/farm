@@ -292,7 +292,7 @@ export default async function Home() {
         <div className="mk-wrap">
           <SectionHead center num="06 — Membership" title={["Choose your plot."]} lead="One season. Three sizes. The same transparency on every one." />
           <PlanCards />
-          <DeliveryStrip showDetails />
+          <DeliveryStrip />
           <p className="plans-note fade d6">
             Every plan includes in-house milling and packing, on-site storage and farm visits. The harvest is shared equally per plot, and yields are estimates, not guarantees.
           </p>
