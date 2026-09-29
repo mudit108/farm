@@ -9,6 +9,7 @@ import { getCurrentMember } from "@/lib/current-member";
 import { getPlanCards, getPlotCounts, getSeason } from "@/lib/public-data";
 import { INSTALLMENT_DUE_DAYS, BALANCE_RELEASE_AFTER_DAYS, balanceLateFeeInr, installmentFeeInr, planIncludes } from "@/lib/demo-data";
 import { inr } from "@/lib/site-content";
+import { DeliveryStrip } from "@/components/site/delivery-strip";
 
 export const dynamic = "force-dynamic";
 
@@ -174,8 +175,9 @@ export default async function PlansPage() {
           </div>
           <p className="incl-note fade d6">
             The Feeding Families Fund amount is set aside from the price shown, not charged on top. Milling and packing are included; the only extra
-            charge is delivery, based on distance. Discount codes and the split-payment fee are shown at checkout.
+            charge is delivery: free for 15 kg bags, ₹150 per 30 kg bag and ₹250 per 50 kg bag. Discount codes and the split-payment fee are shown at checkout.
           </p>
+          <DeliveryStrip showDetails />
         </div>
       </Section>
 

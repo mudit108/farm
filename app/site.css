@@ -894,3 +894,12 @@
   .mk .ha-inset, .mk .ha-card, .mk .ha-seal-ring { animation: none !important; }
   .mk .ha-arch img, .mk .closer-img { transform: none !important; }
 }
+
+/* Delivery zones strip */
+.mk .delivery-strip { max-width: 760px; margin: 28px auto 0; padding: 18px 22px; border: 1px solid rgba(28,35,27,.14); border-radius: 14px; background: #FFFDF7; text-align: center; }
+.mk .delivery-strip-k { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: #3E5A2B; margin: 0 0 10px; }
+.mk .delivery-strip-zones { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.mk .delivery-strip-zones li { padding: 6px 14px; border-radius: 999px; background: #EEF3E6; color: #2C4320; font-size: 14px; font-weight: 500; }
+.mk .delivery-strip-soon, .mk .delivery-strip-detail { margin: 0; font-size: 13px; color: #5F5F54; }
+.mk .delivery-strip-soon a { color: #3E5A2B; text-decoration: underline; }
+.mk .delivery-strip-detail { margin-top: 8px; }

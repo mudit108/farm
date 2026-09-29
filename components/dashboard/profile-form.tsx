@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { updateProfile, type ProfileState } from "@/app/actions/profile";
 import { PHONE_HELP_TEXT } from "@/lib/phone";
+import { DeliveryLocationFields } from "@/components/delivery-location-fields";
 
 const initialState: ProfileState = { status: "idle" };
 
@@ -39,18 +40,10 @@ export function ProfileForm({
         <input name="phone" required type="tel" inputMode="numeric" placeholder="9876543210" className="input" defaultValue={phone} />
         <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">{PHONE_HELP_TEXT} — farm updates are sent here on WhatsApp.</span>
       </label>
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Delivery city</span>
-        <input name="city" required type="text" placeholder="e.g. Jaipur" className="input" defaultValue={city} />
-        <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Where your harvest should be delivered.</span>
-      </label>
+      <DeliveryLocationFields initialCity={city} initialPincode={pincode} pincodeMaxWidth />
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium">Delivery address</span>
         <textarea name="address" rows={2} placeholder="House / street / area / landmark" className="input" defaultValue={address} />
-      </label>
-      <label className="block">
-        <span className="mb-1.5 block text-sm font-medium">Pincode</span>
-        <input name="pincode" type="text" inputMode="numeric" maxLength={6} pattern="\d{6}" placeholder="e.g. 302001" className="input max-w-[10rem]" defaultValue={pincode} />
       </label>
 
       {state.status === "error" && (

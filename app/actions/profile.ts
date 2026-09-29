@@ -5,6 +5,7 @@ import { createSessionClient } from "@/lib/supabase/session";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { normalizeIndianMobile, PHONE_ERROR_TEXT } from "@/lib/phone";
+import { validateDeliveryLocation } from "@/lib/delivery-zones";
 
 export type ProfileState =
   | { status: "idle" }
@@ -36,6 +37,13 @@ export async function updateProfile(
 
   if (pincode && !/^\d{6}$/.test(pincode)) {
     return { status: "error", message: "Pincode should be 6 digits." };
+  }
+
+  // Inside a delivery zone the pincode is required and must belong to it;
+  // a city outside the zones is fine (the member is on the waitlist).
+  const location = validateDeliveryLocation(city, pincode);
+  if (!location.ok) {
+    return { status: "error", message: location.message };
   }
 
   const supabase = await createSessionClient();

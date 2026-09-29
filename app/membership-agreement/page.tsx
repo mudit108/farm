@@ -147,14 +147,24 @@ export default async function MembershipAgreementPage() {
       <h2>7. Receiving your harvest</h2>
       <p>You choose one of the following, from your dashboard, after the crop is harvested and weighed:</p>
       <ul>
-        <li><strong>Home delivery</strong> of the raw harvest (delivery charges billed separately)</li>
-        <li><strong>Processing</strong> into flour (atta), milled and packed in-house at the farm at no extra charge, then delivered to you (delivery charges billed separately)</li>
+        <li><strong>Home delivery</strong> of the raw harvest (delivery charges billed separately, as set out below)</li>
+        <li><strong>Processing</strong> into flour (atta), milled and packed in-house at the farm at no extra charge, then delivered to you (delivery charges billed separately, as set out below)</li>
         <li><strong>Sale to the market</strong> on your behalf, with proceeds sent to you at prevailing market rates at the time of sale (not guaranteed in advance)</li>
       </ul>
       <p>
         For either delivery option, you may choose to receive your harvest
         as a single delivery or split into monthly instalments of a size
         you specify.
+      </p>
+      <p>
+        <strong>Delivery zones, timing and charges.</strong> For the current
+        season, delivery is available in Mumbai, Thane, Navi Mumbai, Pune and
+        Bengaluru. Members whose delivery city is outside these areas are placed
+        on a waitlist and cannot purchase a plan until their city opens; they
+        may instead nominate a delivery address in one of these cities. Deliveries
+        begin approximately 2 weeks after harvest, once harvesting, milling and
+        packing are complete. Delivery is charged per bag: 15 kg bags are free,
+        30 kg bags are ₹150 and 50 kg bags are ₹250.
       </p>
 
       <h2>8. Certificates and plot approval</h2>

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Clock, PauseCircle } from "lucide-react";
+import Link from "next/link";
+import { Clock, MapPin, PauseCircle } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PlanSelectionForm } from "@/components/dashboard/plan-selection-form";
 import { PlotNicknameForm } from "@/components/dashboard/plot-nickname-form";
 import { createSessionClient } from "@/lib/supabase/session";
 import { summarizePlotHoldings, todayInIndia } from "@/lib/demo-data";
+import { isDeliverableCity, DELIVERY_ZONES_SENTENCE } from "@/lib/delivery-zones";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,8 @@ export default async function SelectPlotPage() {
   const deadlinePassed = Boolean(season?.registration_deadline && todayInIndia() > season.registration_deadline);
   const isOpen = !paused && !deadlinePassed;
   const holdings = summarizePlotHoldings(myPlots);
+  const userCity = (user?.user_metadata?.city as string | undefined) ?? "";
+  const waitlisted = !isDeliverableCity(userCity);
 
   return (
     <div>
@@ -89,7 +93,22 @@ export default async function SelectPlotPage() {
           </section>
         )}
 
-        {isOpen ? (
+        {waitlisted ? (
+          <div className="mk-empty">
+            <span className="mk-empty-icon" aria-hidden="true">
+              <MapPin className="h-6 w-6" />
+            </span>
+            <h2>You&apos;re on the waitlist{userCity ? ` for ${userCity}` : ""}</h2>
+            <p>
+              This season we deliver in {DELIVERY_ZONES_SENTENCE}. We&apos;re growing and coming soon to more cities — your account is
+              ready, and we&apos;ll tell you as soon as we open in yours.
+            </p>
+            <p>
+              If your harvest should go to an address in one of these cities (for example, family there), change your delivery city on the{" "}
+              <Link href="/dashboard/account" className="underline">Account page</Link>.
+            </p>
+          </div>
+        ) : isOpen ? (
           <>
             <p className="mb-6 max-w-lg text-sm text-[var(--color-ink-soft)]">
               {myPlots.length > 0

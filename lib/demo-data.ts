@@ -55,7 +55,7 @@ export const wheatComparisonRows = [
   { label: "Who grew it", unknown: "You'll never meet them", known: "Experienced farmers from our village — come and meet them" },
   { label: "What variety it is", unknown: "Usually unlabeled", known: "RAJ 1482, bred for Rajasthan's soil" },
   { label: "What's used on it", unknown: "No way to ask", known: "No harmful chemicals to push yield — test results every month" },
-  { label: "How old it is", unknown: "Could be months, or seasons", known: "This season's harvest, delivered in 2–3 weeks" },
+  { label: "How old it is", unknown: "Could be months, or seasons", known: "This season's harvest, delivered from 2 weeks after harvest" },
   { label: "How it's milled", unknown: "Often refined", known: "Milled whole, in-house — bran and germ intact" },
   { label: "Where it's stored", unknown: "Changes hands, unrecorded", known: "Our own 30-tonne on-site warehouse" },
   { label: "Can you watch it grow", unknown: "No", known: "Yes — a live camera from sowing" },
@@ -257,7 +257,7 @@ export const harvestOptions = [
     tagline: "Raw Harvest",
     description:
       "We deliver your harvest straight to your doorstep as clean raw grain — all at once, or split into monthly instalments if you'd rather receive it gradually. Packed in 15 kg, 30 kg or 50 kg bags.",
-    note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Delivery charges are billed separately based on distance.",
+    note: "Deliveries begin 2 weeks after harvest, in Mumbai, Thane, Navi Mumbai, Pune and Bengaluru this season. Delivery is billed separately: free for 15 kg bags, ₹150 per 30 kg bag and ₹250 per 50 kg bag.",
   },
   {
     id: "processed",
@@ -265,7 +265,7 @@ export const harvestOptions = [
     tagline: "Atta",
     description:
       "We mill your share into fresh whole-wheat atta and pack it in-house at the farm — included in your plan — then deliver it to you, either as a single delivery or in monthly instalments. Packed in the same 15 kg, 30 kg or 50 kg bags.",
-    note: "Typically reaches you 2–3 weeks after harvest, depending on your location. Milling and packing are included; only delivery is charged separately.",
+    note: "Deliveries begin 2 weeks after harvest, in Mumbai, Thane, Navi Mumbai, Pune and Bengaluru this season. Milling and packing are included; only delivery is charged separately (free for 15 kg bags, ₹150 per 30 kg bag, ₹250 per 50 kg bag).",
   },
   {
     id: "sell-to-market",
@@ -296,7 +296,7 @@ export const demoFaqs = [
   },
   {
     q: "What are my options for the harvest?",
-    a: "You can choose to (1) have us deliver the raw harvest to your home (delivery charges not included), (2) have us process it into flour — wheat milled into fresh atta — and deliver that to you, or (3) have us sell it to the market on your behalf and send you the proceeds. For either delivery option, you can also choose to receive it in monthly instalments of a custom size (e.g. 40 kg/month) instead of all at once — set this from your dashboard's Harvest Preference.",
+    a: "You can choose to (1) have us deliver the raw harvest to your home (delivery charged separately per bag: free for 15 kg, ₹150 for 30 kg, ₹250 for 50 kg), (2) have us process it into flour — wheat milled into fresh atta — and deliver that to you, or (3) have us sell it to the market on your behalf and send you the proceeds. For either delivery option, you can also choose to receive it in monthly instalments of a custom size (e.g. 40 kg/month) instead of all at once — set this from your dashboard's Harvest Preference.",
   },
   {
     q: "What do I receive with my membership?",
@@ -368,7 +368,11 @@ export const demoFaqs = [
   },
   {
     q: "How long after harvest will I receive my wheat, and how is it packed?",
-    a: "Typically 2–3 weeks after harvest, depending on your location. It's packed in 15 kg, 30 kg or 50 kg bags — so if you've chosen monthly instalments, you can pick a bag size that suits how much you use. Delivery charges depend on distance and are billed separately from your membership.",
+    a: "Deliveries begin 2 weeks after harvest, once harvesting, milling and packing are complete. It's packed in 15 kg, 30 kg or 50 kg bags — so if you've chosen monthly instalments, you can pick a bag size that suits how much you use. Delivery is billed separately from your membership: 15 kg bags are free, 30 kg bags cost ₹150 and 50 kg bags ₹250 per bag.",
+  },
+  {
+    q: "Which cities do you deliver to?",
+    a: "This season we deliver in Mumbai, Thane, Navi Mumbai, Pune and Bengaluru. We're growing and coming soon to more cities. If you live elsewhere you can still create an account and join the waitlist — we'll tell you when we open in your city — or you can have your harvest delivered to family or friends in one of these cities.",
   },
   {
     q: "Where is my wheat kept between harvest and delivery?",

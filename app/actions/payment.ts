@@ -8,6 +8,7 @@ import { sendPlotConfirmationEmail, sendAdminAlertEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service";
 import { issueReceiptForPayment } from "@/lib/payments/receipts";
 import { checkReferralCode, recordReferralReward } from "@/lib/payments/referrals";
+import { isDeliverableCity, DELIVERY_ZONES_SENTENCE } from "@/lib/delivery-zones";
 import {
   membershipPlans,
   installmentFeeInr,
@@ -60,6 +61,17 @@ export async function createPlanOrder(
   } = await supabase.auth.getUser();
   if (!user) {
     return { status: "error", message: "Please log in first." };
+  }
+
+  // This season's harvest is only delivered in the zones in
+  // lib/delivery-zones.ts. Members elsewhere are on the waitlist: they can
+  // have an account but can't book until their city opens. Checked
+  // server-side so the UI gate can't be bypassed.
+  if (!isDeliverableCity(user.user_metadata?.city as string | undefined)) {
+    return {
+      status: "error",
+      message: `This season we deliver in ${DELIVERY_ZONES_SENTENCE}. You're on the waitlist for your city — we'll let you know as soon as we open there. If your delivery city is one of these, update it on your Account page first.`,
+    };
   }
 
   // Live, admin-editable price — never the static file's priceInr. This

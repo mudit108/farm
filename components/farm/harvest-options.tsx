@@ -13,7 +13,7 @@ export function HarvestOptions({ warehouseTonnes }: { warehouseTonnes: number })
     { icon: CheckCircle2, title: "Quality checked", body: "Checked before it moves to delivery, processing, or market sale — whichever you've chosen." },
     { icon: Warehouse, title: "Stored on-site", body: `Held in our own ${warehouseTonnes}-tonne warehouse at the farm — not left in the field or handed to a third party while it waits.` },
     { icon: Package, title: "Your choice applied", body: "Delivered raw, milled into flour, or sold to market on your behalf — one delivery or monthly installments, in 15/30/50 kg bags." },
-    { icon: LayoutDashboard, title: "Delivered in 2–3 weeks", body: "Your harvest typically reaches you 2–3 weeks after harvest, depending on location. Every delivery is logged on your dashboard with date and quantity." },
+    { icon: LayoutDashboard, title: "Deliveries start 2 weeks after harvest", body: "Deliveries begin 2 weeks after harvest, once harvesting, milling and packing are complete — in Mumbai, Thane, Navi Mumbai, Pune and Bengaluru this season. 15 kg bags are free; 30 kg is ₹150 and 50 kg is ₹250 per bag. Every delivery is logged on your dashboard with date and quantity." },
   ];
 
   return (

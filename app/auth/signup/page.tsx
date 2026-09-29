@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Turnstile, Honeypot } from "@/components/ui/turnstile";
 import { normalizeIndianMobile, PHONE_HELP_TEXT, PHONE_ERROR_TEXT } from "@/lib/phone";
+import { DeliveryLocationFields } from "@/components/delivery-location-fields";
+import { validateDeliveryLocation } from "@/lib/delivery-zones";
 
 /** Shown when someone arrives from a friend's invite link (?ref=CODE). */
 function InviteNotice() {
@@ -44,6 +46,16 @@ export default function SignupPage() {
     const normalizedPhone = normalizeIndianMobile(form.phone);
     if (!normalizedPhone) {
       setError(PHONE_ERROR_TEXT);
+      return;
+    }
+
+    if (!form.city.trim()) {
+      setError("Please choose your delivery city.");
+      return;
+    }
+    const location = validateDeliveryLocation(form.city, form.pincode);
+    if (!location.ok) {
+      setError(location.message);
       return;
     }
 
@@ -143,18 +155,12 @@ export default function SignupPage() {
           <input required type="tel" inputMode="numeric" placeholder="9876543210" className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">{PHONE_HELP_TEXT} — we send farm updates here on WhatsApp.</span>
         </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Delivery city</span>
-          <input required type="text" placeholder="e.g. Jaipur" className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-          <span className="mt-1 block text-xs text-[var(--color-ink-soft)]">Where your harvest should be delivered. You can change this later.</span>
-        </label>
+        <DeliveryLocationFields
+          onChange={({ city, pincode }) => setForm((f) => ({ ...f, city, pincode }))}
+        />
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium">Address <span className="text-[var(--color-ink-soft)] font-normal">(optional)</span></span>
           <input type="text" placeholder="House / street / area" className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Pincode <span className="text-[var(--color-ink-soft)] font-normal">(optional)</span></span>
-          <input type="text" inputMode="numeric" maxLength={6} placeholder="e.g. 331023" className="input" value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })} />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium">Password</span>

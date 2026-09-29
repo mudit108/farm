@@ -40,6 +40,7 @@ export function SiteFooter({ contactEmail, contactPhone }: { contactEmail: strin
             <div className="footer-col">
               <p className="footer-h">Contact</p>
               <span>Sujangarh, Rajasthan</span>
+              <span>Delivering in Mumbai, Thane, Navi Mumbai, Pune &amp; Bengaluru — more cities soon</span>
               {contactEmail && <a href={`mailto:${contactEmail}`}>{contactEmail}</a>}
               {contactPhone && <a href={`tel:${contactPhone.replace(/\s/g, "")}`}>{contactPhone}</a>}
               {wa && (

@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteFrame } from "@/components/site/frame";
 import { SectionHead } from "@/components/site/heads";
+import { DeliveryStrip } from "@/components/site/delivery-strip";
+import { DELIVERY_ZONES_DOTS } from "@/lib/delivery-zones";
 import { CountUp, HeroMeter, Section } from "@/components/site/motion";
 import { Arrow } from "@/components/site/marks";
 import { CameraViewer } from "@/components/site/camera-viewer";
@@ -103,6 +105,9 @@ export default async function Home() {
               </Link>
             </div>
             <HeroMeter filled={counts.filled} total={counts.total} />
+            <p className="hero-sub fade d5" style={{ fontSize: 14, marginTop: 14 }}>
+              Delivering this season in {DELIVERY_ZONES_DOTS} — more cities coming soon.
+            </p>
           </div>
           <HeroArt card={seasonCard} />
         </div>
@@ -242,7 +247,7 @@ export default async function Home() {
           />
           <div className="harvest-grid">
             {[
-              { k: "raw", h: "Delivered raw", p: "Your grain, packed in 15, 30 or 50 kg bags and sent home 2–3 weeks after harvest, depending on where you are.", photo: harvestRawPhoto, alt: "Sacks of raw wheat grain, ready to be packed for home delivery" },
+              { k: "raw", h: "Delivered raw", p: "Your grain, packed in 15, 30 or 50 kg bags and sent home starting 2 weeks after harvest (free for 15 kg bags; ₹150 per 30 kg bag, ₹250 per 50 kg bag).", photo: harvestRawPhoto, alt: "Sacks of raw wheat grain, ready to be packed for home delivery" },
               { k: "flour", h: "Milled into atta", p: "Milled and packed in-house at the farm, included in your plan — whole, with the bran and germ left in.", photo: harvestFlourPhoto, alt: "Packets of whole wheat atta, milled and packed, ready to ship" },
               { k: "market", h: "Sold to market", p: "Won't use it all? We sell the surplus at the day's market rate and send you what it fetches — well below what the plan costs, so not a return.", photo: harvestMarketPhoto, alt: "Wheat grain being weighed on a traditional scale at a grain market" },
             ].map(({ k, h, p, photo, alt }, i) => (
@@ -287,6 +292,7 @@ export default async function Home() {
         <div className="mk-wrap">
           <SectionHead center num="06 — Membership" title={["Choose your plot."]} lead="One season. Three sizes. The same transparency on every one." />
           <PlanCards />
+          <DeliveryStrip showDetails />
           <p className="plans-note fade d6">
             Every plan includes in-house milling and packing, on-site storage and farm visits. The harvest is shared equally per plot, and yields are estimates, not guarantees.
           </p>
