@@ -80,7 +80,7 @@ function planLabel(planId: string | null) {
 }
 /** City / address / pincode for an account: the plot row if it has one (the
  *  member may have edited it), otherwise what they typed at signup. */
-function contactOf(u: { user_metadata?: Record<string, unknown> } | undefined, plot: PlotRow | undefined) {
+function contactOf(u: { user_metadata?: Record<string, unknown> } | null | undefined, plot: PlotRow | undefined) {
   const meta = (k: string) => {
     const v = u?.user_metadata?.[k];
     return typeof v === "string" && v.trim() ? v.trim() : "";
