@@ -78,6 +78,19 @@ function planLabel(planId: string | null) {
   const plan = membershipPlans.find((p) => p.id === planId);
   return plan ? `${plan.name} (${plan.label})` : null;
 }
+/** City / address / pincode for an account: the plot row if it has one (the
+ *  member may have edited it), otherwise what they typed at signup. */
+function contactOf(u: { user_metadata?: Record<string, unknown> } | undefined, plot: PlotRow | undefined) {
+  const meta = (k: string) => {
+    const v = u?.user_metadata?.[k];
+    return typeof v === "string" && v.trim() ? v.trim() : "";
+  };
+  return {
+    city: plot?.city || meta("city"),
+    address: plot?.address || meta("address"),
+    pincode: plot?.pincode || meta("pincode"),
+  };
+}
 function methodTitle(id: string) {
   return harvestOptions.find((o) => o.id === id)?.title ?? id;
 }
@@ -245,6 +258,9 @@ export default async function MembersPage({
       rows[0]?.pincode,
       user?.email,
       user?.user_metadata?.full_name as string | undefined,
+      contactOf(user, rows[0]).city,
+      contactOf(user, rows[0]).address,
+      contactOf(user, rows[0]).pincode,
       ...rows.map((r) => String(r.plot_number)),
       ...rows.map((r) => `#${r.plot_number}`),
     ]
@@ -360,14 +376,14 @@ export default async function MembersPage({
                   </p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-soft)]">
                     <span>{first.phone ?? "—"}</span>
-                    <span>{first.city ?? "—"}</span>
+                    <span>{first.city || contactOf(usersById.get(first.user_id ?? ""), first).city || "—"}</span>
                     <span title="Plot assigned">{first.assigned_at ? new Date(first.assigned_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}</span>
                   </div>
-                  {(first.address || first.pincode) && (
-                    <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
-                      {[first.address, first.pincode].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
+                  {(() => {
+                    const c = contactOf(usersById.get(first.user_id ?? ""), first);
+                    const line = [c.address, c.pincode].filter(Boolean).join(" · ");
+                    return line ? <p className="mt-1 text-xs text-[var(--color-ink-soft)]">{line}</p> : null;
+                  })()}
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-ink-soft)]">
                     {registeredAt && <span>Registered {registeredAt}</span>}
                     <span>{paymentSummaryText(payment)}</span>
@@ -494,6 +510,7 @@ export default async function MembersPage({
           const h = holding[0];
           const plotNumbers = holding.map((r) => r.plot_number).sort((a, b) => a - b);
           const phone = h?.phone || (u.user_metadata?.phone as string) || "";
+          const contact = contactOf(u, h);
           return (
             <Card key={u.id} className="p-4 text-sm">
               <div className="flex items-start justify-between gap-2">
@@ -511,7 +528,7 @@ export default async function MembersPage({
                     <a href={`https://wa.me/91${phone.replace(/\D/g, "").slice(-10)}`} target="_blank" rel="noopener noreferrer" className="font-medium text-[var(--color-green-deep)]">WhatsApp</a>
                   </p>
                 )}
-                <p>{[h?.address, h?.city, h?.pincode].filter(Boolean).join(", ") || "No address yet"}</p>
+                <p>{[contact.address, contact.city, contact.pincode].filter(Boolean).join(", ") || "No address yet"}</p>
                 <p>
                   Registered {new Date(u.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
                   {plotNumbers.length > 0 && ` · ${planLabel(h?.plan_id ?? null) ?? ""} · ${plotNumbers.map((n) => `#${n}`).join(", ")}`}
@@ -526,7 +543,7 @@ export default async function MembersPage({
 
       <Card className="hidden overflow-hidden p-0 md:block">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left text-sm">
+          <table className="w-full min-w-[1240px] text-left text-sm">
             <thead className="border-b border-[var(--color-ink)]/10 bg-[var(--color-bg-deep)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
@@ -534,6 +551,7 @@ export default async function MembersPage({
                 <th className="px-5 py-3 font-medium">Phone</th>
                 <th className="px-5 py-3 font-medium">City</th>
                 <th className="px-5 py-3 font-medium">Address</th>
+                <th className="px-5 py-3 font-medium">Pincode</th>
                 <th className="px-5 py-3 font-medium">Registered</th>
                 <th className="px-5 py-3 font-medium">Confirmed</th>
                 <th className="px-5 py-3 font-medium">Plan</th>
@@ -548,6 +566,7 @@ export default async function MembersPage({
                 const prefOption = pref ? harvestOptions.find((o) => o.id === pref.method) : null;
                 const holding = plotsByUserId.get(u.id) ?? [];
                 const holdingFirst = holding[0];
+                const contact = contactOf(u, holdingFirst);
                 const plotNumbers = holding.map((r) => r.plot_number).sort((a, b) => a - b);
                 const payment = paymentSummaryByUser.get(u.id);
                 return (
@@ -555,10 +574,9 @@ export default async function MembersPage({
                     <td className="px-5 py-3 font-medium">{(u.user_metadata?.full_name as string) || holdingFirst?.full_name || "—"}</td>
                     <td className="px-5 py-3 text-[var(--color-ink-soft)]">{u.email}</td>
                     <td className="px-5 py-3 text-[var(--color-ink-soft)]">{holdingFirst?.phone || (u.user_metadata?.phone as string) || "—"}</td>
-                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">{holdingFirst?.city || "—"}</td>
-                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">
-                      {[holdingFirst?.address, holdingFirst?.pincode].filter(Boolean).join(" · ") || "—"}
-                    </td>
+                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">{contact.city || "—"}</td>
+                    <td className="px-5 py-3 text-[var(--color-ink-soft)]">{contact.address || "—"}</td>
+                    <td className="px-5 py-3 font-mono-data text-xs text-[var(--color-ink-soft)]">{contact.pincode || "—"}</td>
                     <td className="px-5 py-3 text-xs text-[var(--color-ink-soft)]">
                       {new Date(u.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
                     </td>
